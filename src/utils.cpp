@@ -40,3 +40,9 @@ std::map<const char *, size_t> get_cache_sizes() {
 #endif
   return result;
 }
+
+uint64_t get_time_ns() {
+  struct timeval tv = {};
+  gettimeofday(&tv, nullptr);
+  return (uint64_t)tv.tv_sec * 1000000000 + (uint64_t)tv.tv_usec * 1000;
+}

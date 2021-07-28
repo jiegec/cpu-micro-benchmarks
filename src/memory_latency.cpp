@@ -19,12 +19,6 @@
 #define FIFTY TEN TEN TEN TEN TEN
 #define HUNDRED FIFTY FIFTY
 
-uint64_t get_time_ns() {
-  struct timeval tv = {};
-  gettimeofday(&tv, nullptr);
-  return (uint64_t)tv.tv_sec * 1000000000 + (uint64_t)tv.tv_usec * 1000;
-}
-
 // measure memory latency with pointer chasing
 void test(int size) {
   int count = size / sizeof(char *);
