@@ -1,12 +1,17 @@
 #include "include/utils.h"
+#include <unistd.h>
+
+#ifdef __APPLE__
 #include <sys/sysctl.h>
+#endif
 
 std::map<const char *, size_t> get_cache_sizes() {
   std::map<const char *, size_t> result;
 #ifdef __linux__
-  int keys[] = {_SC_LEVEL1_DCACHE_SIZE, _SC_LEVEL2_CACHE_SIZE,
-                _SC_LEVEL3_CACHE_SIZE};
+  int keys[] = {_SC_LEVEL1_ICACHE_SIZE, _SC_LEVEL1_DCACHE_SIZE,
+                _SC_LEVEL2_CACHE_SIZE, _SC_LEVEL3_CACHE_SIZE};
   const char *names[] = {
+      "L1i",
       "L1d",
       "L2",
       "L3",
