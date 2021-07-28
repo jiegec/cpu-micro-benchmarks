@@ -13,6 +13,15 @@ cc_binary(
     deps = [":utils"],
 )
 
+cc_binary(
+    name = "instruction_latency_perf",
+    srcs = [
+        "include/instrs.h",
+        "src/instruction_latency_perf.cpp",
+    ],
+    deps = [":utils"],
+)
+
 cc_library(
     name = "utils",
     srcs = ["src/utils.cpp"],

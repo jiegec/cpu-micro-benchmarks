@@ -1,5 +1,6 @@
 #include "include/utils.h"
 #include <unistd.h>
+#include <sys/time.h>
 
 #ifdef __APPLE__
 #include <sys/sysctl.h>

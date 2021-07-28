@@ -14,10 +14,6 @@
 
 // learned from lmbench lat_mem_rd
 #define ONE p = (char **)*p;
-#define FIVE ONE ONE ONE ONE ONE
-#define TEN FIVE FIVE
-#define FIFTY TEN TEN TEN TEN TEN
-#define HUNDRED FIFTY FIFTY
 
 // measure memory latency with pointer chasing
 void test(int size) {
@@ -48,14 +44,14 @@ void test(int size) {
 
   // warmup
   for (int i = 0; i < warmup; i++) {
-    HUNDRED;
+    HUNDRED(ONE);
   }
 
   // benchmark
   uint64_t before = get_time_ns();
 
   for (int i = 0; i < iterations; i++) {
-    HUNDRED;
+    HUNDRED(ONE);
   }
 
   // avoid optimization
