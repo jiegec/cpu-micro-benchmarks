@@ -2,9 +2,9 @@
 #define __UTILS_H__
 
 #include <map>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string>
-#include <stdint.h>
 
 // learned from lmbench lat_mem_rd
 #define FIVE(X) X X X X X
@@ -15,5 +15,6 @@
 // utilities
 std::map<const char *, size_t> get_cache_sizes();
 uint64_t get_time_ns();
+char **generate_random_pointer_chasing(size_t size);
 
 #endif

@@ -17,26 +17,7 @@
 
 // measure memory latency with pointer chasing
 void test(int size) {
-  int count = size / sizeof(char *);
-  char **buffer = new char *[count];
-  int *index = new int[count];
-
-  // init index and shuffle
-  for (int i = 0; i < count; i++) {
-    index[i] = i;
-  }
-  for (int i = 1; i < count; i++) {
-    int j = rand() % i;
-    int temp = index[i];
-    index[i] = index[j];
-    index[j] = temp;
-  }
-
-  // init circular list
-  for (int i = 0; i < count - 1; i++) {
-    buffer[index[i]] = (char *)&buffer[index[i + 1]];
-  }
-  buffer[index[count - 1]] = (char *)&buffer[index[0]];
+  char **buffer = generate_random_pointer_chasing(size);
 
   const int warmup = 50000;
   const int iterations = 500000;
@@ -60,7 +41,6 @@ void test(int size) {
   printf("%d,%.2f\n", size, (double)(after - before) / iterations / 100);
   fflush(stdout);
 
-  delete[] index;
   delete[] buffer;
 }
 
@@ -96,6 +76,9 @@ int main(int argc, char *argv[]) {
   test(1024 * 512);
   test(1024 * 768);
   test(1024 * 1024);
+  test(1024 * 1024 * 2);
+  test(1024 * 1024 * 4);
+  test(1024 * 1024 * 8);
   test(1024 * 1024 * 16);
   test(1024 * 1024 * 32);
   test(1024 * 1024 * 48);

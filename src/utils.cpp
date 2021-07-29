@@ -1,6 +1,6 @@
 #include "include/utils.h"
-#include <unistd.h>
 #include <sys/time.h>
+#include <unistd.h>
 
 #ifdef __APPLE__
 #include <sys/sysctl.h>
@@ -46,4 +46,31 @@ uint64_t get_time_ns() {
   struct timeval tv = {};
   gettimeofday(&tv, nullptr);
   return (uint64_t)tv.tv_sec * 1000000000 + (uint64_t)tv.tv_usec * 1000;
+}
+
+char **generate_random_pointer_chasing(size_t size) {
+  int count = size / sizeof(char *);
+  char **buffer = new char *[count];
+  int *index = new int[count];
+
+  // init index and shuffle
+  for (int i = 0; i < count; i++) {
+    index[i] = i;
+  }
+  for (int i = 1; i < count; i++) {
+    int j = rand() % i;
+    int temp = index[i];
+    index[i] = index[j];
+    index[j] = temp;
+  }
+
+  // init circular list
+  for (int i = 0; i < count - 1; i++) {
+    buffer[index[i]] = (char *)&buffer[index[i + 1]];
+  }
+  buffer[index[count - 1]] = (char *)&buffer[index[0]];
+
+  delete[] index;
+
+  return buffer;
 }
