@@ -42,9 +42,10 @@ uint64_t perf_read() {
 int main() {
   struct perf_event_attr *attr =
       (struct perf_event_attr *)malloc(sizeof(struct perf_event_attr));
-  memset(attr, 0, sizeof(attr));
-  attr->type = PERF_TYPE_RAW;
-  attr->config = 0x3C; // cycles
+  memset(attr, 0, sizeof(struct perf_event_attr));
+  attr->type = PERF_TYPE_HARDWARE;
+  attr->size = sizeof(struct perf_event_attr);
+  attr->config = PERF_COUNT_HW_CPU_CYCLES;
   attr->disabled = 0;
   attr->pinned = 1;
   attr->inherit = 1;

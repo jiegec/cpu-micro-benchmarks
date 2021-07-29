@@ -5,7 +5,7 @@ INSTR_TEST(fmul_double, "fmul d0, d0, d0\n", "d0")
 
 #elif defined(__x86_64__)
 INSTR_TEST(add, "inc %%rax\n", "rax")
-INSTR_TEST(fadd_double, "addsd %%xmm0, %%xmm1\n", "xmm0")
-INSTR_TEST(fsub_double, "subsd %%xmm0, %%xmm1\n", "xmm0")
-INSTR_TEST(fmul_double, "mulsd %%xmm0, %%xmm1\n", "xmm0")
+INSTR_TEST(addsd, "addsd %%xmm0, %%xmm1\n", "xmm0")
+INSTR_TEST(subsd, "subsd %%xmm0, %%xmm1\n", "xmm0")
+INSTR_TEST(mulsd, "mulsd %%xmm0, %%xmm1\n", "xmm0")
 #endif
