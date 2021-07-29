@@ -53,6 +53,7 @@ int main() {
   perf_fd = syscall(SYS_perf_event_open, attr, 0, -1, -1, 0);
   if (perf_fd < 0) {
     perror("perf_event_open");
+    fprintf(stderr, "try: sudo sysctl kernel.perf_event_paranoid=2");
     return 1;
   }
 
