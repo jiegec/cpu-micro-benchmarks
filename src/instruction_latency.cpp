@@ -26,7 +26,7 @@ std::vector<std::pair<const char *, void (*)()>> tests = {
 
 int main() {
   uint64_t begin = get_time_ns();
-  test_add();
+  test_int_add();
   uint64_t unit_elapsed = get_time_ns() - begin;
   for (auto it : tests) {
     begin = get_time_ns();

@@ -12,6 +12,7 @@
 #define FIFTY(X) TEN(X) TEN(X) TEN(X) TEN(X) TEN(X)
 #define HUNDRED(X) FIFTY(X) FIFTY(X)
 
+// utilities
 std::map<const char *, size_t> get_cache_sizes();
 uint64_t get_time_ns();
 
