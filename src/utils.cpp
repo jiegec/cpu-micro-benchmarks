@@ -1,4 +1,5 @@
 #include "include/utils.h"
+#include <random>
 #include <sys/time.h>
 #include <unistd.h>
 
@@ -53,12 +54,16 @@ char **generate_random_pointer_chasing(size_t size) {
   char **buffer = new char *[count];
   int *index = new int[count];
 
+  std::random_device rand_dev;
+  std::mt19937 generator(rand_dev());
+
   // init index and shuffle
   for (int i = 0; i < count; i++) {
     index[i] = i;
   }
   for (int i = 1; i < count; i++) {
-    int j = rand() % i;
+    std::uniform_int_distribution<int> distr(0, i - 1);
+    int j = distr(generator);
     int temp = index[i];
     index[i] = index[j];
     index[j] = temp;

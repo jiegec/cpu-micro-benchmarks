@@ -54,6 +54,7 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  printf("size,time(ns)\n");
   test(1024);
   test(1024 * 2);
   test(1024 * 4);
