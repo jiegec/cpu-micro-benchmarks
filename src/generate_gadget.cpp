@@ -4,16 +4,15 @@ FILE *fp;
 
 // generate gadget for rob test
 void gen_rob_test() {
-  int loop_count = 1000;
-  int repeat = 100;
+  int repeat = 5;
   int min_size = 32;
   int max_size = 256;
+  // args: loop count, buffer
   fprintf(fp, ".text\n");
   for (int size = min_size; size <= max_size; size++) {
     fprintf(fp, ".global rob_size_%d\n", size);
     fprintf(fp, "rob_size_%d:\n", size);
 #ifdef __aarch64__
-    fprintf(fp, "\tldr x1, =%d\n", loop_count);
     fprintf(fp, "\t1:\n");
     for (int i = 0; i < repeat; i++) {
       fprintf(fp, "\tldr x0, [x0]\n");
@@ -25,9 +24,8 @@ void gen_rob_test() {
     fprintf(fp, "\tbne 1b\n");
     fprintf(fp, "\tret\n");
 #elif defined(__x86_64__)
-    fprintf(fp, "\tmovq %%rdi, %%r8\n");
-    fprintf(fp, "\tmovq %%rsi, %%r9\n");
-    fprintf(fp, "\tmovl $%d, %%eax\n", loop_count);
+    fprintf(fp, "\tmovl %%rdi, %%r8\n");
+    fprintf(fp, "\tmovq %%rsi, %%rax\n");
     fprintf(fp, "\t1:\n");
     for (int i = 0; i < repeat; i++) {
       fprintf(fp, "\tmovq (%%r8), %%r8\n");
