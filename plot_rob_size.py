@@ -1,14 +1,18 @@
 from matplotlib import pyplot as plt
 import csv
 
-x_data = []
-y_data = []
+size_data = []
+min_data = []
+avg_data = []
 
 with open('rob_size.csv', newline='') as f:
 	r = csv.DictReader(f)
 	for row in r:
-		x_data.append(float(row["size"]))
-		y_data.append(float(row["min"]))
+		size_data.append(float(row["size"]))
+		min_data.append(float(row["min"]))
+		avg_data.append(float(row["avg"]))
 
-plt.plot(x_data, y_data)
+plt.plot(size_data, min_data, label="min")
+plt.plot(size_data, avg_data, label="avg")
+plt.legend()
 plt.savefig('plot_rob_size.png')
