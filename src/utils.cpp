@@ -50,18 +50,22 @@ uint64_t get_time_ns() {
 }
 
 char **generate_random_pointer_chasing(size_t size) {
+  int page_size = getpagesize();
+  int page_pointer_count = page_size / sizeof(char *);
   int count = size / sizeof(char *);
+  // every page one pointer
+  int index_count = size / page_size;
   char **buffer = new char *[count];
-  int *index = new int[count];
+  int *index = new int[index_count];
 
   std::random_device rand_dev;
   std::mt19937 generator(rand_dev());
 
   // init index and shuffle
-  for (int i = 0; i < count; i++) {
+  for (int i = 0; i < index_count; i++) {
     index[i] = i;
   }
-  for (int i = 1; i < count; i++) {
+  for (int i = 1; i < index_count; i++) {
     std::uniform_int_distribution<int> distr(0, i - 1);
     int j = distr(generator);
     int temp = index[i];
@@ -70,10 +74,12 @@ char **generate_random_pointer_chasing(size_t size) {
   }
 
   // init circular list
-  for (int i = 0; i < count - 1; i++) {
-    buffer[index[i]] = (char *)&buffer[index[i + 1]];
+  for (int i = 0; i < index_count - 1; i++) {
+    buffer[index[i] * page_pointer_count] =
+        (char *)&buffer[index[i + 1] * page_pointer_count];
   }
-  buffer[index[count - 1]] = (char *)&buffer[index[0]];
+  buffer[index[index_count - 1] * page_pointer_count] =
+      (char *)&buffer[index[0] * page_pointer_count];
 
   delete[] index;
 
