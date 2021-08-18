@@ -4,7 +4,7 @@ FILE *fp;
 
 // generate gadget for rob test
 void gen_rob_test() {
-  int repeat = 5;
+  int repeat = 10;
   int min_size = 32;
   int max_size = 256;
   // args: loop count, buffer
@@ -17,7 +17,7 @@ void gen_rob_test() {
     for (int i = 0; i < repeat; i++) {
       fprintf(fp, "\tldr x0, [x0]\n");
       for (int j = 0; j < size - 1; j++) {
-        fprintf(fp, "\tcmp x2, x2\n");
+        fprintf(fp, "\tnop\n");
       }
     }
     fprintf(fp, "\tsubs x1, x1, #1\n");

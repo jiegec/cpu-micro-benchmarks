@@ -17,9 +17,9 @@ extern gadget rob_gadgets[];
 }
 
 int main(int argc, char *argv[]) {
-  int loop_count = 100000;
+  int loop_count = 50000;
   // match gen_rob_test
-  int repeat = 5;
+  int repeat = 10;
   int min_size = 32;
   int max_size = 256;
 
