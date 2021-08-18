@@ -1,2 +1,4 @@
 builddir
 .vscode
+*.png
+*.csv
