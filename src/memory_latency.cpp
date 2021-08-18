@@ -3,6 +3,7 @@
 
 #include "include/utils.h"
 #include <algorithm>
+#include <assert.h>
 #include <limits.h>
 #include <math.h>
 #include <stdint.h>
@@ -14,6 +15,8 @@
 
 // learned from lmbench lat_mem_rd
 #define ONE p = (char **)*p;
+
+FILE *fp;
 
 // measure memory latency with pointer chasing
 void test(int size) {
@@ -38,23 +41,26 @@ void test(int size) {
   // avoid optimization
   *(volatile char *)*p;
   uint64_t after = get_time_ns();
-  printf("%d,%.2f\n", size, (double)(after - before) / iterations / 100);
-  fflush(stdout);
+  fprintf(fp, "%d,%.2f\n", size, (double)(after - before) / iterations / 100);
+  fflush(fp);
 
   delete[] buffer;
 }
 
 int main(int argc, char *argv[]) {
+  fp = fopen("memory_latency.csv", "w");
+  assert(fp);
+
   std::map<const char *, size_t> cache_sizes = get_cache_sizes();
   for (auto it : cache_sizes) {
     const char *name = it.first;
     size_t size = it.second;
     if (size != 0) {
-      printf("%s cache: %zu bytes\n", name, size);
+      fprintf(fp, "%s cache: %zu bytes\n", name, size);
     }
   }
 
-  printf("size,time(ns)\n");
+  fprintf(fp, "size,time(ns)\n");
   test(1024);
   test(1024 * 2);
   test(1024 * 4);
@@ -90,5 +96,6 @@ int main(int argc, char *argv[]) {
   test(1024 * 1024 * 384);
   test(1024 * 1024 * 512);
   test(1024 * 1024 * 1024);
+  printf("Results are written to memory_latency.csv\n");
   return 0;
 }

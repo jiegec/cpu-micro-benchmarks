@@ -21,6 +21,8 @@ char **generate_random_pointer_chasing(size_t size);
 void setup_time_or_cycles();
 uint64_t get_time_or_cycles();
 
+void bind_to_core();
+
 // perf related
 #ifdef __linux__
 void setup_perf_cycles();

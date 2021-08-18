@@ -14,5 +14,7 @@ with open('rob_size.csv', newline='') as f:
 
 plt.plot(size_data, min_data, label="min")
 plt.plot(size_data, avg_data, label="avg")
+plt.ylabel('Time')
+plt.xlabel('Instruction Block Size')
 plt.legend()
 plt.savefig('plot_rob_size.png')

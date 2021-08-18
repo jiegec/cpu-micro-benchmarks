@@ -23,12 +23,15 @@ int main(int argc, char *argv[]) {
   int min_size = 32;
   int max_size = 256;
 
+  bind_to_core();
   setup_time_or_cycles();
+  FILE *fp = fopen("rob_size.csv", "w");
+  assert(fp);
 
   size_t buffer_size = 1024 * 1024 * 128; // 128 MB
   char **buffer = generate_random_pointer_chasing(buffer_size);
   char **p = buffer;
-  printf("size,min,avg,max\n");
+  fprintf(fp, "size,min,avg,max\n");
   for (int size = min_size; size <= max_size; size++) {
     std::vector<double> history;
     int iterations = 100;
@@ -59,9 +62,11 @@ int main(int argc, char *argv[]) {
         max = history[i];
       }
     }
-    printf("%d,%.2lf,%.2lf,%.2lf\n", size, min, sum / history.size(), max);
-    fflush(stdout);
+    fprintf(fp, "%d,%.2lf,%.2lf,%.2lf\n", size, min, sum / history.size(), max);
+    fflush(fp);
   }
+
+  printf("Results are written to rob_size.csv\n");
   delete[] buffer;
   return 0;
 }

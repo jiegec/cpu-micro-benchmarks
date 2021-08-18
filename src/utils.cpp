@@ -146,3 +146,16 @@ uint64_t get_time_or_cycles() {
   return get_time_ns();
 #endif
 }
+
+// bind to core 0
+void bind_to_core() {
+#ifdef __linux__
+  cpu_set_t set;
+  CPU_ZERO(&set);
+  CPU_SET(0, &set);
+  int res = sched_setaffinity(0, sizeof(set), &set);
+  if (res == 0) {
+    printf("Pinned to cpu 0\n");
+  }
+#endif
+}
