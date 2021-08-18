@@ -11,6 +11,7 @@ void gen_rob_test() {
   fprintf(fp, ".text\n");
   for (int size = min_size; size <= max_size; size++) {
     fprintf(fp, ".global rob_size_%d\n", size);
+    fprintf(fp, ".align 4\n");
     fprintf(fp, "rob_size_%d:\n", size);
 #ifdef __aarch64__
     fprintf(fp, "\t1:\n");
@@ -41,6 +42,9 @@ void gen_rob_test() {
   }
 
   fprintf(fp, ".data\n");
+  // for macOS
+  fprintf(fp, ".global _rob_gadgets\n");
+  fprintf(fp, "_rob_gadgets:\n");
   fprintf(fp, ".global rob_gadgets\n");
   fprintf(fp, "rob_gadgets:\n");
   for (int size = min_size; size <= max_size; size++) {
