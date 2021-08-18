@@ -17,7 +17,7 @@ extern gadget rob_gadgets[];
 }
 
 int main(int argc, char *argv[]) {
-  int loop_count = 5000;
+  int loop_count = 1000;
   // match gen_rob_test
   int repeat = 20;
   int min_size = 32;
@@ -31,15 +31,18 @@ int main(int argc, char *argv[]) {
   printf("size,min,avg,max\n");
   for (int size = min_size; size <= max_size; size++) {
     std::vector<double> history;
+    int iterations = 100;
+    history.reserve(iterations);
+
     double sum = 0;
     // run several times
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < iterations; i++) {
       uint64_t begin = get_time_or_cycles();
       p = rob_gadgets[size - min_size](p, loop_count);
       uint64_t elapsed = get_time_or_cycles() - begin;
 
       // skip warmup
-      if (i >= 5) {
+      if (i >= 10) {
         double time = (double)elapsed / loop_count / repeat;
         history.push_back(time);
         sum += time;

@@ -14,6 +14,10 @@
 #include <sys/syscall.h>
 #endif
 
+#ifdef __x86_64__
+#include <x86intrin.h>
+#endif
+
 std::map<const char *, size_t> get_cache_sizes() {
   std::map<const char *, size_t> result;
 #ifdef __linux__
@@ -128,8 +132,11 @@ void setup_time_or_cycles() {
   setup_perf_cycles();
 #endif
 }
+
 uint64_t get_time_or_cycles() {
-#ifdef __linux__
+#ifdef __x86_64__
+  return __rdtsc();
+#elif defined(__linux__)
   return perf_read();
 #else
   return get_time_ns();
