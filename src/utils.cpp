@@ -136,6 +136,10 @@ void setup_time_or_cycles() {
 uint64_t get_time_or_cycles() {
 #ifdef __x86_64__
   return __rdtsc();
+#elif defined(__aarch64__)
+  uint64_t val;
+  asm volatile("mrs %0, cntvct_el0" : "=r"(val));
+  return val;
 #elif defined(__linux__)
   return perf_read();
 #else
