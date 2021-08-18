@@ -24,7 +24,7 @@ void gen_rob_test() {
     fprintf(fp, "\tbne 1b\n");
     fprintf(fp, "\tret\n");
 #elif defined(__x86_64__)
-    fprintf(fp, "\tmovl %%rdi, %%r8\n");
+    fprintf(fp, "\tmovq %%rdi, %%r8\n");
     fprintf(fp, "\tmovq %%rsi, %%rax\n");
     fprintf(fp, "\t1:\n");
     for (int i = 0; i < repeat; i++) {
