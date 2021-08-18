@@ -1,8 +1,8 @@
 #include "include/utils.h"
 #include <assert.h>
 #include <stdio.h>
-#include <vector>
 #include <stdlib.h>
+#include <vector>
 
 // ref:
 // http://blog.stuffedcow.net/2013/05/measuring-rob-capacity/
@@ -23,6 +23,8 @@ int main(int argc, char *argv[]) {
   int min_size = 32;
   int max_size = 256;
 
+  setup_time_or_cycles();
+
   size_t buffer_size = 1024 * 1024 * 128; // 128 MB
   char **buffer = generate_random_pointer_chasing(buffer_size);
   char **p = buffer;
@@ -32,9 +34,9 @@ int main(int argc, char *argv[]) {
     double sum = 0;
     // run several times
     for (int i = 0; i < 5; i++) {
-      uint64_t begin = get_time_ns();
+      uint64_t begin = get_time_or_cycles();
       p = rob_gadgets[size - min_size](p, loop_count);
-      uint64_t elapsed = get_time_ns() - begin;
+      uint64_t elapsed = get_time_or_cycles() - begin;
 
       double time = (double)elapsed / loop_count / repeat;
       history.push_back(time);
@@ -52,6 +54,7 @@ int main(int argc, char *argv[]) {
       }
     }
     printf("%d,%.2lf,%.2lf,%.2lf\n", size, min, sum / history.size(), max);
+    fflush(stdout);
   }
   delete[] buffer;
   return 0;

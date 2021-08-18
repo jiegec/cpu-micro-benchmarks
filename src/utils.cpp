@@ -1,10 +1,17 @@
 #include "include/utils.h"
+#include <assert.h>
+#include <memory.h>
 #include <random>
 #include <sys/time.h>
 #include <unistd.h>
 
 #ifdef __APPLE__
 #include <sys/sysctl.h>
+#endif
+
+#ifdef __linux__
+#include <linux/perf_event.h>
+#include <sys/syscall.h>
 #endif
 
 std::map<const char *, size_t> get_cache_sizes() {
@@ -84,4 +91,47 @@ char **generate_random_pointer_chasing(size_t size) {
   delete[] index;
 
   return buffer;
+}
+
+#ifdef __linux__
+int perf_fd = -1;
+
+uint64_t perf_read() {
+  uint64_t counter;
+  int res = read(perf_fd, &counter, sizeof(counter));
+  assert(res == sizeof(counter));
+  return counter;
+}
+
+void setup_perf_cycles() {
+  struct perf_event_attr *attr =
+      (struct perf_event_attr *)malloc(sizeof(struct perf_event_attr));
+  memset(attr, 0, sizeof(struct perf_event_attr));
+  attr->type = PERF_TYPE_HARDWARE;
+  attr->size = sizeof(struct perf_event_attr);
+  attr->config = PERF_COUNT_HW_CPU_CYCLES;
+  attr->disabled = 0;
+  attr->pinned = 1;
+  attr->inherit = 1;
+  attr->exclude_kernel = 1;
+  perf_fd = syscall(SYS_perf_event_open, attr, 0, -1, -1, 0);
+  if (perf_fd < 0) {
+    perror("perf_event_open");
+    fprintf(stderr, "try: sudo sysctl kernel.perf_event_paranoid=2");
+    exit(1);
+  }
+}
+#endif
+
+void setup_time_or_cycles() {
+#ifdef __linux__
+  setup_perf_cycles();
+#endif
+}
+uint64_t get_time_or_cycles() {
+#ifdef __linux__
+  return perf_read();
+#else
+  return get_time_ns();
+#endif
 }
