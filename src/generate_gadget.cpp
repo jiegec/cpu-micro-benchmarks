@@ -4,7 +4,7 @@ FILE *fp;
 
 // generate gadget for rob test
 void gen_rob_test() {
-  int repeat = 10;
+  int repeat = 20;
   int min_size = 32;
   int max_size = 256;
   // args: loop count, buffer

@@ -25,13 +25,14 @@ std::vector<std::pair<const char *, void (*)()>> tests = {
 #undef INSTR_TEST
 
 int main() {
-  uint64_t begin = get_time_ns();
+  setup_time_or_cycles();
+  uint64_t begin = get_time_or_cycles();
   test_int_add();
-  uint64_t unit_elapsed = get_time_ns() - begin;
+  uint64_t unit_elapsed = get_time_or_cycles() - begin;
   for (auto it : tests) {
-    begin = get_time_ns();
+    begin = get_time_or_cycles();
     it.second();
-    uint64_t elapsed = get_time_ns() - begin;
+    uint64_t elapsed = get_time_or_cycles() - begin;
     printf("%s: %.2lf cycles\n", it.first, (double)elapsed / unit_elapsed);
   }
 }

@@ -24,9 +24,3 @@ rob_size = executable('rob_size',
 	'src/rob_size.cpp',
 	gadget_asm,
 	link_with: utils)
-
-if host_machine.system() == 'linux'
-	instruction_latency_perf = executable('instruction_latency_perf',
-		'src/instruction_latency_perf.cpp',
-		link_with: utils)
-endif
