@@ -140,9 +140,9 @@ void setup_time_or_cycles() {
 
 uint64_t get_time_or_cycles() {
   // https://clang.llvm.org/docs/LanguageExtensions.html#builtin-readcyclecounter
-#if __has_builtin(__builtin_readcyclecounter) && !defined(__APPLE__)
+#if __has_builtin(__builtin_readcyclecounter) && !defined(__aarch64__)
   // cycle
-  // macOS on AArch64 does not open pmccntr_el0 to user
+  // macOS on AArch64 and Linux does not open pmccntr_el0 to user
   // x86_64: rdtsc
   // aarch64: mrs x0, PMCCNTR_EL0
   // ppc64le: mfspr 3, 268
