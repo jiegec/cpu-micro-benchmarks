@@ -32,7 +32,7 @@ void test(int size) {
   }
 
   // benchmark
-  uint64_t before = get_time_ns();
+  uint64_t before = get_time();
 
   for (int i = 0; i < iterations; i++) {
     HUNDRED(ONE);
@@ -40,7 +40,7 @@ void test(int size) {
 
   // avoid optimization
   *(volatile char *)*p;
-  uint64_t after = get_time_ns();
+  uint64_t after = get_time();
   fprintf(fp, "%d,%.2f\n", size, (double)(after - before) / iterations / 100);
   fflush(fp);
 

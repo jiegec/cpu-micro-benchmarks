@@ -59,7 +59,7 @@ std::map<const char *, size_t> get_cache_sizes() {
   return result;
 }
 
-uint64_t get_time_ns() {
+uint64_t get_time() {
   struct timeval tv = {};
   gettimeofday(&tv, nullptr);
   return (uint64_t)tv.tv_sec * 1000000000 + (uint64_t)tv.tv_usec * 1000;
@@ -160,7 +160,7 @@ uint64_t get_time_or_cycles() {
   return val;
 #else
   // time
-  return get_time_ns();
+  return get_time();
 #endif
 }
 

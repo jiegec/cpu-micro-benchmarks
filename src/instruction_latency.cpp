@@ -25,6 +25,7 @@ std::vector<std::pair<const char *, void (*)()>> tests = {
 #undef INSTR_TEST
 
 int main() {
+  bind_to_core();
   setup_time_or_cycles();
   uint64_t begin = get_time_or_cycles();
   test_int_add();

@@ -14,10 +14,12 @@
 
 // utilities
 std::map<const char *, size_t> get_cache_sizes();
-uint64_t get_time_ns();
 char **generate_random_pointer_chasing(size_t size);
 
 // get time or cycles
+// unit: ns or cycle
+uint64_t get_time();
+// prioritize cycle over time
 void setup_time_or_cycles();
 uint64_t get_time_or_cycles();
 
