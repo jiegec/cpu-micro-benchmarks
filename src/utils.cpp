@@ -147,12 +147,12 @@ uint64_t get_time_or_cycles() {
   // aarch64: mrs x0, PMCCNTR_EL0
   // ppc64le: mfspr 3, 268
   return __builtin_readcyclecounter();
+#elif defined(__x86_64__)
+  // cycle
+  return __rdtsc();
 #elif defined(__linux__)
   // cycle
   return perf_read();
-#elif defined(__x86_64__)
-  // time
-  return __rdtsc();
 #elif defined(__aarch64__)
   // time
   uint64_t val;
