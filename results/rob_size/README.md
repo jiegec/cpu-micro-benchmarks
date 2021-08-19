@@ -5,6 +5,7 @@
 - Intel Broadwell: 192
 - Intel Cascade Lake: 224
 - ARM Cortex A72: 40
+- IBM Power 8: ?
 
 References:
 
@@ -32,3 +33,8 @@ https://en.wikichip.org/wiki/amd/microarchitectures/zen_2
 
 https://www.anandtech.com/show/16226/apple-silicon-m1-a14-deep-dive/2
 - Apple M1: ~630
+
+https://www.anandtech.com/show/10435/assessing-ibms-power8-part-1/3
+- IBM Power 8: 224
+- Intel Broadwell: 192
+- Intel Skylake: 224
