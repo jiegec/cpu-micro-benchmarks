@@ -31,4 +31,9 @@ INSTR_TEST(int_add, "inc %%rax\n", "rax")
 INSTR_TEST(sse_addsd, "addsd %%xmm0, %%xmm1\n", "xmm0")
 INSTR_TEST(sse_subsd, "subsd %%xmm0, %%xmm1\n", "xmm0")
 INSTR_TEST(sse_mulsd, "mulsd %%xmm0, %%xmm1\n", "xmm0")
+
+#elif defined(__powerpc__)
+INSTR_TEST(int_add, "add %%r0, %%r1, %%r0\n", "r0")
+INSTR_TEST(int_mulhw, "mulhw %%r0, %%r1, %%r0\n", "r0")
+INSTR_TEST(int_mulld, "mulld %%r0, %%r1, %%r0\n", "r0")
 #endif
