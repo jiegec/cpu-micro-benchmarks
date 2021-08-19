@@ -5,6 +5,7 @@
 - Intel Broadwell: 192
 - Intel Cascade Lake: 224
 - ARM Cortex A72: 40
+- ARM Neoverse N1: 128
 - IBM Power 8: ?
 
 References:
@@ -38,3 +39,6 @@ https://www.anandtech.com/show/10435/assessing-ibms-power8-part-1/3
 - IBM Power 8: 224
 - Intel Broadwell: 192
 - Intel Skylake: 224
+
+https://en.wikichip.org/wiki/arm_holdings/microarchitectures/neoverse_n1
+- ARM Neoverse N1: 128
