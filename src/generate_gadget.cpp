@@ -38,6 +38,17 @@ void gen_rob_test() {
     fprintf(fp, "\tjne 1b\n");
     fprintf(fp, "\tmovq %%r8, %%rax\n");
     fprintf(fp, "\tret\n");
+#elif defined(__powerpc__)
+    fprintf(fp, "\tmtctr 4\n");
+    fprintf(fp, "\t1:\n");
+    for (int i = 0; i < repeat; i++) {
+      fprintf(fp, "\tld 3, 0(3)\n");
+      for (int j = 0; j < size - 1; j++) {
+        fprintf(fp, "\tnop\n");
+      }
+    }
+    fprintf(fp, "\tbdnz 1b\n");
+    fprintf(fp, "\tblr\n");
 #endif
   }
 
@@ -51,6 +62,8 @@ void gen_rob_test() {
 #ifdef __aarch64__
     fprintf(fp, ".dword rob_size_%d\n", size);
 #elif defined(__x86_64__)
+    fprintf(fp, ".dc.a rob_size_%d\n", size);
+#elif defined(__powerpc__)
     fprintf(fp, ".dc.a rob_size_%d\n", size);
 #endif
   }
