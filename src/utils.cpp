@@ -18,6 +18,11 @@
 #include <x86intrin.h>
 #endif
 
+// https://clang.llvm.org/docs/LanguageExtensions.html#has-builtin
+#ifndef __has_builtin
+#define __has_builtin(x) 0
+#endif
+
 std::map<const char *, size_t> get_cache_sizes() {
   std::map<const char *, size_t> result;
 #ifdef __linux__
@@ -134,7 +139,10 @@ void setup_time_or_cycles() {
 }
 
 uint64_t get_time_or_cycles() {
-#ifdef __x86_64__
+  // https://clang.llvm.org/docs/LanguageExtensions.html#builtin-readcyclecounter
+#if __has_builtin(__builtin_readcyclecounter)
+  return __builtin_readcyclecounter();
+#elif defined(__x86_64__)
   return __rdtsc();
 #elif defined(__aarch64__)
   uint64_t val;
