@@ -42,3 +42,20 @@ https://www.anandtech.com/show/10435/assessing-ibms-power8-part-1/3
 
 https://en.wikichip.org/wiki/arm_holdings/microarchitectures/neoverse_n1
 - ARM Neoverse N1: 128
+
+https://www.tomshardware.com/reviews/arm-cortex-a72-architecture,4424.html
+- ARM Cortex A72: 128
+
+https://travisdowns.github.io/blog/2019/06/11/speed-limits.html#ooo-table
+- Intel Sandy Bridge: 168
+- Intel Ivy Bridge: 168
+- Intel Haswell: 192
+- Intel Broadwell: 192
+- Intel Skylake: 224
+- Intel Sunny Cove: 352
+- AMD Zen: 192
+- AMD Zen 2: 224
+- AMD Zen 3: 256
+- Apple M1 Firestorm: 636
+- Apple M1 Icestorm: 111
+- Amazon Graviton 2: ~124
