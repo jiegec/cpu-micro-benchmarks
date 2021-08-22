@@ -2,6 +2,7 @@
 
 - AMD Zen 1: 192
 - AMD Zen 2: 224
+- Intel Ivy Bridge EP: 168
 - Intel Broadwell: 192
 - Intel Cascade Lake: 224
 - ARM Cortex A72: 40
