@@ -6,6 +6,8 @@ INSTR_TEST(int_madd, "madd x0, x0, x0, x0\n", "x0")
 INSTR_TEST(int_madd2, "madd x0, x1, x2, x0\n", "x0")
 INSTR_TEST(int_madd3, "madd x0, x1, x0, x2\n", "x0")
 INSTR_TEST(int_madd4, "madd x0, x0, x1, x2\n", "x0")
+INSTR_TEST(int_sdiv, "sdiv x0, x1, x0\n", "x0")
+INSTR_TEST(int_udiv, "udiv x0, x1, x0\n", "x0")
 
 INSTR_TEST(fp_fmul_single, "fmul s0, s0, s0\n", "s0")
 INSTR_TEST(fp_fmul_double, "fmul d0, d0, d0\n", "d0")
