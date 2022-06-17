@@ -5,11 +5,13 @@ utils = static_library('utils', 'src/utils.cpp')
 
 memory_latency = executable('memory_latency',
 	'src/memory_latency.cpp',
-	link_with: utils)
+	link_with: utils,
+	install: true)
 
 instruction_latency = executable('instruction_latency',
 	'src/instruction_latency.cpp',
-	link_with: utils)
+	link_with: utils,
+	install: true)
 
 generate_gadget = executable('generate_gadget',
 	'src/generate_gadget.cpp',
@@ -23,4 +25,5 @@ gadget_asm = custom_target('gadget_asm',
 rob_size = executable('rob_size',
 	'src/rob_size.cpp',
 	gadget_asm,
-	link_with: utils)
+	link_with: utils,
+	install: true)
