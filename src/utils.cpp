@@ -67,6 +67,10 @@ uint64_t get_time() {
 
 char **generate_random_pointer_chasing(size_t size) {
   int page_size = getpagesize();
+  if (size < page_size) {
+    return NULL;
+  }
+
   int page_pointer_count = page_size / sizeof(char *);
   int count = size / sizeof(char *);
   // every page one pointer

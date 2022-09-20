@@ -21,6 +21,10 @@ FILE *fp;
 // measure memory latency with pointer chasing
 void test(int size) {
   char **buffer = generate_random_pointer_chasing(size);
+  if (!buffer) {
+    // skipped
+    return;
+  }
 
   const int warmup = 50000;
   const int iterations = 500000;
