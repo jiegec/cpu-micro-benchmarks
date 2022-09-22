@@ -35,6 +35,11 @@ void test(int size, int warmup, int iterations) {
 
   // benchmark
   uint64_t before = get_time();
+#ifdef __linux__
+  uint64_t cycles_before = perf_read_cycles();
+  uint64_t llc_misses_before = perf_read_llc_misses();
+  uint64_t llc_loads_before = perf_read_llc_loads();
+#endif
 
   for (int i = 0; i < iterations; i++) {
     HUNDRED(ONE);
@@ -43,13 +48,32 @@ void test(int size, int warmup, int iterations) {
   // avoid optimization
   *(volatile char *)*p;
   uint64_t after = get_time();
+#ifdef __linux__
+  uint64_t cycles_after = perf_read_cycles();
+  uint64_t llc_misses_after = perf_read_llc_misses();
+  uint64_t llc_loads_after = perf_read_llc_loads();
+#endif
+
+#ifdef __linux__
+  fprintf(fp, "%d,%.2f,%.2f,%.2f,%.2f\n", size,
+          (double)(after - before) / iterations / 100,
+          (double)(cycles_after - cycles_before) / iterations / 100,
+          (double)(llc_misses_after - llc_misses_before) / iterations / 100,
+          (double)(llc_loads_after - llc_loads_before) / iterations / 100);
+#else
   fprintf(fp, "%d,%.2f\n", size, (double)(after - before) / iterations / 100);
+#endif
   fflush(fp);
 
   delete[] buffer;
 }
 
 int main(int argc, char *argv[]) {
+#ifdef __linux__
+  setup_perf_cycles();
+  setup_perf_llc_misses();
+  setup_perf_llc_loads();
+#endif
   fp = fopen("memory_latency.csv", "w");
   assert(fp);
 
@@ -80,7 +104,11 @@ int main(int argc, char *argv[]) {
     }
   }
 
+#ifdef __linux__
+  fprintf(fp, "size,time(ns),cycles,llc miss ratio,llc load ratio\n");
+#else
   fprintf(fp, "size,time(ns)\n");
+#endif
   test(1024, warmup, iteration);
   test(1024 * 2, warmup, iteration);
   test(1024 * 4, warmup, iteration);

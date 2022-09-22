@@ -109,30 +109,58 @@ char **generate_random_pointer_chasing(size_t size) {
 #ifdef __linux__
 int perf_fd = -1;
 
-uint64_t perf_read() {
+uint64_t perf_read_common(int fd) {
   uint64_t counter;
-  int res = read(perf_fd, &counter, sizeof(counter));
+  int res = read(fd, &counter, sizeof(counter));
   assert(res == sizeof(counter));
   return counter;
 }
 
-void setup_perf_cycles() {
+int setup_perf_common(uint32_t type, uint64_t config) {
   struct perf_event_attr *attr =
       (struct perf_event_attr *)malloc(sizeof(struct perf_event_attr));
   memset(attr, 0, sizeof(struct perf_event_attr));
-  attr->type = PERF_TYPE_HARDWARE;
+  attr->type = type;
   attr->size = sizeof(struct perf_event_attr);
-  attr->config = PERF_COUNT_HW_CPU_CYCLES;
+  attr->config = config;
   attr->disabled = 0;
   attr->pinned = 1;
   attr->inherit = 1;
   attr->exclude_kernel = 1;
-  perf_fd = syscall(SYS_perf_event_open, attr, 0, -1, -1, 0);
-  if (perf_fd < 0) {
+  int fd = syscall(SYS_perf_event_open, attr, 0, -1, -1, 0);
+  if (fd < 0) {
     perror("perf_event_open");
     fprintf(stderr, "try: sudo sysctl kernel.perf_event_paranoid=2");
     exit(1);
   }
+  return fd;
+}
+
+uint64_t perf_read_cycles() { return perf_read_common(perf_fd); }
+
+void setup_perf_cycles() {
+  perf_fd = setup_perf_common(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES);
+}
+
+int perf_fd_llc_misses = -1;
+int perf_fd_llc_loads = -1;
+
+uint64_t perf_read_llc_misses() { return perf_read_common(perf_fd_llc_misses); }
+
+uint64_t perf_read_llc_loads() { return perf_read_common(perf_fd_llc_loads); }
+
+void setup_perf_llc_misses() {
+  perf_fd_llc_misses = setup_perf_common(
+      PERF_TYPE_HW_CACHE, (PERF_COUNT_HW_CACHE_LL) |
+                              (PERF_COUNT_HW_CACHE_OP_READ << 8) |
+                              (PERF_COUNT_HW_CACHE_RESULT_MISS << 16));
+}
+
+void setup_perf_llc_loads() {
+  perf_fd_llc_loads = setup_perf_common(
+      PERF_TYPE_HW_CACHE, (PERF_COUNT_HW_CACHE_LL) |
+                              (PERF_COUNT_HW_CACHE_OP_READ << 8) |
+                              (PERF_COUNT_HW_CACHE_RESULT_ACCESS << 16));
 }
 #endif
 
@@ -157,7 +185,7 @@ uint64_t get_time_or_cycles() {
   return __rdtsc();
 #elif defined(__linux__)
   // cycle
-  return perf_read();
+  return perf_read_cycles();
 #elif defined(__aarch64__)
   // time
   uint64_t val;
