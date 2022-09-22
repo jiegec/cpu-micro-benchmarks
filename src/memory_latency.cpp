@@ -111,6 +111,9 @@ int main(int argc, char *argv[]) {
   test(1024 * 320, warmup, iteration);
   test(1024 * 352, warmup, iteration);
   test(1024 * 384, warmup, iteration);
+  test(1024 * 416, warmup, iteration);
+  test(1024 * 448, warmup, iteration);
+  test(1024 * 480, warmup, iteration);
   test(1024 * 512, warmup, iteration);
   test(1024 * 768, warmup, iteration);
   test(1024 * 1024, warmup, iteration);
@@ -118,11 +121,17 @@ int main(int argc, char *argv[]) {
   test(1024 * 1024 * 4, warmup, iteration);
   test(1024 * 1024 * 8, warmup, iteration);
   test(1024 * 1024 * 16, warmup, iteration);
+  test(1024 * 1024 * 24, warmup, iteration);
   test(1024 * 1024 * 32, warmup, iteration);
+  test(1024 * 1024 * 40, warmup, iteration);
   test(1024 * 1024 * 48, warmup, iteration);
   test(1024 * 1024 * 64, warmup, iteration);
+  test(1024 * 1024 * 80, warmup, iteration);
+  test(1024 * 1024 * 96, warmup, iteration);
   test(1024 * 1024 * 128, warmup, iteration);
+  test(1024 * 1024 * 160, warmup, iteration);
   test(1024 * 1024 * 192, warmup, iteration);
+  test(1024 * 1024 * 224, warmup, iteration);
   test(1024 * 1024 * 256, warmup, iteration);
   test(1024 * 1024 * 384, warmup, iteration);
   test(1024 * 1024 * 512, warmup, iteration);
