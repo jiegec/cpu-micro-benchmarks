@@ -107,8 +107,6 @@ char **generate_random_pointer_chasing(size_t size) {
 }
 
 #ifdef __linux__
-int perf_fd = -1;
-
 uint64_t perf_read_common(int fd) {
   uint64_t counter;
   int res = read(fd, &counter, sizeof(counter));
@@ -136,10 +134,24 @@ int setup_perf_common(uint32_t type, uint64_t config) {
   return fd;
 }
 
-uint64_t perf_read_cycles() { return perf_read_common(perf_fd); }
+int perf_fd_cycles = -1;
+
+uint64_t perf_read_cycles() { return perf_read_common(perf_fd_cycles); }
 
 void setup_perf_cycles() {
-  perf_fd = setup_perf_common(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES);
+  perf_fd_cycles =
+      setup_perf_common(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES);
+}
+
+int perf_fd_instructions = -1;
+
+uint64_t perf_read_instructions() {
+  return perf_read_common(perf_fd_instructions);
+}
+
+void setup_perf_instructions() {
+  perf_fd_instructions =
+      setup_perf_common(PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS);
 }
 
 int perf_fd_llc_misses = -1;

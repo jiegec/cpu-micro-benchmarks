@@ -29,6 +29,8 @@ void bind_to_core();
 #ifdef __linux__
 void setup_perf_cycles();
 uint64_t perf_read_cycles();
+void setup_perf_instructions();
+uint64_t perf_read_instructions();
 void setup_perf_llc_misses();
 uint64_t perf_read_llc_misses();
 void setup_perf_llc_loads();

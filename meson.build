@@ -13,6 +13,11 @@ instruction_latency = executable('instruction_latency',
 	link_with: utils,
 	install: true)
 
+ipc = executable('ipc',
+	'src/ipc.cpp',
+	link_with: utils,
+	install: true)
+
 generate_gadget = executable('generate_gadget',
 	'src/generate_gadget.cpp',
 	link_with: utils)
