@@ -197,7 +197,11 @@ uint64_t get_time_or_cycles() {
   return __rdtsc();
 #elif defined(__linux__)
   // cycle
-  return perf_read_cycles();
+  if (perf_fd_cycles >= 0) {
+    return perf_read_cycles();
+  } else {
+    return get_time();
+  }
 #elif defined(__aarch64__)
   // time
   uint64_t val;

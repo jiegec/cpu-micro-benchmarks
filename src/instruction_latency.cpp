@@ -1,5 +1,6 @@
 #include "include/utils.h"
 #include <stdio.h>
+#include <unistd.h>
 #include <utility>
 #include <vector>
 
@@ -24,9 +25,25 @@ std::vector<std::pair<const char *, void (*)()>> tests = {
 
 #undef INSTR_TEST
 
-int main() {
+int main(int argc, char *argv[]) {
+  bool perf = false;
+
+  int opt;
+  while ((opt = getopt(argc, argv, "p")) != -1) {
+    switch (opt) {
+    case 'p':
+      perf = true;
+      break;
+    default:
+      fprintf(stderr, "Usage: %s [-p]\n", argv[0]);
+      exit(EXIT_FAILURE);
+    }
+  }
+
   bind_to_core();
-  setup_time_or_cycles();
+  if (perf) {
+    setup_time_or_cycles();
+  }
   uint64_t begin = get_time_or_cycles();
   test_int_add();
   uint64_t unit_elapsed = get_time_or_cycles() - begin;
