@@ -4,11 +4,11 @@
 #include <utility>
 #include <vector>
 
-const int N = 1000000;
+int N = 1000000;
 
 #define INSTR_TEST(NAME, INST, ...)                                            \
-  void test_##NAME() {                                                         \
-    for (int i = 0; i < N; i++) {                                              \
+  void test_##NAME(int n) {                                                    \
+    for (int i = 0; i < n; i++) {                                              \
       asm volatile(HUNDRED(INST) : : : __VA_ARGS__);                           \
     }                                                                          \
   }
@@ -19,7 +19,7 @@ const int N = 1000000;
 
 #define INSTR_TEST(NAME, INST, ...) std::make_pair(#NAME, test_##NAME),
 
-std::vector<std::pair<const char *, void (*)()>> tests = {
+std::vector<std::pair<const char *, void (*)(int)>> tests = {
 #include "include/instrs.h"
 };
 
@@ -29,8 +29,11 @@ int main(int argc, char *argv[]) {
   bool perf = false;
 
   int opt;
-  while ((opt = getopt(argc, argv, "p")) != -1) {
+  while ((opt = getopt(argc, argv, "n:p")) != -1) {
     switch (opt) {
+    case 'n':
+      sscanf(optarg, "%d", &N);
+      break;
     case 'p':
       perf = true;
       break;
@@ -45,11 +48,11 @@ int main(int argc, char *argv[]) {
     setup_time_or_cycles();
   }
   uint64_t begin = get_time_or_cycles();
-  test_int_add();
+  test_int_add(N);
   uint64_t unit_elapsed = get_time_or_cycles() - begin;
   for (auto it : tests) {
     begin = get_time_or_cycles();
-    it.second();
+    it.second(N);
     uint64_t elapsed = get_time_or_cycles() - begin;
     std::string name = it.first;
     double cycles = (double)elapsed / unit_elapsed;
