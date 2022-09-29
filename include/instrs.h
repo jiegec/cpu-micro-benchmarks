@@ -1,16 +1,20 @@
 #ifdef __aarch64__
 INSTR_TEST(int_add, "add x0, x1, x0\n", "x0")
+INSTR_TEST(int_add_tp, "add x0, x1, x2\n", "x0")
 INSTR_TEST(int_mul, "mul x0, x1, x0\n", "x0")
+INSTR_TEST(int_mul_tp, "mul x0, x1, x2\n", "x0")
 INSTR_TEST(int_smull, "smull x0, w1, w0\n", "x0")
 INSTR_TEST(int_madd, "madd x0, x0, x0, x0\n", "x0")
 INSTR_TEST(int_madd2, "madd x0, x1, x2, x0\n", "x0")
 INSTR_TEST(int_madd3, "madd x0, x1, x0, x2\n", "x0")
 INSTR_TEST(int_madd4, "madd x0, x0, x1, x2\n", "x0")
 INSTR_TEST(int_sdiv, "sdiv x0, x1, x0\n", "x0")
+INSTR_TEST(int_sdiv_tp, "sdiv x0, x1, x2\n", "x0")
 INSTR_TEST(int_udiv, "udiv x0, x1, x0\n", "x0")
 
 INSTR_TEST(fp_fmul_single, "fmul s0, s0, s0\n", "s0")
 INSTR_TEST(fp_fmul_double, "fmul d0, d0, d0\n", "d0")
+INSTR_TEST(fp_fmul_single_tp, "fmul s0, s1, s2\n", "s0")
 INSTR_TEST(fp_fadd_single, "fadd s0, s0, s0\n", "s0")
 INSTR_TEST(fp_fadd_double, "fadd d0, d0, d0\n", "d0")
 INSTR_TEST(fp_fdiv_single, "fdiv s0, s0, s0\n", "s0")
@@ -31,6 +35,7 @@ INSTR_TEST(asimd_int_mul_single, "mul v0.4s, v0.4s, v0.4s\n", "v0")
 
 INSTR_TEST(asimd_fp_fmul_single, "fmul v0.4s, v0.4s, v0.4s\n", "v0")
 INSTR_TEST(asimd_fp_fmul_double, "fmul v0.2d, v0.2d, v0.2d\n", "d0")
+INSTR_TEST(asimd_fp_fmul_single_tp, "fmul v0.4s, v1.4s, v2.4s\n", "v0")
 
 INSTR_TEST(asimd_fp_fadd_single, "fadd v0.4s, v0.4s, v0.4s\n", "v0")
 INSTR_TEST(asimd_fp_fadd_double, "fadd v0.2d, v0.2d, v0.2d\n", "d0")

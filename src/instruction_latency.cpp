@@ -51,6 +51,12 @@ int main(int argc, char *argv[]) {
     begin = get_time_or_cycles();
     it.second();
     uint64_t elapsed = get_time_or_cycles() - begin;
-    printf("%s: %.2lf cycles\n", it.first, (double)elapsed / unit_elapsed);
+    std::string name = it.first;
+    double cycles = (double)elapsed / unit_elapsed;
+    if (name.find("_tp") != std::string::npos) {
+      printf("%s: throughput %.2lf instructions\n", it.first, 1.0 / cycles);
+    } else {
+      printf("%s: latency %.2lf cycles\n", it.first, cycles);
+    }
   }
 }
