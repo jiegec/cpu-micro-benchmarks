@@ -12,6 +12,7 @@
 #ifdef __linux__
 #include <linux/perf_event.h>
 #include <sys/syscall.h>
+#include <sched.h>
 #endif
 
 #ifdef __x86_64__

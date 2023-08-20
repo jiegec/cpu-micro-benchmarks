@@ -6,7 +6,7 @@ FILE *fp;
 void gen_rob_test() {
   int repeat = 20;
   int min_size = 32;
-  int max_size = 256;
+  int max_size = 384;
   // args: loop count, buffer
   fprintf(fp, ".text\n");
   for (int size = min_size; size <= max_size; size++) {
@@ -49,6 +49,17 @@ void gen_rob_test() {
     }
     fprintf(fp, "\tbdnz 1b\n");
     fprintf(fp, "\tblr\n");
+#elif defined(__loongarch__)
+    fprintf(fp, "\t1:\n");
+    for (int i = 0; i < repeat; i++) {
+      fprintf(fp, "\tld.d $a0, $a0, 0\n");
+      for (int j = 0; j < size - 1; j++) {
+        fprintf(fp, "\tnop\n");
+      }
+    }
+    fprintf(fp, "\taddi.d $a1, $a1, -1\n");
+    fprintf(fp, "\tbne $a1, $zero, 1b\n");
+    fprintf(fp, "\tret\n");
 #endif
   }
 
@@ -64,6 +75,8 @@ void gen_rob_test() {
 #elif defined(__x86_64__)
     fprintf(fp, ".dc.a rob_size_%d\n", size);
 #elif defined(__powerpc__)
+    fprintf(fp, ".dc.a rob_size_%d\n", size);
+#elif defined(__loongarch__)
     fprintf(fp, ".dc.a rob_size_%d\n", size);
 #endif
   }

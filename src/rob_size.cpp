@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
   // match gen_rob_test
   int repeat = 20;
   int min_size = 32;
-  int max_size = 256;
+  int max_size = 384;
 
   bind_to_core();
   setup_time_or_cycles();
