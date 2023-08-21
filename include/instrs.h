@@ -1,10 +1,13 @@
 #ifdef __aarch64__
-INSTR_TEST(unit, "add x0, x1, x2\n", "x0")
+INSTR_TEST(unit, "add x0, x0, x0\n", "x0")
 
-INSTR_TEST(int_add, "add x0, x1, x2\n", "x0")
+INSTR_TEST(int_add, "add x0, x1, x0\n", "x0")
 INSTR_TEST(int_add_tp, "add x0, x1, x2\n", "x0")
 
 INSTR_TEST(int_mul, "mul x0, x1, x0\n", "x0")
+INSTR_TEST(int_mul_2, "mul x0, x0, x1\n", "x0")
+INSTR_TEST(int_mul_3, "mul x8, x9, x8\n", "x8")
+INSTR_TEST(int_mul_4, "mul x2, x2, x0\n", "x2")
 INSTR_TEST(int_mul_tp, "mul x0, x1, x2\n", "x0")
 
 INSTR_TEST(int_smull, "smull x0, w1, w0\n", "x0")
@@ -23,9 +26,11 @@ INSTR_TEST(int_udiv, "udiv x0, x1, x0\n", "x0")
 INSTR_TEST(int_udiv_tp, "udiv x0, x1, x2\n", "x0")
 
 INSTR_TEST(fp_fadd_single, "fadd s0, s0, s0\n", "s0")
+INSTR_TEST(fp_fadd_single_2, "fadd s0, s0, s1\n", "s0")
 INSTR_TEST(fp_fadd_single_tp, "fadd s0, s1, s2\n", "s0")
 
 INSTR_TEST(fp_fadd_double, "fadd d0, d0, d0\n", "d0")
+INSTR_TEST(fp_fadd_double_2, "fadd d0, d0, d1\n", "d0")
 INSTR_TEST(fp_fadd_double_tp, "fadd d0, d1, d2\n", "d0")
 
 INSTR_TEST(fp_fmul_single, "fmul s0, s0, s0\n", "s0")
@@ -33,6 +38,7 @@ INSTR_TEST(fp_fmul_single_2, "fmul s0, s0, s1\n", "s0")
 INSTR_TEST(fp_fmul_single_tp, "fmul s0, s1, s2\n", "s0")
 
 INSTR_TEST(fp_fmul_double, "fmul d0, d0, d0\n", "d0")
+INSTR_TEST(fp_fmul_double_2, "fmul d0, d0, d1\n", "d0")
 INSTR_TEST(fp_fmul_double_tp, "fmul d0, d1, d2\n", "d0")
 
 INSTR_TEST(fp_fdiv_single, "fdiv s0, s0, s0\n", "s0")
@@ -48,16 +54,21 @@ INSTR_TEST(fp_fmadd_single_4, "fmadd s0, s1, s2, s0\n", "v0")
 INSTR_TEST(fp_fmadd_single_tp, "fmadd s0, s1, s2, s3\n", "v0")
 
 INSTR_TEST(asimd_int_add_half, "add v0.8h, v0.8h, v0.8h\n", "v0")
+INSTR_TEST(asimd_int_add_half_2, "add v0.8h, v0.8h, v1.8h\n", "v0")
 INSTR_TEST(asimd_int_add_half_tp, "add v0.8h, v1.8h, v2.8h\n", "v0")
 
 INSTR_TEST(asimd_int_add_single, "add v0.4s, v0.4s, v0.4s\n", "v0")
+INSTR_TEST(asimd_int_add_single_2, "add v0.4s, v0.4s, v1.4s\n", "v0")
 INSTR_TEST(asimd_int_add_single_tp, "add v0.4s, v1.4s, v2.4s\n", "v0")
 
 INSTR_TEST(asimd_int_add_double, "add v0.2d, v0.2d, v0.2d\n", "v0")
+INSTR_TEST(asimd_int_add_double_2, "add v0.2d, v0.2d, v1.2d\n", "v0")
 INSTR_TEST(asimd_int_add_double_tp, "add v0.2d, v1.2d, v2.2d\n", "v0")
 
 INSTR_TEST(asimd_int_mul_half, "mul v0.8h, v0.8h, v0.8h\n", "v0")
+INSTR_TEST(asimd_int_mul_half_2, "mul v0.8h, v0.8h, v1.8h\n", "v0")
 INSTR_TEST(asimd_int_mul_single, "mul v0.4s, v0.4s, v0.4s\n", "v0")
+INSTR_TEST(asimd_int_mul_single_2, "mul v0.4s, v0.4s, v1.4s\n", "v0")
 
 INSTR_TEST(asimd_fp_fmul_single, "fmul v0.4s, v0.4s, v0.4s\n", "v0")
 INSTR_TEST(asimd_fp_fmul_double, "fmul v0.2d, v0.2d, v0.2d\n", "d0")
