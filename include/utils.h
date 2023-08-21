@@ -11,6 +11,7 @@
 #define TEN(X) FIVE(X) FIVE(X)
 #define FIFTY(X) TEN(X) TEN(X) TEN(X) TEN(X) TEN(X)
 #define HUNDRED(X) FIFTY(X) FIFTY(X)
+#define THOUSAND(X) HUNDRED(TEN(X))
 
 // utilities
 std::map<const char *, size_t> get_cache_sizes();
