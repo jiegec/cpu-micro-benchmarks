@@ -70,6 +70,7 @@ INSTR_TEST(asimd_fp_fmla_single, "fmla v0.4s, v0.4s, v0.4s\n", "v0")
 INSTR_TEST(asimd_fp_fmla_single_2, "fmla v0.4s, v1.4s, v2.4s\n", "v0")
 
 #elif defined(__x86_64__)
+INSTR_TEST(unit, "add %%rbx, %%rax\n", "rax")
 INSTR_TEST(int_add, "add %%rbx, %%rax\n", "rax")
 INSTR_TEST(int_andn, "andn %%rbx, %%rax, %%rax\n", "rax")
 INSTR_TEST(int_andn_tp, "andn %%rbx, %%rcx, %%rax\n", "rax")
