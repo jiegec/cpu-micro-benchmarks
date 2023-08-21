@@ -142,6 +142,9 @@ uint64_t perf_read_cycles() { return perf_read_common(perf_fd_cycles); }
 void setup_perf_cycles() {
   perf_fd_cycles =
       setup_perf_common(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES);
+  if (perf_fd_cycles >= 0) {
+    printf("Using PMU to count cycles\n");
+  }
 }
 
 int perf_fd_instructions = -1;
