@@ -184,30 +184,14 @@ void setup_time_or_cycles() {
 }
 
 uint64_t get_time_or_cycles() {
-#if __has_builtin(__builtin_readcyclecounter) && !defined(__aarch64__)
-  // cycle
-  // https://clang.llvm.org/docs/LanguageExtensions.html#builtin-readcyclecounter
-  // macOS on AArch64 and Linux does not open pmccntr_el0 to user
-  // x86_64: rdtsc; shl; or
-  // aarch64: mrs x0, PMCCNTR_EL0
-  // ppc64le: mfspr 3, 268
-  // riscv64: rdcycle a0
-  return __builtin_readcyclecounter();
-#elif defined(__x86_64__)
-  // cycle
-  return __rdtsc();
-#elif defined(__linux__)
-  // cycle
+#if defined(__linux__)
   if (perf_fd_cycles >= 0) {
+    // cycle
     return perf_read_cycles();
   } else {
+    // time
     return get_time();
   }
-#elif defined(__aarch64__)
-  // time
-  uint64_t val;
-  asm volatile("mrs %0, cntvct_el0" : "=r"(val));
-  return val;
 #else
   // time
   return get_time();
