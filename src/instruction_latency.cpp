@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
     std::string name = it.first;
     double cycles = (double)elapsed / unit_elapsed;
     if (name.find("_tp") != std::string::npos) {
-      printf("%s: throughput %.2lf instructions\n", it.first, 1.0 / cycles);
+      printf("%s: throughput 1/%.2lf=%.2lf instructions\n", it.first, cycles, 1.0 / cycles);
     } else {
       printf("%s: latency %.2lf cycles\n", it.first, cycles);
     }
