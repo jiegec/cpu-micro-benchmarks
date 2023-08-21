@@ -11,7 +11,7 @@ int N = 1000000;
 #define INSTR_TEST(NAME, INST, ...)                                            \
   void test_##NAME(int n) {                                                    \
     for (int i = 0; i < n; i++) {                                              \
-      asm volatile(HUNDRED(INST) : : : __VA_ARGS__);                           \
+      asm volatile(".align 4\n" HUNDRED(INST) : : : __VA_ARGS__);              \
     }                                                                          \
   }
 
@@ -103,7 +103,7 @@ int main(int argc, char *argv[]) {
       }
 
       // round to 0.01
-      cycles = (double)(long)(cycles * 100) / 100.0;
+      cycles = (double)(long)(cycles * 100 + 0.5) / 100.0;
       printf("%s: latency %.2lf cycles\n", it.name, cycles);
       info[base_name].latency.insert(cycles);
     }
