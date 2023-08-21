@@ -89,7 +89,7 @@ INSTR_TEST(int_mulhw, "mulhw %%r0, %%r1, %%r0\n", "r0")
 INSTR_TEST(int_mulld, "mulld %%r0, %%r1, %%r0\n", "r0")
 
 #elif defined(__loongarch__)
-INSTR_TEST(int_add, "add.w $r12, $r1, $r12\n", "r12")
+INSTR_TEST(unit, "add.w $r12, $r1, $r12\n", "r12")
 INSTR_TEST(int_add32, "add.w $r12, $r1, $r12\n", "r12")
 INSTR_TEST(int_add32_tp, "add.w $r12, $r1, $r2\n", "r12")
 INSTR_TEST(int_add64, "add.d $r12, $r1, $r12\n", "r12")
