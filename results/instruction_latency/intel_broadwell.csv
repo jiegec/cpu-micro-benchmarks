@@ -1,0 +1,10 @@
+name,latency,throughput
+int_add,1.00,0.00
+int_andn,1.00,0.50
+int_lea_add,1.00,0.50
+sse_addpd,3.00,0.00
+sse_addsd,3.00,0.00
+sse_mulpd,3.00,0.00
+sse_mulsd,3.00,0.00
+sse_subpd,3.00,0.00
+sse_subsd,3.00,0.00
