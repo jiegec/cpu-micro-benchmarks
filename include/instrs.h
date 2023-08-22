@@ -53,6 +53,12 @@ INSTR_TEST(fp_fmadd_single_3, "fmadd s0, s1, s0, s2\n", "v0")
 INSTR_TEST(fp_fmadd_single_4, "fmadd s0, s1, s2, s0\n", "v0")
 INSTR_TEST(fp_fmadd_single_tp, "fmadd s0, s1, s2, s3\n", "v0")
 
+INSTR_TEST(fp_fmadd_double, "fmadd d0, d0, d0, d0\n", "v0")
+INSTR_TEST(fp_fmadd_double_2, "fmadd d0, d0, d1, d2\n", "v0")
+INSTR_TEST(fp_fmadd_double_3, "fmadd d0, d1, d0, d2\n", "v0")
+INSTR_TEST(fp_fmadd_double_4, "fmadd d0, d1, d2, d0\n", "v0")
+INSTR_TEST(fp_fmadd_double_tp, "fmadd d0, d1, d2, d3\n", "v0")
+
 INSTR_TEST(asimd_int_add_half, "add v0.8h, v0.8h, v0.8h\n", "v0")
 INSTR_TEST(asimd_int_add_half_2, "add v0.8h, v0.8h, v1.8h\n", "v0")
 INSTR_TEST(asimd_int_add_half_tp, "add v0.8h, v1.8h, v2.8h\n", "v0")
@@ -67,18 +73,27 @@ INSTR_TEST(asimd_int_add_double_tp, "add v0.2d, v1.2d, v2.2d\n", "v0")
 
 INSTR_TEST(asimd_int_mul_half, "mul v0.8h, v0.8h, v0.8h\n", "v0")
 INSTR_TEST(asimd_int_mul_half_2, "mul v0.8h, v0.8h, v1.8h\n", "v0")
+
 INSTR_TEST(asimd_int_mul_single, "mul v0.4s, v0.4s, v0.4s\n", "v0")
 INSTR_TEST(asimd_int_mul_single_2, "mul v0.4s, v0.4s, v1.4s\n", "v0")
+INSTR_TEST(asimd_int_mul_single_tp, "mul v0.4s, v1.4s, v2.4s\n", "v0")
 
 INSTR_TEST(asimd_fp_fmul_single, "fmul v0.4s, v0.4s, v0.4s\n", "v0")
-INSTR_TEST(asimd_fp_fmul_double, "fmul v0.2d, v0.2d, v0.2d\n", "d0")
 INSTR_TEST(asimd_fp_fmul_single_tp, "fmul v0.4s, v1.4s, v2.4s\n", "v0")
 
+INSTR_TEST(asimd_fp_fmul_double, "fmul v0.2d, v0.2d, v0.2d\n", "d0")
+INSTR_TEST(asimd_fp_fmul_double_tp, "fmul v0.2d, v1.2d, v2.2d\n", "d0")
+
 INSTR_TEST(asimd_fp_fadd_single, "fadd v0.4s, v0.4s, v0.4s\n", "v0")
+INSTR_TEST(asimd_fp_fadd_single_tp, "fadd v0.4s, v1.4s, v2.4s\n", "v0")
+
 INSTR_TEST(asimd_fp_fadd_double, "fadd v0.2d, v0.2d, v0.2d\n", "d0")
+INSTR_TEST(asimd_fp_fadd_double_tp, "fadd v0.2d, v1.2d, v2.2d\n", "d0")
 
 INSTR_TEST(asimd_fp_fmla_single, "fmla v0.4s, v0.4s, v0.4s\n", "v0")
 INSTR_TEST(asimd_fp_fmla_single_2, "fmla v0.4s, v1.4s, v2.4s\n", "v0")
+INSTR_TEST(asimd_fp_fmla_single_3, "fmla v0.4s, v0.4s, v2.4s\n", "v0")
+INSTR_TEST(asimd_fp_fmla_single_4, "fmla v0.4s, v1.4s, v0.4s\n", "v0")
 
 #elif defined(__x86_64__)
 INSTR_TEST(unit, "add %%rbx, %%rax\n", "rax")
