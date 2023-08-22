@@ -164,16 +164,26 @@ INSTR_TEST(lsx_fp_vfadd_d_tp, "vfadd.d $vr0, $vr1, $vr2\n")
 INSTR_TEST(lsx_fp_vfmul_d, "vfmul.d $vr0, $vr1, $vr0\n")
 INSTR_TEST(lsx_fp_vfmul_d_tp, "vfmul.d $vr0, $vr1, $vr2\n")
 
-INSTR_TEST(lasx_int_vadd_d, "xvadd.d $xr0, $xr1, $xr0\n")
-INSTR_TEST(lasx_int_vadd_d_tp, "xvadd.d $xr0, $xr1, $xr2\n")
+INSTR_TEST(lsx_fp_vfmadd_d, "vfmadd.d $vr0, $vr1, $vr2, $vr0\n")
+INSTR_TEST(lsx_fp_vfmadd_d_2, "vfmadd.d $vr0, $vr1, $vr0, $vr3\n")
+INSTR_TEST(lsx_fp_vfmadd_d_3, "vfmadd.d $vr0, $vr0, $vr2, $vr3\n")
+INSTR_TEST(lsx_fp_vfmadd_d_tp, "vfmadd.d $vr0, $vr1, $vr2, $vr3\n")
 
-INSTR_TEST(lasx_int_vmul_d, "xvmul.d $xr0, $xr1, $xr0\n")
-INSTR_TEST(lasx_int_vmul_d_tp, "xvmul.d $xr0, $xr1, $xr2\n")
+INSTR_TEST(lasx_int_xvadd_d, "xvadd.d $xr0, $xr1, $xr0\n")
+INSTR_TEST(lasx_int_xvadd_d_tp, "xvadd.d $xr0, $xr1, $xr2\n")
 
-INSTR_TEST(lasx_fp_vfadd_d, "xvfadd.d $xr0, $xr1, $xr0\n")
-INSTR_TEST(lasx_fp_vfadd_d_tp, "xvfadd.d $xr0, $xr1, $xr2\n")
+INSTR_TEST(lasx_int_xvmul_d, "xvmul.d $xr0, $xr1, $xr0\n")
+INSTR_TEST(lasx_int_xvmul_d_tp, "xvmul.d $xr0, $xr1, $xr2\n")
 
-INSTR_TEST(lasx_fp_vfmul_d, "xvfmul.d $xr0, $xr1, $xr0\n")
-INSTR_TEST(lasx_fp_vfmul_d_tp, "xvfmul.d $xr0, $xr1, $xr2\n")
+INSTR_TEST(lasx_fp_xvfadd_d, "xvfadd.d $xr0, $xr1, $xr0\n")
+INSTR_TEST(lasx_fp_xvfadd_d_tp, "xvfadd.d $xr0, $xr1, $xr2\n")
+
+INSTR_TEST(lasx_fp_xvfmul_d, "xvfmul.d $xr0, $xr1, $xr0\n")
+INSTR_TEST(lasx_fp_xvfmul_d_tp, "xvfmul.d $xr0, $xr1, $xr2\n")
+
+INSTR_TEST(lasx_fp_xvfmadd_d, "xvfmadd.d $xr0, $xr1, $xr2, $xr0\n")
+INSTR_TEST(lasx_fp_xvfmadd_d_2, "xvfmadd.d $xr0, $xr1, $xr0, $xr3\n")
+INSTR_TEST(lasx_fp_xvfmadd_d_3, "xvfmadd.d $xr0, $xr0, $xr2, $xr3\n")
+INSTR_TEST(lasx_fp_xvfmadd_d_tp, "xvfmadd.d $xr0, $xr1, $xr2, $xr3\n")
 
 #endif

@@ -16,11 +16,13 @@ int_crcc_w_w_w,1.00,0.00
 int_div64,19.00,0.00
 int_mul32,4.00,0.50
 int_mul64,4.00,0.50
-lasx_fp_vfadd_d,3.00,0.25
-lasx_fp_vfmul_d,5.00,0.50
-lasx_int_vadd_d,1.00,0.25
-lasx_int_vmul_d,4.00,0.50
+lasx_fp_xvfadd_d,3.00,0.25
+lasx_fp_xvfmadd_d,5.00,0.50
+lasx_fp_xvfmul_d,5.00,0.50
+lasx_int_xvadd_d,1.00,0.25
+lasx_int_xvmul_d,4.00,0.50
 lsx_fp_vfadd_d,3.00,0.25
+lsx_fp_vfmadd_d,5.00,0.50
 lsx_fp_vfmul_d,5.00,0.50
 lsx_int_vadd_d,1.00,0.25
 lsx_int_vmul_d,4.00,0.50
