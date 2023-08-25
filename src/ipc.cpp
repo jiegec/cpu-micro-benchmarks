@@ -18,14 +18,9 @@ void test_1() {
 
 int main(int argc, char *argv[]) {
 
-  bool perf = false;
-
   int opt;
-  while ((opt = getopt(argc, argv, "p")) != -1) {
+  while ((opt = getopt(argc, argv, "")) != -1) {
     switch (opt) {
-    case 'p':
-      perf = true;
-      break;
     default:
       fprintf(stderr, "Usage: %s [-p]\n", argv[0]);
       exit(EXIT_FAILURE);
