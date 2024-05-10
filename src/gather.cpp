@@ -6,12 +6,20 @@
 int res = 0;
 const int n = 1000;
 int array[n] = {0};
-const int repeat = 1000;
-const int unroll = 8;
+const int repeat = 500;
+const int unroll = 16;
 
 void test_1(int *indices) {
   __m256i index = _mm256_loadu_si256((__m256i *)indices);
   for (int i = 0; i < repeat; i++) {
+    index = _mm256_i32gather_epi32(array, index, 4);
+    index = _mm256_i32gather_epi32(array, index, 4);
+    index = _mm256_i32gather_epi32(array, index, 4);
+    index = _mm256_i32gather_epi32(array, index, 4);
+    index = _mm256_i32gather_epi32(array, index, 4);
+    index = _mm256_i32gather_epi32(array, index, 4);
+    index = _mm256_i32gather_epi32(array, index, 4);
+    index = _mm256_i32gather_epi32(array, index, 4);
     index = _mm256_i32gather_epi32(array, index, 4);
     index = _mm256_i32gather_epi32(array, index, 4);
     index = _mm256_i32gather_epi32(array, index, 4);
