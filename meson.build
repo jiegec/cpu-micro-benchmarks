@@ -18,6 +18,12 @@ ipc = executable('ipc',
 	link_with: utils,
 	install: true)
 
+gather = executable('gather',
+	'src/gather.cpp',
+	cpp_args: ['-mavx2'],
+	link_with: utils,
+	install: true)
+
 generate_gadget = executable('generate_gadget',
 	'src/generate_gadget.cpp',
 	link_with: utils)
