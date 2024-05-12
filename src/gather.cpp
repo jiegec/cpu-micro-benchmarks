@@ -109,6 +109,12 @@ int main(int argc, char *argv[]) {
   uint64_t cycles_after = perf_read_cycles();
   uint64_t instructions_after = perf_read_instructions();
 
+  // i9-14900K: AVX2 24 cycles
+  // i9-12900KS: AVX2 24 cycles
+  // i9-10980XE: AVX2 38 cycles, AVX512 43 cycles
+  // EPYC 9654: AVX2 20 cycles, AVX512 33 cycles
+  // EPYC 7742: AVX2 21 cycles
+  // EPYC 7551: AVX2 20 cycles
   printf("%ld cycles, %ld instructions, %.2lf ipc, %d ans\n",
          (cycles_after - cycles_before) / m / repeat / unroll,
          (instructions_after - instructions_before) / m / repeat / unroll,
