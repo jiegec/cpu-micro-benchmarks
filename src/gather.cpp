@@ -10,6 +10,7 @@ const int repeat = 500;
 const int unroll = 16;
 
 void test_1(int *indices) {
+#ifdef AVX2
   __m256i index = _mm256_loadu_si256((__m256i *)indices);
   for (int i = 0; i < repeat; i++) {
     index = _mm256_i32gather_epi32(array, index, 4);
@@ -30,6 +31,29 @@ void test_1(int *indices) {
     index = _mm256_i32gather_epi32(array, index, 4);
   }
   res += index[0];
+#endif
+#ifdef AVX512
+  __m512i index = _mm512_loadu_si512((__m512i *)indices);
+  for (int i = 0; i < repeat; i++) {
+    index = _mm512_i32gather_epi32(index, array, 4);
+    index = _mm512_i32gather_epi32(index, array, 4);
+    index = _mm512_i32gather_epi32(index, array, 4);
+    index = _mm512_i32gather_epi32(index, array, 4);
+    index = _mm512_i32gather_epi32(index, array, 4);
+    index = _mm512_i32gather_epi32(index, array, 4);
+    index = _mm512_i32gather_epi32(index, array, 4);
+    index = _mm512_i32gather_epi32(index, array, 4);
+    index = _mm512_i32gather_epi32(index, array, 4);
+    index = _mm512_i32gather_epi32(index, array, 4);
+    index = _mm512_i32gather_epi32(index, array, 4);
+    index = _mm512_i32gather_epi32(index, array, 4);
+    index = _mm512_i32gather_epi32(index, array, 4);
+    index = _mm512_i32gather_epi32(index, array, 4);
+    index = _mm512_i32gather_epi32(index, array, 4);
+    index = _mm512_i32gather_epi32(index, array, 4);
+  }
+  res += index[0];
+#endif
 }
 
 int main(int argc, char *argv[]) {
@@ -48,14 +72,20 @@ int main(int argc, char *argv[]) {
   setup_perf_cycles();
 
   // int indices[] = {0, 1, 2, 3, 4, 5, 6, 7};
-  int indices[8];
+#ifdef AVX2
+  const int vlen = 8;
+#endif
+#ifdef AVX512
+  const int vlen = 16;
+#endif
+  int indices[vlen];
   srand(time(NULL));
-  for (int i = 0; i < 8; i++) {
+  for (int i = 0; i < vlen; i++) {
     indices[i] = rand() % 32;
   }
 
   printf("Numbers:");
-  for (int i = 0; i < 8; i++) {
+  for (int i = 0; i < vlen; i++) {
     // generate patterns
     printf(" %d", indices[i]);
     array[indices[i]] = indices[i];

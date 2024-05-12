@@ -18,11 +18,21 @@ ipc = executable('ipc',
 	link_with: utils,
 	install: true)
 
-gather = executable('gather',
-	'src/gather.cpp',
-	cpp_args: ['-mavx2'],
-	link_with: utils,
-	install: true)
+cpu = target_machine.cpu_family()
+if cpu == 'x86_64'
+	gather_avx2 = executable('gather_avx2',
+		'src/gather.cpp',
+		cpp_args: ['-DAVX2', '-mavx2'],
+		link_with: utils,
+		install: true)
+	gather_avx512 = executable('gather_avx512',
+		'src/gather.cpp',
+		cpp_args: ['-DAVX512', '-mavx512f'],
+		link_with: utils,
+		install: true)
+endif
+
+
 
 generate_gadget = executable('generate_gadget',
 	'src/generate_gadget.cpp',
