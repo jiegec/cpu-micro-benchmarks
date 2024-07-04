@@ -29,6 +29,7 @@ ticks = [4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192]
 plt.xticks(ticks, ticks)
 plt.yticks(range(10))
 plt.ylim((0, 10))
+plt.grid()
 plt.xlabel('Branches in loop')
 plt.ylabel('Cycles Per Branch')
 plt.legend()
