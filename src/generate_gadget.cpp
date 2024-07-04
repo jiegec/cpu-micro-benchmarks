@@ -84,6 +84,7 @@ void gen_rob_gadget() {
 }
 
 // generate gadget for btb test
+// https://github.com/ChipsandCheese/Microbenchmarks/blob/master/AsmGen/tests/BtbTest.cs
 void gen_btb_gadget() {
   int min_size = 4;
   int max_size = 8192;
@@ -118,6 +119,18 @@ void gen_btb_gadget() {
       fprintf(fp, "\tsubs x0, x0, #1\n");
       fprintf(fp, "\tbne 1b\n");
       fprintf(fp, "\tret\n");
+#elif defined(__x86_64__)
+      fprintf(fp, "\t1:\n");
+      // the last loop is bne 1b
+      for (int i = 0; i < size - 1; i++) {
+        fprintf(fp, "\tjmp 2f\n");
+        // fill nops so that branch instructions have the specified stride
+        fprintf(fp, "\t.balign %d\n", stride);
+        fprintf(fp, "\t2:\n");
+      }
+      fprintf(fp, "\tdec %%rdi\n");
+      fprintf(fp, "\tjne 1b\n");
+      fprintf(fp, "\tret\n");
 #endif
     }
   }
@@ -132,6 +145,8 @@ void gen_btb_gadget() {
     for (int stride = min_stride; stride <= max_stride; stride *= 2) {
 #ifdef __aarch64__
       fprintf(fp, ".dword btb_size_%d_%d\n", size, stride);
+#elif defined(__x86_64__)
+    fprintf(fp, ".dc.a btb_size_%d_%d\n", size, stride);
 #endif
     }
   }
