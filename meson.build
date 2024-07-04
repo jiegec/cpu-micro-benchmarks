@@ -59,3 +59,14 @@ btb_size = executable('btb_size',
 	btb_gadget_asm,
 	link_with: utils,
 	install: true)
+
+ras_gadget_asm = custom_target('ras_gadget_asm',
+	output: 'ras_gadget.S',
+	input: generate_gadget,
+	command: [generate_gadget, 'ras', '@OUTPUT@'])
+
+ras_size = executable('ras_size',
+	'src/ras_size.cpp',
+	ras_gadget_asm,
+	link_with: utils,
+	install: true)
