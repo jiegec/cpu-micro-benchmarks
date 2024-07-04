@@ -38,13 +38,24 @@ generate_gadget = executable('generate_gadget',
 	'src/generate_gadget.cpp',
 	link_with: utils)
 
-gadget_asm = custom_target('gadget_asm',
-	output: 'gadget.S',
+rob_gadget_asm = custom_target('rob_gadget_asm',
+	output: 'rob_gadget.S',
 	input: generate_gadget,
-	command: [generate_gadget, '@OUTPUT@'])
+	command: [generate_gadget, 'rob', '@OUTPUT@'])
 
 rob_size = executable('rob_size',
 	'src/rob_size.cpp',
-	gadget_asm,
+	rob_gadget_asm,
+	link_with: utils,
+	install: true)
+
+btb_gadget_asm = custom_target('btb_gadget_asm',
+	output: 'btb_gadget.S',
+	input: generate_gadget,
+	command: [generate_gadget, 'btb', '@OUTPUT@'])
+
+btb = executable('btb',
+	'src/btb.cpp',
+	btb_gadget_asm,
 	link_with: utils,
 	install: true)
