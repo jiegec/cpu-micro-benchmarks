@@ -17,13 +17,18 @@ with open('btb.csv', newline='') as f:
 		avg_data.append(float(row["avg"]))
 
 for stride in [4, 8, 16, 32, 64]:
+	x_data = []
 	y_data = []
 	for i in range(len(stride_data)):
 		if stride_data[i] == stride:
+			x_data.append(size_data[i])
 			y_data.append(min_data[i])
-	plt.plot(range(len(y_data)), y_data, label=f"Branch Per {stride}B")
+	plt.plot(x_data, y_data, label=f"Branch Per {stride}B")
+plt.xscale('log')
 ticks = [4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192]
-plt.xticks(range(len(ticks)), ticks)
+plt.xticks(ticks, ticks)
+plt.yticks(range(10))
+plt.ylim((0, 10))
 plt.xlabel('Branches in loop')
 plt.ylabel('Cycles Per Branch')
 plt.legend()

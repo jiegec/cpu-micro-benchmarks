@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
 
   fprintf(fp, "size,stride,min,avg,max\n");
   int gadget_index = 0;
-  for (int size = min_size; size <= max_size; size *= 2) {
+  for (int size = min_size; size <= max_size; size = (size * 1.1 + 1)) {
     for (int stride = min_stride; stride <= max_stride; stride *= 2) {
       std::vector<double> history;
       int iterations = 100;
