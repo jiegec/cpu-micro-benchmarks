@@ -171,6 +171,13 @@ void gen_ras_gadget() {
     fprintf(fp, "\tldp x29, x30, [sp, #0x10]\n");
     fprintf(fp, "\tadd sp, sp, #0x20\n");
     fprintf(fp, "\tret\n");
+#elif defined(__x86_64__)
+    fprintf(fp, "\t1:\n");
+    // call function
+    fprintf(fp, "\tcall ras_func_%d\n", size - 1);
+    fprintf(fp, "\tdec %%rdi\n");
+    fprintf(fp, "\tjne 1b\n");
+    fprintf(fp, "\tret\n");
 #endif
 
     // inner function
@@ -190,6 +197,9 @@ void gen_ras_gadget() {
     fprintf(fp, "\tldp x29, x30, [sp, #0x10]\n");
     fprintf(fp, "\tadd sp, sp, #0x20\n");
     fprintf(fp, "\tret\n");
+#elif defined(__x86_64__)
+    fprintf(fp, "\tcall ras_func_%d\n", size - 1);
+    fprintf(fp, "\tret\n");
 #endif
   }
 
@@ -208,6 +218,8 @@ void gen_ras_gadget() {
   for (int size = min_size; size <= max_size; size++) {
 #ifdef __aarch64__
     fprintf(fp, ".dword ras_size_%d\n", size);
+#elif defined(__x86_64__)
+    fprintf(fp, ".dc.a ras_size_%d\n", size);
 #endif
   }
 }
