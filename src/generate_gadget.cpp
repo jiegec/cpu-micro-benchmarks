@@ -103,8 +103,15 @@ void gen_btb_gadget() {
       for (int i = 0; i < size - 1; i++) {
         fprintf(fp, "\tb 2f\n");
         // fill nops so that branch instructions have the specified stride
-        for (int i = 0;i < (stride / 4);i++) {
-          fprintf(fp, "\tnop\n");
+        if (i == size - 2) {
+          // one less nop for subs
+          for (int i = 0; i < (stride / 4) - 2; i++) {
+            fprintf(fp, "\tnop\n");
+          }
+        } else {
+          for (int i = 0; i < (stride / 4) - 1; i++) {
+            fprintf(fp, "\tnop\n");
+          }
         }
         fprintf(fp, "\t2:\n");
       }
