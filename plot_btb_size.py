@@ -8,7 +8,7 @@ stride_data = []
 min_data = []
 avg_data = []
 
-with open('btb.csv', newline='') as f:
+with open('btb_size.csv', newline='') as f:
 	r = csv.DictReader(f)
 	for row in r:
 		size_data.append(float(row["size"]))
@@ -33,4 +33,4 @@ plt.grid()
 plt.xlabel('Branches in loop')
 plt.ylabel('Cycles Per Branch')
 plt.legend()
-plt.savefig('plot_btb.png')
+plt.savefig('plot_btb_size.png')

@@ -54,8 +54,8 @@ btb_gadget_asm = custom_target('btb_gadget_asm',
 	input: generate_gadget,
 	command: [generate_gadget, 'btb', '@OUTPUT@'])
 
-btb = executable('btb',
-	'src/btb.cpp',
+btb_size = executable('btb_size',
+	'src/btb_size.cpp',
 	btb_gadget_asm,
 	link_with: utils,
 	install: true)
