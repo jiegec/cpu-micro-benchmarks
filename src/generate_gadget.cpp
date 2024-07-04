@@ -137,9 +137,78 @@ void gen_btb_gadget() {
 #ifdef __aarch64__
       fprintf(fp, ".dword btb_size_%d_%d\n", size, stride);
 #elif defined(__x86_64__)
-    fprintf(fp, ".dc.a btb_size_%d_%d\n", size, stride);
+      fprintf(fp, ".dc.a btb_size_%d_%d\n", size, stride);
 #endif
     }
+  }
+}
+
+// generate gadget for ras test
+// https://github.com/ChipsandCheese/Microbenchmarks/blob/master/AsmGen/tests/ReturnStackTest.cs
+void gen_ras_gadget() {
+  int min_size = 1;
+  int max_size = 64;
+
+  // args: loop count
+  fprintf(fp, ".text\n");
+  for (int size = min_size; size <= max_size; size++) {
+    // entry
+    fprintf(fp, ".global ras_size_%d\n", size);
+    fprintf(fp, ".balign 32\n");
+    fprintf(fp, "ras_size_%d:\n", size);
+#ifdef __aarch64__
+    // save lr
+    fprintf(fp, "\tsub sp, sp, #0x20\n");
+    fprintf(fp, "\tstp x29, x30, [sp, #0x10]\n");
+
+    fprintf(fp, "\t1:\n");
+    // call function
+    fprintf(fp, "\tbl ras_func_%d\n", size - 1);
+    fprintf(fp, "\tsubs x0, x0, #1\n");
+    fprintf(fp, "\tbne 1b\n");
+
+    // restore lr
+    fprintf(fp, "\tldp x29, x30, [sp, #0x10]\n");
+    fprintf(fp, "\tadd sp, sp, #0x20\n");
+    fprintf(fp, "\tret\n");
+#endif
+
+    // inner function
+    fprintf(fp, ".global ras_func_%d\n", size);
+    fprintf(fp, ".balign 32\n");
+    fprintf(fp, "ras_func_%d:\n", size);
+
+#ifdef __aarch64__
+    // save lr
+    fprintf(fp, "\tsub sp, sp, #0x20\n");
+    fprintf(fp, "\tstp x29, x30, [sp, #0x10]\n");
+
+    // call lower function
+    fprintf(fp, "\tbl ras_func_%d\n", size - 1);
+
+    // restore lr
+    fprintf(fp, "\tldp x29, x30, [sp, #0x10]\n");
+    fprintf(fp, "\tadd sp, sp, #0x20\n");
+    fprintf(fp, "\tret\n");
+#endif
+  }
+
+  // recursion base
+  fprintf(fp, ".global ras_func_%d\n", 0);
+  fprintf(fp, ".balign 32\n");
+  fprintf(fp, "ras_func_%d:\n", 0);
+  fprintf(fp, "\tret\n");
+
+  fprintf(fp, ".data\n");
+  // for macOS
+  fprintf(fp, ".global _ras_gadgets\n");
+  fprintf(fp, "_ras_gadgets:\n");
+  fprintf(fp, ".global ras_gadgets\n");
+  fprintf(fp, "ras_gadgets:\n");
+  for (int size = min_size; size <= max_size; size++) {
+#ifdef __aarch64__
+    fprintf(fp, ".dword ras_size_%d\n", size);
+#endif
   }
 }
 
@@ -151,6 +220,8 @@ int main(int argc, char *argv[]) {
     gen_rob_gadget();
   } else if (strcmp(argv[1], "btb") == 0) {
     gen_btb_gadget();
+  } else if (strcmp(argv[1], "ras") == 0) {
+    gen_ras_gadget();
   } else {
     fprintf(stderr, "Unknown gadget to generate!\n");
     return 1;
