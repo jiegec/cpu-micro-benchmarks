@@ -89,11 +89,11 @@ void gen_btb_gadget() {
   int min_size = 4;
   int max_size = 8192;
   int min_stride = 4;
-  int max_stride = 64;
+  int max_stride = 128;
 
   // args: loop count
   fprintf(fp, ".text\n");
-  for (int size = min_size; size <= max_size; size = (size * 1.1 + 1)) {
+  for (int size = min_size; size <= max_size; size = (size * 1.19 + 1)) {
     for (int stride = min_stride; stride <= max_stride; stride *= 2) {
       fprintf(fp, ".global btb_size_%d_%d\n", size, stride);
       fprintf(fp, ".balign 32\n");
@@ -104,16 +104,7 @@ void gen_btb_gadget() {
       for (int i = 0; i < size - 1; i++) {
         fprintf(fp, "\tb 2f\n");
         // fill nops so that branch instructions have the specified stride
-        if (i == size - 2) {
-          // one less nop for subs
-          for (int i = 0; i < (stride / 4) - 2; i++) {
-            fprintf(fp, "\tnop\n");
-          }
-        } else {
-          for (int i = 0; i < (stride / 4) - 1; i++) {
-            fprintf(fp, "\tnop\n");
-          }
-        }
+        fprintf(fp, "\t.balign %d\n", stride);
         fprintf(fp, "\t2:\n");
       }
       fprintf(fp, "\tsubs x0, x0, #1\n");
@@ -141,7 +132,7 @@ void gen_btb_gadget() {
   fprintf(fp, "_btb_gadgets:\n");
   fprintf(fp, ".global btb_gadgets\n");
   fprintf(fp, "btb_gadgets:\n");
-  for (int size = min_size; size <= max_size; size = (size * 1.1 + 1)) {
+  for (int size = min_size; size <= max_size; size = (size * 1.19 + 1)) {
     for (int stride = min_stride; stride <= max_stride; stride *= 2) {
 #ifdef __aarch64__
       fprintf(fp, ".dword btb_size_%d_%d\n", size, stride);

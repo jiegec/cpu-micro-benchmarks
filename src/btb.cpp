@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
   int min_size = 4;
   int max_size = 8192;
   int min_stride = 4;
-  int max_stride = 64;
+  int max_stride = 128;
 
   bind_to_core();
   setup_time_or_cycles();
@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
 
   fprintf(fp, "size,stride,min,avg,max\n");
   int gadget_index = 0;
-  for (int size = min_size; size <= max_size; size = (size * 1.1 + 1)) {
+  for (int size = min_size; size <= max_size; size = (size * 1.19 + 1)) {
     for (int stride = min_stride; stride <= max_stride; stride *= 2) {
       std::vector<double> history;
       int iterations = 100;

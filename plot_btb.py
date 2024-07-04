@@ -16,7 +16,7 @@ with open('btb.csv', newline='') as f:
 		min_data.append(float(row["min"]))
 		avg_data.append(float(row["avg"]))
 
-for stride in [4, 8, 16, 32, 64]:
+for stride in [4, 8, 16, 32, 64, 128]:
 	x_data = []
 	y_data = []
 	for i in range(len(stride_data)):
