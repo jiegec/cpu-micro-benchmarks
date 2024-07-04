@@ -19,7 +19,7 @@ extern gadget btb_gadgets[];
 }
 
 int main(int argc, char *argv[]) {
-  int loop_count = 1000;
+  int loop_count = 2000;
   // match gen_btb_test
   int min_size = 4;
   int max_size = 8192;
