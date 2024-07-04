@@ -8,6 +8,7 @@
 // http://blog.stuffedcow.net/2013/05/measuring-rob-capacity/
 // https://github.com/travisdowns/robsize
 // https://chipsandcheese.com/2023/10/27/cortex-x2-arm-aims-high/
+// https://zhuanlan.zhihu.com/p/595585895
 // use with generate_gadget tool
 
 // defined in gen_btb_test()
