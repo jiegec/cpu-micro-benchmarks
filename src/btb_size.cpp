@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
 
   bind_to_core();
   setup_time_or_cycles();
-  FILE *fp = fopen("btb.csv", "w");
+  FILE *fp = fopen("btb_size.csv", "w");
   assert(fp);
 
   fprintf(fp, "size,stride,min,avg,max\n");
@@ -71,6 +71,6 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  printf("Results are written to btb.csv\n");
+  printf("Results are written to btb_size.csv\n");
   return 0;
 }
