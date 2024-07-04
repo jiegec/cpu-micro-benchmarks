@@ -224,6 +224,78 @@ void gen_ras_gadget() {
   }
 }
 
+// generate gadget for bp test
+// https://github.com/ChipsandCheese/Microbenchmarks/blob/master/AsmGen/tests/BranchHistoryTest.cs
+// https://github.com/ChipsandCheese/Microbenchmarks/blob/master/AsmGen/DataFiles/GccBranchHistFunction.c
+void gen_bp_gadget() {
+  int min_size = 1;
+  int max_size = 1024;
+
+  // args: loop count, pattern array[branch][history], history len
+  fprintf(fp, ".text\n");
+  for (int size = min_size; size <= max_size; size *= 2) {
+    // entry
+    fprintf(fp, ".global bp_size_%d\n", size);
+    fprintf(fp, ".balign 32\n");
+    fprintf(fp, "bp_size_%d:\n", size);
+#ifdef __aarch64__
+    // save registers
+    fprintf(fp, "\tsub sp, sp, #0x40\n");
+    fprintf(fp, "\tstp x11, x12, [sp, #0x30]\n");
+    fprintf(fp, "\tstp x15, x16, [sp, #0x20]\n");
+    fprintf(fp, "\tstp x13, x14, [sp, #0x10]\n");
+    fprintf(fp, "\teor x16, x16, x16\n");
+    fprintf(fp, "\teor x15, x15, x15\n");
+    fprintf(fp, "\teor x12, x12, x12\n");
+    fprintf(fp, "\teor x11, x11, x11\n");
+
+    fprintf(fp, "\t1:\n");
+    fprintf(fp, "\teor x14, x14, x14\n");
+
+    // data-dependent branches
+    // w14: branch index
+    // w16: history index
+    for (int i = 0; i < size; i++) {
+      fprintf(fp, "\tldr x15, [x1, w14, uxtw #3]\n");
+      fprintf(fp, "\tadd w14, w14, 1\n");
+      fprintf(fp, "\tldr w13, [x15, w16, uxtw #2]\n");
+      // conditional branch
+      fprintf(fp, "\tcbnz x13, 2f\n");
+      fprintf(fp, "\tadd x12, x12, 1\n");
+      fprintf(fp, "\t2:\n");
+    }
+
+    // increment w16, set w16 to 0 if w16 == history len
+    fprintf(fp, "\tadd w16, w16, 1\n");
+    fprintf(fp, "\tcmp w16, w2\n");
+    fprintf(fp, "\tcsel w16, w11, w16, EQ\n");
+
+    // loop
+    fprintf(fp, "\tsub x0, x0, 1\n");
+    fprintf(fp, "\tcbnz x0, 1b\n");
+
+    // restore regs
+    fprintf(fp, "\tldp x11, x12, [sp, #0x30]\n");
+    fprintf(fp, "\tldp x15, x16, [sp, #0x20]\n");
+    fprintf(fp, "\tldp x13, x14, [sp, #0x10]\n");
+    fprintf(fp, "\tadd sp, sp, #0x40\n");
+    fprintf(fp, "\tret\n");
+#endif
+  }
+
+  fprintf(fp, ".data\n");
+  // for macOS
+  fprintf(fp, ".global _bp_gadgets\n");
+  fprintf(fp, "_bp_gadgets:\n");
+  fprintf(fp, ".global bp_gadgets\n");
+  fprintf(fp, "bp_gadgets:\n");
+  for (int size = min_size; size <= max_size; size *= 2) {
+#ifdef __aarch64__
+    fprintf(fp, ".dword bp_size_%d\n", size);
+#endif
+  }
+}
+
 int main(int argc, char *argv[]) {
   assert(argc == 3);
   fp = fopen(argv[2], "w");
@@ -234,6 +306,8 @@ int main(int argc, char *argv[]) {
     gen_btb_gadget();
   } else if (strcmp(argv[1], "ras") == 0) {
     gen_ras_gadget();
+  } else if (strcmp(argv[1], "bp") == 0) {
+    gen_bp_gadget();
   } else {
     fprintf(stderr, "Unknown gadget to generate!\n");
     return 1;

@@ -70,3 +70,14 @@ ras_size = executable('ras_size',
 	ras_gadget_asm,
 	link_with: utils,
 	install: true)
+
+bp_gadget_asm = custom_target('bp_gadget_asm',
+	output: 'bp_gadget.S',
+	input: generate_gadget,
+	command: [generate_gadget, 'bp', '@OUTPUT@'])
+
+bp_size = executable('bp_size',
+	'src/bp_size.cpp',
+	bp_gadget_asm,
+	link_with: utils,
+	install: true)
