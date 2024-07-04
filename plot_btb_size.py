@@ -22,7 +22,7 @@ for stride in [4, 8, 16, 32, 64, 128]:
 	for i in range(len(stride_data)):
 		if stride_data[i] == stride:
 			x_data.append(size_data[i])
-			y_data.append(min_data[i])
+			y_data.append(avg_data[i])
 	plt.plot(x_data, y_data, label=f"Branch Per {stride}B")
 plt.xscale('log')
 ticks = [4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192]
