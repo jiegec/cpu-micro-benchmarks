@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <set>
 #include <stdio.h>
 #include <string.h>
 FILE *fp;
@@ -87,42 +88,54 @@ void gen_rob_gadget() {
 // https://github.com/ChipsandCheese/Microbenchmarks/blob/master/AsmGen/tests/BtbTest.cs
 void gen_btb_gadget() {
   int min_size = 4;
-  int max_size = 8192;
+  int max_product = 262144;
   int min_stride = 4;
-  int max_stride = 128;
+  int max_stride = 65536;
 
   // args: loop count
   fprintf(fp, ".text\n");
-  for (int size = min_size; size <= max_size; size = (size * 1.19 + 1)) {
-    for (int stride = min_stride; stride <= max_stride; stride *= 2) {
-      fprintf(fp, ".global btb_size_%d_%d\n", size, stride);
-      fprintf(fp, ".balign 32\n");
-      fprintf(fp, "btb_size_%d_%d:\n", size, stride);
+  for (int stride = min_stride; stride <= max_stride; stride *= 2) {
+    std::set<int> sizes;
+    for (int size_base = min_size; size_base <= max_product / stride;
+         size_base *= 2) {
+      for (int size_mid = size_base; size_mid < size_base * 2;
+           size_mid *= 1.25992105) {
+        for (int size = size_mid - 1; size <= size_mid + 1; size++) {
+          if (sizes.find(size) != sizes.end()) {
+            continue;
+          }
+          sizes.insert(size);
+
+          fprintf(fp, ".global btb_size_%d_%d\n", size, stride);
+          fprintf(fp, ".balign 32\n");
+          fprintf(fp, "btb_size_%d_%d:\n", size, stride);
 #ifdef __aarch64__
-      fprintf(fp, "\t1:\n");
-      // the last loop is bne 1b
-      for (int i = 0; i < size - 1; i++) {
-        fprintf(fp, "\tb 2f\n");
-        // fill nops so that branch instructions have the specified stride
-        fprintf(fp, "\t.balign %d\n", stride);
-        fprintf(fp, "\t2:\n");
-      }
-      fprintf(fp, "\tsubs x0, x0, #1\n");
-      fprintf(fp, "\tbne 1b\n");
-      fprintf(fp, "\tret\n");
+          fprintf(fp, "\t1:\n");
+          // the last loop is bne 1b
+          for (int i = 0; i < size - 1; i++) {
+            fprintf(fp, "\tb 2f\n");
+            // fill nops so that branch instructions have the specified stride
+            fprintf(fp, "\t.balign %d\n", stride);
+            fprintf(fp, "\t2:\n");
+          }
+          fprintf(fp, "\tsubs x0, x0, #1\n");
+          fprintf(fp, "\tbne 1b\n");
+          fprintf(fp, "\tret\n");
 #elif defined(__x86_64__)
-      fprintf(fp, "\t1:\n");
-      // the last loop is bne 1b
-      for (int i = 0; i < size - 1; i++) {
-        fprintf(fp, "\tjmp 2f\n");
-        // fill nops so that branch instructions have the specified stride
-        fprintf(fp, "\t.balign %d\n", stride);
-        fprintf(fp, "\t2:\n");
-      }
-      fprintf(fp, "\tdec %%rdi\n");
-      fprintf(fp, "\tjne 1b\n");
-      fprintf(fp, "\tret\n");
+          fprintf(fp, "\t1:\n");
+          // the last loop is bne 1b
+          for (int i = 0; i < size - 1; i++) {
+            fprintf(fp, "\tjmp 2f\n");
+            // fill nops so that branch instructions have the specified stride
+            fprintf(fp, "\t.balign %d\n", stride);
+            fprintf(fp, "\t2:\n");
+          }
+          fprintf(fp, "\tdec %%rdi\n");
+          fprintf(fp, "\tjne 1b\n");
+          fprintf(fp, "\tret\n");
 #endif
+        }
+      }
     }
   }
 
@@ -132,13 +145,25 @@ void gen_btb_gadget() {
   fprintf(fp, "_btb_gadgets:\n");
   fprintf(fp, ".global btb_gadgets\n");
   fprintf(fp, "btb_gadgets:\n");
-  for (int size = min_size; size <= max_size; size = (size * 1.19 + 1)) {
-    for (int stride = min_stride; stride <= max_stride; stride *= 2) {
+  for (int stride = min_stride; stride <= max_stride; stride *= 2) {
+    std::set<int> sizes;
+    for (int size_base = min_size; size_base <= max_product / stride;
+         size_base *= 2) {
+      for (int size_mid = size_base; size_mid < size_base * 2;
+           size_mid *= 1.25992105) {
+        for (int size = size_mid - 1; size <= size_mid + 1; size++) {
+          if (sizes.find(size) != sizes.end()) {
+            continue;
+          }
+          sizes.insert(size);
+
 #ifdef __aarch64__
-      fprintf(fp, ".dword btb_size_%d_%d\n", size, stride);
+          fprintf(fp, ".dword btb_size_%d_%d\n", size, stride);
 #elif defined(__x86_64__)
-      fprintf(fp, ".dc.a btb_size_%d_%d\n", size, stride);
+          fprintf(fp, ".dc.a btb_size_%d_%d\n", size, stride);
 #endif
+        }
+      }
     }
   }
 }
