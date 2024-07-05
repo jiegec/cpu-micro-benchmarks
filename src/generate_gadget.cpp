@@ -325,7 +325,7 @@ void gen_bp_gadget() {
 // https://cseweb.ucsd.edu/~dstefan/pubs/yavarzadeh:2023:half.pdf
 void gen_ghr_gadget() {
   int min_size = 1;
-  int max_size = 128;
+  int max_size = 256;
 
   // args: loop count, random array
   fprintf(fp, ".text\n");
@@ -363,6 +363,37 @@ void gen_ghr_gadget() {
     fprintf(fp, "\tldp x11, x12, [sp, #0x10]\n");
     fprintf(fp, "\tadd sp, sp, #0x20\n");
     fprintf(fp, "\tret\n");
+#elif defined(__x86_64__)
+    // save registers
+    fprintf(fp, "\tpush %%rbx\n");
+
+    fprintf(fp, "\t1:\n");
+
+    // first branch based on random value
+    fprintf(fp, "\tmov (%%rsi, %%rdi, 4), %%ebx\n");
+    fprintf(fp, "\ttest %%ebx, %%ebx\n");
+    fprintf(fp, "\tjnz 2f\n");
+    fprintf(fp, "\t2:\n");
+
+    // the first branch is jnz 2f
+    // forward always-taken branches
+    for (int i = 0; i < size - 1; i++) {
+      fprintf(fp, "\tjmp 2f\n");
+      fprintf(fp, "\t2:\n");
+    }
+
+    // last branch based on the same random value
+    fprintf(fp, "\tmov (%%rsi, %%rdi, 4), %%ebx\n");
+    fprintf(fp, "\ttest %%ebx, %%ebx\n");
+    fprintf(fp, "\tjnz 2f\n");
+    fprintf(fp, "\t2:\n");
+
+    fprintf(fp, "\tdec %%rdi\n");
+    fprintf(fp, "\tjnz 1b\n");
+
+    // restore regs
+    fprintf(fp, "\tpop %%rbx\n");
+    fprintf(fp, "\tret\n");
 #endif
   }
 
@@ -375,6 +406,8 @@ void gen_ghr_gadget() {
   for (int size = min_size; size <= max_size; size++) {
 #ifdef __aarch64__
     fprintf(fp, ".dword ghr_size_%d\n", size);
+#elif defined(__x86_64__)
+    fprintf(fp, ".dc.a ghr_size_%d\n", size);
 #endif
   }
 }
