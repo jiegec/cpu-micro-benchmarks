@@ -36,6 +36,8 @@ void setup_perf_llc_misses();
 uint64_t perf_read_llc_misses();
 void setup_perf_llc_loads();
 uint64_t perf_read_llc_loads();
+void setup_perf_branch_misses();
+uint64_t perf_read_branch_misses();
 #endif
 
 #endif
