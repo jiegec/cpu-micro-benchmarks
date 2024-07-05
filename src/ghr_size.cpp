@@ -18,15 +18,15 @@ int main(int argc, char *argv[]) {
   // match gen_ghr_test
   int repeat = 2;
   int min_size = 1;
-  int max_size = 128;
+  int max_size = 256;
 
   bind_to_core();
   setup_perf_branch_misses();
   FILE *fp = fopen("ghr_size.csv", "w");
   assert(fp);
 
-  uint32_t *buffer = new uint32_t[loop_count];
-  for (int i = 0; i < loop_count; i++) {
+  uint32_t *buffer = new uint32_t[loop_count + 1];
+  for (int i = 0; i <= loop_count; i++) {
     buffer[i] = rand() % 2;
   }
 

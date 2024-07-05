@@ -3,3 +3,4 @@ builddir
 *.png
 *.csv
 result
+.cache
