@@ -11,7 +11,7 @@ int N = 100000;
 #define INSTR_TEST(NAME, INST, ...)                                            \
   void test_##NAME(int n) {                                                    \
     for (int i = 0; i < n; i++) {                                              \
-      asm volatile(".align 4\n" THOUSAND(INST) : : : __VA_ARGS__);              \
+      asm volatile(".align 4\n" THOUSAND(INST) : : : __VA_ARGS__);             \
     }                                                                          \
   }
 

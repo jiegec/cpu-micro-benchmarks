@@ -81,3 +81,14 @@ bp_size = executable('bp_size',
 	bp_gadget_asm,
 	link_with: utils,
 	install: true)
+
+ghr_gadget_asm = custom_target('ghr_gadget_asm',
+	output: 'ghr_gadget.S',
+	input: generate_gadget,
+	command: [generate_gadget, 'ghr', '@OUTPUT@'])
+
+ghr_size = executable('ghr_size',
+	'src/ghr_size.cpp',
+	ghr_gadget_asm,
+	link_with: utils,
+	install: true)

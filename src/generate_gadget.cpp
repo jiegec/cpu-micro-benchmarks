@@ -321,6 +321,64 @@ void gen_bp_gadget() {
   }
 }
 
+// generate gadget for ghr test
+// https://cseweb.ucsd.edu/~dstefan/pubs/yavarzadeh:2023:half.pdf
+void gen_ghr_gadget() {
+  int min_size = 1;
+  int max_size = 128;
+
+  // args: loop count, random array
+  fprintf(fp, ".text\n");
+  for (int size = min_size; size <= max_size; size++) {
+    fprintf(fp, ".global ghr_size_%d\n", size);
+    fprintf(fp, ".balign 32\n");
+    fprintf(fp, "ghr_size_%d:\n", size);
+#ifdef __aarch64__
+    // save registers
+    fprintf(fp, "\tsub sp, sp, #0x20\n");
+    fprintf(fp, "\tstp x11, x12, [sp, #0x10]\n");
+
+    fprintf(fp, "\t1:\n");
+
+    // first branch based on random value
+    fprintf(fp, "\tldr w11, [x1, w0, uxtw #2]\n");
+    fprintf(fp, "\tcbnz w11, 2f\n");
+    fprintf(fp, "\t2:\n");
+
+    // the first branch is cbnz w11, 2f
+    // forward always-taken branches
+    for (int i = 0; i < size - 1; i++) {
+      fprintf(fp, "\tb 2f\n");
+      fprintf(fp, "\t2:\n");
+    }
+
+    // last branch based on the same random value
+    fprintf(fp, "\tcbnz w11, 2f\n");
+    fprintf(fp, "\t2:\n");
+
+    fprintf(fp, "\tsubs x0, x0, #1\n");
+    fprintf(fp, "\tbne 1b\n");
+
+    // restore regs
+    fprintf(fp, "\tldp x11, x12, [sp, #0x10]\n");
+    fprintf(fp, "\tadd sp, sp, #0x20\n");
+    fprintf(fp, "\tret\n");
+#endif
+  }
+
+  fprintf(fp, ".data\n");
+  // for macOS
+  fprintf(fp, ".global _ghr_gadgets\n");
+  fprintf(fp, "_ghr_gadgets:\n");
+  fprintf(fp, ".global ghr_gadgets\n");
+  fprintf(fp, "ghr_gadgets:\n");
+  for (int size = min_size; size <= max_size; size++) {
+#ifdef __aarch64__
+    fprintf(fp, ".dword ghr_size_%d\n", size);
+#endif
+  }
+}
+
 int main(int argc, char *argv[]) {
   assert(argc == 3);
   fp = fopen(argv[2], "w");
@@ -333,6 +391,8 @@ int main(int argc, char *argv[]) {
     gen_ras_gadget();
   } else if (strcmp(argv[1], "bp") == 0) {
     gen_bp_gadget();
+  } else if (strcmp(argv[1], "ghr") == 0) {
+    gen_ghr_gadget();
   } else {
     fprintf(stderr, "Unknown gadget to generate!\n");
     return 1;

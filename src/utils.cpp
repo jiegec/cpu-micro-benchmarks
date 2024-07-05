@@ -11,8 +11,8 @@
 
 #ifdef __linux__
 #include <linux/perf_event.h>
-#include <sys/syscall.h>
 #include <sched.h>
+#include <sys/syscall.h>
 #endif
 
 #ifdef __x86_64__
@@ -156,6 +156,17 @@ uint64_t perf_read_instructions() {
 void setup_perf_instructions() {
   perf_fd_instructions =
       setup_perf_common(PERF_TYPE_HARDWARE, PERF_COUNT_HW_INSTRUCTIONS);
+}
+
+int perf_fd_branch_misses = -1;
+
+uint64_t perf_read_branch_misses() {
+  return perf_read_common(perf_fd_branch_misses);
+}
+
+void setup_perf_branch_misses() {
+  perf_fd_branch_misses =
+      setup_perf_common(PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES);
 }
 
 int perf_fd_llc_misses = -1;
