@@ -412,81 +412,6 @@ void gen_ghr_gadget() {
   }
 }
 
-// generate gadget for ghr2 test
-// https://cseweb.ucsd.edu/~dstefan/pubs/yavarzadeh:2023:half.pdf
-void gen_ghr2_gadget() {
-  int min_branch_align = 1;
-  int max_branch_align = 17;
-  int min_target_align = 1;
-  int max_target_align = 8;
-
-  // args: loop count, random array
-  fprintf(fp, ".text\n");
-  for (int branch_align = min_branch_align; branch_align <= max_branch_align;
-       branch_align++) {
-    for (int target_align = min_target_align; target_align <= max_target_align;
-         target_align++) {
-      fprintf(fp, ".global ghr2_size_%d_%d\n", branch_align, target_align);
-      fprintf(fp, ".balign 32\n");
-      fprintf(fp, "ghr2_size_%d_%d:\n", branch_align, target_align);
-#if defined(__x86_64__)
-      // save registers
-      fprintf(fp, "\tpush %%rbx\n");
-
-      fprintf(fp, "\t1:\n");
-
-      // read random value
-      fprintf(fp, "\tmov (%%rsi, %%rdi, 4), %%ebx\n");
-      fprintf(fp, "\ttest %%ebx, %%ebx\n");
-
-      // forward always-taken branches
-      // place alignment on branch & target
-      for (int i = 0; i < 256; i++) {
-        fprintf(fp, "\t.p2align %d\n", branch_align);
-        fprintf(fp, "\tjmp 2f\n");
-        fprintf(fp, "\t.p2align %d\n", target_align);
-        fprintf(fp, "\t2:\n");
-      }
-
-      // first random branch
-      fprintf(fp, "\t.p2align %d\n", branch_align);
-      fprintf(fp, "\tjnz 2f\n");
-      fprintf(fp, "\t.p2align %d\n", target_align);
-      fprintf(fp, "\t2:\n");
-
-      // second random branch
-      fprintf(fp, "\t.p2align %d\n", branch_align);
-      fprintf(fp, "\tjnz 2f\n");
-      fprintf(fp, "\t.p2align %d\n", target_align);
-      fprintf(fp, "\t2:\n");
-
-      fprintf(fp, "\tdec %%rdi\n");
-      fprintf(fp, "\tjnz 1b\n");
-
-      // restore regs
-      fprintf(fp, "\tpop %%rbx\n");
-      fprintf(fp, "\tret\n");
-#endif
-    }
-  }
-
-  fprintf(fp, ".data\n");
-  // for macOS
-  fprintf(fp, ".global _ghr2_gadgets\n");
-  fprintf(fp, "_ghr2_gadgets:\n");
-  fprintf(fp, ".global ghr2_gadgets\n");
-  fprintf(fp, "ghr2_gadgets:\n");
-  for (int branch_align = min_branch_align; branch_align <= max_branch_align;
-       branch_align++) {
-    for (int target_align = min_target_align; target_align <= max_target_align;
-         target_align++) {
-#if defined(__x86_64__)
-      fprintf(fp, ".dc.a ghr2_size_%d_%d\n", branch_align, target_align);
-#endif
-    }
-  }
-}
-
 int main(int argc, char *argv[]) {
   assert(argc == 3);
   fp = fopen(argv[2], "w");
@@ -501,8 +426,6 @@ int main(int argc, char *argv[]) {
     gen_bp_gadget();
   } else if (strcmp(argv[1], "ghr") == 0) {
     gen_ghr_gadget();
-  } else if (strcmp(argv[1], "ghr2") == 0) {
-    gen_ghr2_gadget();
   } else {
     fprintf(stderr, "Unknown gadget to generate!\n");
     return 1;
