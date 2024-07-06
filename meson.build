@@ -93,13 +93,7 @@ ghr_size = executable('ghr_size',
 	link_with: utils,
 	install: true)
 
-ghr2_gadget_asm = custom_target('ghr2_gadget_asm',
-	output: 'ghr2_gadget.S',
-	input: generate_gadget,
-	command: [generate_gadget, 'ghr2', '@OUTPUT@'])
-
 ghr2_size = executable('ghr2_size',
 	'src/ghr2_size.cpp',
-	ghr2_gadget_asm,
 	link_with: utils,
 	install: true)
