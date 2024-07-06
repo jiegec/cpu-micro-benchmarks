@@ -18,7 +18,7 @@ extern "C" {
 extern gadget ghr2_gadgets[];
 }
 
-const int min_branch_align = 5;
+const int min_branch_align = 10;
 const int max_branch_align = 20;
 const int min_target_align = 1;
 const int max_target_align = 8;
@@ -78,20 +78,21 @@ std::tuple<size_t, gadget> jit(int branch_align, int target_align) {
 
   // 256 always taken branches
   // the end of the branches are aligned to 2**max_branch_align
+  // the target of branches are aligned to 2**max_target_align
   int taken_branches = 256;
   printf("Dummy branch addr: %p\n", p + 5);
   for (int i = 0; i < taken_branches; i++) {
     // 0xe9 OFF OFF OFF OFF: jmp 2f
-    size_t offset = (1 << max_branch_align) - 5;
+    size_t offset = (1 << max_branch_align) - (1 << max_target_align);
     *p++ = 0xe9;
     *p++ = offset & 0xFF;
     *p++ = (offset >> 8) & 0xFF;
     *p++ = (offset >> 16) & 0xFF;
     *p++ = (offset >> 24) & 0xFF;
 
-    // fill invalid instructions
+    // fill nop instructions
     for (int j = 0; j < (1 << max_branch_align) - 5; j++) {
-      *p++ = 0xf4;
+      *p++ = 0x90;
     }
   }
 
