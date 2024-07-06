@@ -412,6 +412,109 @@ void gen_ghr_gadget() {
   }
 }
 
+// generate gadget for ghr2 test
+// https://cseweb.ucsd.edu/~dstefan/pubs/yavarzadeh:2023:half.pdf
+void gen_ghr2_gadget() {
+  int min_branch_align = 15;
+  int max_branch_align = 19;
+  int min_target_align = 3;
+  int max_target_align = 8;
+
+  // args: loop count, random array
+  fprintf(fp, "section .text\n");
+  for (int branch_align = min_branch_align; branch_align <= max_branch_align;
+       branch_align++) {
+    for (int target_align = min_target_align; target_align <= max_target_align;
+         target_align++) {
+      fprintf(fp, "global ghr2_size_%d_%d\n", branch_align, target_align);
+      fprintf(fp, "align 32\n");
+      fprintf(fp, "ghr2_size_%d_%d:\n", branch_align, target_align);
+#if defined(__x86_64__)
+      // save registers
+      fprintf(fp, "\tpush rbx\n");
+      fprintf(fp, "\tpush rax\n");
+
+      fprintf(fp, "\tghr2_size_%d_%d_loop_begin:\n", branch_align,
+              target_align);
+
+      // read random value
+      fprintf(fp, "\tmov ebx, [rsi+rdi*4]\n");
+
+      // loop
+      // NOTE: do not generate more loops: they contribute to branch misses due
+      // to history limit do not generate a chain of loops: btb will become a
+      // bottleneck eax = 194 means 193 taken branches
+      fprintf(fp, "\tmov eax, 194\n");
+      fprintf(fp, "\tjmp ghr2_size_%d_%d_dummy_target\n", branch_align,
+              target_align);
+
+      // place alignment on target
+      fprintf(fp, "\talign %d\n", 1 << max_branch_align);
+      fprintf(fp, "\t%%rep %d\n",
+              (1 << max_branch_align) - (1 << max_target_align));
+      fprintf(fp, "\tnop\n");
+      fprintf(fp, "\t%%endrep\n");
+      fprintf(fp, "\tghr2_size_%d_%d_dummy_target:\n", branch_align,
+              target_align);
+
+      // place alignment on branch
+      // 8 bytes: dec %eax, jnz 2b
+      fprintf(fp, "\t%%rep %d\n", (1 << max_target_align) - 8);
+      fprintf(fp, "\tnop\n");
+      fprintf(fp, "\t%%endrep\n");
+      fprintf(fp, "\tdec eax\n");
+      fprintf(fp, "\tjnz ghr2_size_%d_%d_dummy_target\n", branch_align,
+              target_align);
+
+      // first random branch
+      // place alignment on branch & target
+      fprintf(fp, "\ttest ebx, ebx\n");
+      fprintf(fp, "\talign %d\n", 1 << branch_align);
+      fprintf(fp, "\t%%rep %d\n", (1 << branch_align) - 2);
+      fprintf(fp, "\tnop\n");
+      fprintf(fp, "\t%%endrep\n");
+      fprintf(fp, "\tjnz ghr2_size_%d_%d_first_target\n", branch_align,
+              target_align); // 2 bytes
+      fprintf(fp, "\tnop\n");
+      fprintf(fp, "\talign %d\n", 1 << target_align);
+      fprintf(fp, "\tghr2_size_%d_%d_first_target:\n", branch_align,
+              target_align);
+
+      // second random branch
+      fprintf(fp, "\tjnz ghr2_size_%d_%d_second_target\n", branch_align,
+              target_align);
+      fprintf(fp, "\tghr2_size_%d_%d_second_target:\n", branch_align,
+              target_align);
+
+      fprintf(fp, "\tdec rdi\n");
+      fprintf(fp, "\tjnz ghr2_size_%d_%d_loop_begin\n", branch_align,
+              target_align);
+
+      // restore regs
+      fprintf(fp, "\tpop rax\n");
+      fprintf(fp, "\tpop rbx\n");
+      fprintf(fp, "\tret\n");
+#endif
+    }
+  }
+
+  fprintf(fp, "section .data\n");
+  // for macOS
+  fprintf(fp, "global _ghr2_gadgets\n");
+  fprintf(fp, "_ghr2_gadgets:\n");
+  fprintf(fp, "global ghr2_gadgets\n");
+  fprintf(fp, "ghr2_gadgets:\n");
+  for (int branch_align = min_branch_align; branch_align <= max_branch_align;
+       branch_align++) {
+    for (int target_align = min_target_align; target_align <= max_target_align;
+         target_align++) {
+#if defined(__x86_64__)
+      fprintf(fp, "dq ghr2_size_%d_%d\n", branch_align, target_align);
+#endif
+    }
+  }
+}
+
 int main(int argc, char *argv[]) {
   assert(argc == 3);
   fp = fopen(argv[2], "w");
@@ -426,6 +529,8 @@ int main(int argc, char *argv[]) {
     gen_bp_gadget();
   } else if (strcmp(argv[1], "ghr") == 0) {
     gen_ghr_gadget();
+  } else if (strcmp(argv[1], "ghr2") == 0) {
+    gen_ghr2_gadget();
   } else {
     fprintf(stderr, "Unknown gadget to generate!\n");
     return 1;
