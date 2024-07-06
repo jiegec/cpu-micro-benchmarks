@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <tuple>
 #include <unistd.h>
 #include <vector>
 
@@ -22,7 +23,7 @@ const int max_branch_align = 20;
 const int min_target_align = 1;
 const int max_target_align = 8;
 
-gadget jit(int branch_align, int target_align) {
+std::tuple<size_t, gadget> jit(int branch_align, int target_align) {
   // jit code for ghr2 structure:
   // prolog
   // flush ghr:
@@ -43,13 +44,14 @@ gadget jit(int branch_align, int target_align) {
   // pop rbx
   // ret
 
-  printf("Branch align: %x\n", branch_align);
-  printf("Target align: %x\n", target_align);
+  printf("Branch align: %d\n", branch_align);
+  printf("Target align: %d\n", target_align);
 
   // mmap 1G for jitted code
-  size_t mem =
+  size_t base =
       (size_t)mmap(NULL, 1 * 1024 * 1024 * 1024, PROT_WRITE | PROT_EXEC,
                    MAP_ANONYMOUS | MAP_PRIVATE, -1, 0);
+  size_t mem = base;
 
   // align up to max_branch_align
   mem++;
@@ -228,7 +230,7 @@ gadget jit(int branch_align, int target_align) {
   // 0xc3: ret
   *p++ = 0xc3;
 
-  return (gadget)mem;
+  return {base, (gadget)mem};
 }
 
 int main(int argc, char *argv[]) {
@@ -256,7 +258,9 @@ int main(int argc, char *argv[]) {
       int iterations = 20;
       history.reserve(iterations);
 
-      gadget g = jit(branch_align, target_align);
+      size_t mem;
+      gadget g;
+      std::tie(mem, g) = jit(branch_align, target_align);
 
       double sum = 0;
       // run several times
@@ -286,6 +290,8 @@ int main(int argc, char *argv[]) {
       fprintf(fp, "%d,%d,%.2lf,%.2lf,%.2lf\n", branch_align, target_align, min,
               sum / history.size(), max);
       fflush(fp);
+
+      munmap((void *)mem, 1 * 1024 * 1024 * 1024);
     }
   }
 
