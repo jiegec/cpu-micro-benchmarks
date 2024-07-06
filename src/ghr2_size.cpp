@@ -59,8 +59,8 @@ std::tuple<size_t, gadget> jit(int branch_align, int target_align) {
     mem++;
   }
 
-  // retract 6 bytes for prolog
-  mem -= 6;
+  // retract 6+5 bytes for prolog
+  mem -= 6 + 5;
 
   // this is also function entry
   // prolog
@@ -77,11 +77,11 @@ std::tuple<size_t, gadget> jit(int branch_align, int target_align) {
   *p++ = 0xdb;
 
   // 256 always taken branches
+  // the end of the branches are aligned to 2**max_branch_align
   int taken_branches = 256;
-  printf("Dummy branch addr: %p\n", p);
+  printf("Dummy branch addr: %p\n", p + 5);
   for (int i = 0; i < taken_branches; i++) {
     // 0xe9 OFF OFF OFF OFF: jmp 2f
-    // offset = (1 << max_branch_align) - 5
     size_t offset = (1 << max_branch_align) - 5;
     *p++ = 0xe9;
     *p++ = offset & 0xFF;
@@ -90,8 +90,7 @@ std::tuple<size_t, gadget> jit(int branch_align, int target_align) {
     *p++ = (offset >> 24) & 0xFF;
 
     // fill invalid instructions
-    // until aligned to max_branch_align
-    while (((size_t)p) & ((1 << max_branch_align) - 1)) {
+    for (int j = 0; j < (1 << max_branch_align) - 5; j++) {
       *p++ = 0xf4;
     }
   }
@@ -99,10 +98,10 @@ std::tuple<size_t, gadget> jit(int branch_align, int target_align) {
   // first branch
   // add some 1s to higher bits
 
-  size_t jnz_offset;
+  size_t jnz_offset; // end addr of jnz
   size_t target_offset;
 
-  // nop * jnz_offset
+  // nop * (jnz_offset - 6)
   // jnz 2f:
   // align to max_branch_align
   // nop * target_offset
@@ -112,10 +111,10 @@ std::tuple<size_t, gadget> jit(int branch_align, int target_align) {
     jnz_offset = (1 << (max_branch_align - branch_align)) - 1;
     jnz_offset <<= branch_align;
   } else {
-    jnz_offset = 0;
+    jnz_offset = 1 << max_branch_align;
   }
   // do not under/overflow
-  assert(jnz_offset + 23 < (1 << max_branch_align));
+  assert(jnz_offset > 6);
 
   if (target_align < max_branch_align) {
     target_offset = (1 << (max_branch_align - target_align)) - 1;
@@ -123,31 +122,25 @@ std::tuple<size_t, gadget> jit(int branch_align, int target_align) {
   } else {
     target_offset = 0;
   }
+  target_offset += 1 << max_branch_align;
 
   // jump to first jnz
   // 0xe9 OFF OFF OFF OFF: jmp 2f
-  size_t offset = (1 << max_branch_align) + jnz_offset - 5;
+  size_t offset = jnz_offset - 6;
   *p++ = 0xe9;
   *p++ = offset & 0xFF;
   *p++ = (offset >> 8) & 0xFF;
   *p++ = (offset >> 16) & 0xFF;
   *p++ = (offset >> 24) & 0xFF;
 
-  // fill 0xf4
-  // until aligned to max_branch_align
-  while (((size_t)p) & ((1 << max_branch_align) - 1)) {
+  // fill 0xf4 until jnz_offset - 6
+  for (size_t i = 0; i < jnz_offset - 6; i++) {
     *p++ = 0xf4;
   }
-
-  // add offset before jnz
-  for (size_t i = 0; i < jnz_offset; i++) {
-    *p++ = 0xf4;
-  }
-  assert((((size_t)p) & ((1 << branch_align) - 1)) == 0);
 
   // 0x0f 0x85 OFF OFF OFF OFF: jnz 2f
-  printf("Branch addr: %p\n", p);
-  offset = target_offset + (1 << max_branch_align) - jnz_offset - 6;
+  printf("Branch addr: %p\n", p + 6);
+  offset = target_offset - jnz_offset;
   *p++ = 0x0f;
   *p++ = 0x85;
   *p++ = offset & 0xFF;
@@ -186,17 +179,10 @@ std::tuple<size_t, gadget> jit(int branch_align, int target_align) {
   // 0xc3: ret
   *p++ = 0xc3;
 
-  // fill 0xf4
-  // until aligned to max_branch_align
-  while (((size_t)p) & ((1 << max_branch_align) - 1)) {
-    *p++ = 0xf4;
-  }
-
   // fill 0xf4 to target
-  for (size_t i = 0; i < target_offset; i++) {
+  for (size_t i = jnz_offset + 6 + 3 + 6 + 1 + 1; i < target_offset; i++) {
     *p++ = 0xf4;
   }
-  assert((((size_t)p) & ((1 << target_align) - 1)) == 0);
   printf("Target addr: %p\n", p);
 
   // second branch in taken direction
