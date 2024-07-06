@@ -470,13 +470,20 @@ void gen_ghr2_gadget() {
       // place alignment on branch & target
       fprintf(fp, "\ttest ebx, ebx\n");
       fprintf(fp, "\talign %d\n", 1 << branch_align);
-      fprintf(fp, "\t%%rep %d\n", (1 << branch_align) - 2);
+      if (target_align >= 7) {
+        // 6 bytes jnz
+        fprintf(fp, "\t%%rep %d\n", (1 << branch_align) - 6);
+      } else {
+        // 2 bytes jnz
+        fprintf(fp, "\t%%rep %d\n", (1 << branch_align) - 2);
+      }
       fprintf(fp, "\tnop\n");
       fprintf(fp, "\t%%endrep\n");
       fprintf(fp, "\tjnz ghr2_size_%d_%d_first_target\n", branch_align,
-              target_align); // 2 bytes
+              target_align); // 2/6 bytes
+      fprintf(fp, "\t%%rep %d\n", 1 << target_align);
       fprintf(fp, "\tnop\n");
-      fprintf(fp, "\talign %d\n", 1 << target_align);
+      fprintf(fp, "\t%%endrep\n");
       fprintf(fp, "\tghr2_size_%d_%d_first_target:\n", branch_align,
               target_align);
 
