@@ -14,9 +14,9 @@ extern gadget ghr2_gadgets[];
 }
 
 int main(int argc, char *argv[]) {
-  int loop_count = 10000;
+  int loop_count = 1000;
   // match gen_ghr2_test
-  int min_branch_align = 15;
+  int min_branch_align = 13;
   int max_branch_align = 19;
   int min_target_align = 3;
   int max_target_align = 8;
