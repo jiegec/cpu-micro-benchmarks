@@ -1,0 +1,25 @@
+#!/bin/bash
+#                                                                        2012-02-19 AgF
+
+# Compile and run PMCTest for detecting return stack buffer size
+# (c) 2012 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+echo -e "Test of return stack buffer size\n"  > results2/returnstack.txt
+echo -e "The size of the return stack buffer is the last level that has few or no mispredictions\n\n"  >> results2/returnstack.txt
+
+. vars.sh
+
+for nesting in {2..66}
+do
+
+echo -e "\n\nNesting level $nesting"  >> results2/returnstack.txt
+$ass -f elf64 -o b64.o -lxx.lst -Dnesting=$nesting -Dcounters=$BranchPMCs -Preturnstack.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/returnstack.txt
+
+done
+
+echo -e "\n"  >> results2/returnstack.txt
+

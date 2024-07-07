@@ -1,0 +1,576 @@
+#!/bin/bash
+#                                                                        2016-09-25 AgF
+# Compile and run PMCTest for floating point vector instructions
+# looping through list of instructions
+# (c) Copyright 2012-2016 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+# Detect CPU specific variables
+. vars.sh
+
+repeat0=10
+
+# List of register sizes for VEX instructions
+if  [ `grep -c -i "avx512" cpuinfo.txt ` -eq 0 ] ; then
+  regsizelist="128 256"
+  regsizelisty="256"
+  echo -e "AVX2 instructions\n\n"  > results1/avx2.txt
+else
+  regsizelist="128 256 512"
+  regsizelisty="256 512"
+  echo -e "AVX2 and AVX512 instructions\n\n"  > results1/avx2.txt
+fi
+
+# Instructions that cannot have 512 bit registers
+XYinstructions=" vaddsubps vaddsubpd vhaddps vhaddpd vhsubps vhsubpd vcmpeqps vcmpltpd vroundps vroundpd \
+vdpps vdppd vblendps vblendpd vrcpps vrsqrtps "
+
+# Instructions that require AVX512DQ if 512 bits
+DQinstructions=" vandps vandpd vandnps vandnpd vorps vorpd vxorps vxorpd "
+
+echo -e "Floatint point vector instructions latency and throughput\n"  > results1/fvec.txt
+echo -e "\nInstructions with two operands, without VEX"  >> results1/fvec.txt
+
+# instructions that have two operands, 128 bit
+for instruct in  movaps movapd movups movupd movddup movshdup movsldup                      \
+                 unpckhps unpcklpd cvtpd2ps cvtps2pd cvtdq2ps cvttps2dq cvtdq2pd cvtpd2dq   \
+                 addss subsd addps subpd addsubps haddps hsubpd mulss mulsd mulps mulpd     \
+                 cmpeqss cmpeqps cmpltpd comiss ucomisd maxss minsd minps maxpd andps orpd
+#movss movsd movlhps movhlps cvtsd2ss cvtss2sd
+do
+
+for regsize in  128
+do
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize"  >> results1/fvec.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dregsize=$regsize -Dcounters=$PMCs -Dtmode=L -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize"  >> results1/fvec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dregsize=$regsize -Dcounters=$cts -Dtmode=T -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+done
+
+echo -e "\n\nThroughput: $instruct r$regsize,[m]"  >> results1/fvec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dregsize=$regsize -Dcounters=$cts -Dtmode=M -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+done
+done
+done
+
+
+if [ `./cpugetinfo -avx` -ne 0 ] ; then
+
+echo -e "\n\n\n256 bit instructions with two operands"  >> results1/fvec.txt
+
+
+# instructions that have two operands, 256 bit
+
+for instruct in  vmovddup vmovshdup vmovsldup vmovaps vmovapd 
+# movlhps movhlps
+#vcvtsd2ss vcvtss2sd
+#vmovlhps vmovhlps 
+do
+
+for regsize in $regsizelisty
+do
+
+if [[ $regsize -gt 256 && "$XYinstructions" == *" $instruct "* ]] ; then continue ; fi
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize"  >> results1/fvec.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dregsize=$regsize -Dcounters=$PMCs -Dtmode=L -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize"  >> results1/fvec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dregsize=$regsize -Dcounters=$cts -Dtmode=T -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+done
+
+echo -e "\n\nThroughput: $instruct r$regsize,[m]"  >> results1/fvec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dregsize=$regsize -Dcounters=$cts -Dtmode=M -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+done
+done
+done
+
+# VEX instructions with 3 operands
+echo -e "\nVEX instructions with 3 operands"  >> results1/fvec.txt
+
+
+for instruct in  vunpckhps vunpcklpd                                                         \
+                 vaddps vsubpd vaddsubps vaddsubpd vhaddps vhsubpd vmulps vmulpd vcmpeqps vcmpltpd  \
+                 vmaxps vminpd vandps vorpd                                                  \
+                 vpermilps vpermilpd
+do
+
+for regsize in  $regsizelist
+do
+
+if [[ $regsize -gt 256 && "$XYinstructions" == *" $instruct "* ]] ; then continue ; fi
+if  [ `grep -c -i "avx512dq" cpuinfo.txt ` -eq 0 ] ; then
+  if [[ $regsize -ge 512 && "$DQinstructions" == *" $instruct "* ]] ; then continue ; fi
+fi
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,r$regsize"  >> results1/fvec.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=3 -Dregsize=$regsize -Dcounters=$PMCs -Dtmode=L -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize,r$regsize"  >> results1/fvec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=3 -Dregsize=$regsize -Dcounters=$cts -Dtmode=T -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+done
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize,[m$regsize]"  >> results1/fvec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=3 -Dregsize=$regsize -Dcounters=$cts -Dtmode=M -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+done
+done
+done
+
+fi # AVX
+
+
+
+echo -e "\nInstructions with two operands and one immediate operand"  >> results1/fvec.txt
+
+# instructions with two 128 bit operands and one immediate
+
+for instruct in  shufps shufpd blendps blendpd dpps dppd roundss roundsd roundps roundpd
+do
+
+for regsize in 128
+do
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,i"  >> results1/fvec.txt
+
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dnumimm=1 -Dimmvalue=0 -Dregsize=$regsize -Dcounters=$PMCs -Dtmode=L -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize,i"  >> results1/fvec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dnumimm=1 -Dimmvalue=5 -Dregsize=$regsize -Dcounters=$cts -Dtmode=T -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+
+done
+
+echo -e "\n\nThroughput: $instruct r$regsize,[m$regsize],i"  >> results1/fvec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dnumimm=1 -Dimmvalue=2 -Dregsize=$regsize -Dcounters=$cts -Dtmode=M -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+done
+done
+done
+
+if [ `./cpugetinfo -avx` -ne 0 ] ; then
+
+# instructions with two operands and one immediate
+
+for instruct in  vpermilps vpermilpd
+do
+
+for regsize in $regsizelist
+do
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,i"  >> results1/fvec.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dnumimm=1 -Dimmvalue=1 -Dregsize=$regsize -Dcounters=$PMCs -Dtmode=L -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize,i"  >> results1/fvec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dnumimm=1 -Dimmvalue=5 -Dregsize=$regsize -Dcounters=$cts -Dtmode=T -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+done
+
+echo -e "\n\nThroughput: $instruct r$regsize,[m$regsize],i"  >> results1/fvec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dnumimm=1 -Dimmvalue=2 -Dregsize=$regsize -Dcounters=$cts -Dtmode=M -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+done
+done
+done
+
+
+# instructions with 256 bit 2 operands 
+for instruct in  vroundps vroundpd
+do
+for regsize in 256
+do
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,i"  >> results1/fvec.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dnumimm=1 -Dimmvalue=0 -Dregsize=$regsize -Dcounters=$PMCs -Dtmode=L -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize,i"  >> results1/fvec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dnumimm=1 -Dimmvalue=5 -Dregsize=$regsize -Dcounters=$cts -Dtmode=T -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+done
+
+echo -e "\n\nThroughput: $instruct r$regsize,[m$regsize],i"  >> results1/fvec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dnumimm=1 -Dimmvalue=2 -Dregsize=$regsize -Dcounters=$cts -Dtmode=M -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+done
+done
+done
+
+
+# instructions with 256 bit 3 operands + 1 immediate operand
+echo -e "\nInstructions with 3 operands and one immediate operand"  >> results1/fvec.txt
+
+# There is no 256 bit vdppd
+for instruct in  vshufps vshufpd vdpps vblendps vblendpd vperm2f128
+do
+for regsize in $regsizelist
+do
+
+if [  $regsize -ne 256 -a "$instruct" == "vperm2f128" ] ; then continue ; fi
+if [[ $regsize -gt 256 && "$XYinstructions" == *" $instruct "* ]] ; then continue ; fi
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,r$regsize,i"  >> results1/fvec.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=3 -Dnumimm=1 -Dimmvalue=0 -Dregsize=$regsize -Dcounters=$PMCs -Dtmode=L -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize,r$regsize,i"  >> results1/fvec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=3 -Dnumimm=1 -Dimmvalue=5 -Dregsize=$regsize -Dcounters=$cts -Dtmode=T -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+done
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize,[m$regsize],i"  >> results1/fvec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=3 -Dnumimm=1 -Dimmvalue=2 -Dregsize=$regsize -Dcounters=$cts -Dtmode=M -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+done
+done
+done
+
+
+# instructions with 128 or 256 bit 4 operands
+
+for instruct in  vblendvps vblendvpd
+do
+for regsize in 128 256
+do
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,r$regsize,r$regsize"  >> results1/fvec.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=4 -Dnumimm=0 -Dregsize=$regsize -Dcounters=$PMCs -Dtmode=L -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize,r$regsize,r$regsize"  >> results1/fvec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=4 -Dnumimm=0 -Dregsize=$regsize -Dcounters=$cts -Dtmode=T -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+done
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize,r$regsize,[m$regsize]"  >> results1/fvec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=4 -Dnumimm=0 -Dregsize=$regsize -Dcounters=$cts -Dtmode=M3 -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+done
+done
+done
+
+fi # avx
+
+
+echo -e "\n\n\ndivision"  >> results1/fvec.txt
+
+if [ `./cpugetinfo -avx` -ne 0 ] ; then
+instlist="div vdiv"
+#reglist="128 256"
+else
+instlist="div "
+#reglist="128 "
+fi
+
+for inst in $instlist
+do
+for suff in ss sd ps pd
+do
+for regsize in $regsizelist
+do
+
+# merge instruction name
+instruct=$inst$suff
+
+if [ $regsize -ne 128 ] ; then
+if [ "$inst" == "div" -o "$suff" == "ss" -o "$suff" == "sd" ] ; then
+continue
+fi
+fi
+if [ "$inst" == "vdiv" ] ; then
+operand3=",r$regsize"
+else
+operand3=""
+fi
+
+tcase=best
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize$operand3 ($tcase case)"  >> results1/fvec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dinstructt=$inst -Dsuff=$suff -Dnumop=2 -Dregsize=$regsize -Dtcase=$tcase -Dcounters=$cts -Dtmode=T -Drepeat0=$repeat0 -Pfvecdiv.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+done
+
+tcase=worst
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize$operand3 ($tcase case)"  >> results1/fvec.txt
+$ass -f elf64 -o b64.o  -Dinstruct=$instruct -Dinstructt=$inst -Dsuff=$suff -Dnumop=2 -Dregsize=$regsize -Dtcase=$tcase -Dtmode=T -Drepeat0=$repeat0 -Pfvecdiv.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+
+for tcase in best worst
+do
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize$operand3 ($tcase case)"  >> results1/fvec.txt
+$ass -f elf64 -o b64.o  -Dinstruct=$instruct -Dinstructt=$inst -Dsuff=$suff -Dnumop=2 -Dregsize=$regsize -Dtcase=$tcase  -Dtmode=L -Drepeat0=$repeat0 -Pfvecdiv.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+done
+
+for tcase in best worst
+do
+echo -e "\n\nthroughput with memory operand: $instruct r$regsize$operand3,[m$regsize] ($tcase case)"  >> results1/fvec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o  -Dinstruct=$instruct -Dinstructt=$inst -Dsuff=$suff -Dnumop=2 -Dregsize=$regsize -Dtcase=$tcase -Dcounters=$cts -Dtmode=M -Drepeat0=$repeat0 -Pfvecdiv.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+done
+done
+done
+done
+done
+
+echo -e "\n\n\nsquare root"  >> results1/fvec.txt
+
+if [ `./cpugetinfo -avx` -ne 0 ] ; then
+instlist="sqrt vsqrt"
+#reglist="128 256"
+else
+instlist="sqrt "
+#reglist="128 "
+fi
+
+for inst in $instlist
+do
+for suff in ss sd ps pd
+do
+for regsize in $regsizelist
+do
+
+# merge instruction name
+instruct=$inst$suff
+
+if [ $regsize -ne 128 ] ; then
+if [ "$inst" == "sqrt" -o "$suff" == "ss" -o "$suff" == "sd" ] ; then
+continue
+fi
+fi
+
+tcase=best
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize ($tcase case)"  >> results1/fvec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dinstructt=$inst -Dsuff=$suff -Dnumop=2 -Dregsize=$regsize -Dtcase=$tcase -Dcounters=$cts -Dtmode=T -Drepeat0=$repeat0 -Pfvecdiv.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+done
+
+tcase=worst
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize ($tcase case)"  >> results1/fvec.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dinstructt=$inst -Dsuff=$suff -Dnumop=2 -Dregsize=$regsize -Dtcase=$tcase -Dtmode=T -Drepeat0=$repeat0 -Pfvecdiv.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+
+for tcase in best worst
+do
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize ($tcase case)"  >> results1/fvec.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dinstructt=$inst -Dsuff=$suff -Dnumop=2 -Dregsize=$regsize -Dtcase=$tcase  -Dtmode=L -Drepeat0=$repeat0 -Pfvecdiv.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+done
+
+for tcase in best worst
+do
+echo -e "\n\nThroughput with memory operand: $instruct r$regsize,[m$regsize] ($tcase case)"  >> results1/fvec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dinstructt=$inst -Dsuff=$suff -Dnumop=2 -Dregsize=$regsize -Dtcase=$tcase -Dcounters=$cts -Dtmode=M -Drepeat0=$repeat0 -Pfvecdiv.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+done
+done
+done
+done
+done
+
+echo -e "\n\n\nreciprocal, etc."  >> results1/fvec.txt
+
+if [ `./cpugetinfo -avx` -ne 0 ] ; then
+instlist="rcp vrcp rsqrt vrsqrt"
+#reglist="128 256"
+else
+instlist="rcp rsqrt"
+#reglist="128 "
+fi
+
+for inst in $instlist
+do
+for suff in ss ps
+do
+for regsize in $regsizelist
+do
+
+# merge instruction name
+instruct=$inst$suff
+
+if [ $regsize -ne 128 ] ; then
+if [ "$inst" == "rcp" -o "$inst" == "rsqrt" -o "$suff" == "ss" -o "$suff" == "sd" ] ; then
+continue
+fi
+fi
+
+if [[ $regsize -gt 256 && "$XYinstructions" == *" $instruct "* ]] ; then continue ; fi
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize"  >> results1/fvec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dinstructt=rcp -Dsuff=$suff -Dnumop=2 -Dregsize=$regsize -Dcounters=$cts -Dtmode=T -Drepeat0=$repeat0 -Pfvecdiv.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+done
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize"  >> results1/fvec.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dinstructt=rcp -Dsuff=$suff -Dnumop=2 -Dregsize=$regsize  -Dtmode=L -Drepeat0=$repeat0 -Pfvecdiv.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+
+echo -e "\n\nThroughput with memory operand: $instruct r$regsize,[m$regsize]"  >> results1/fvec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dinstructt=rcp -Dsuff=$suff -Dnumop=2 -Dregsize=$regsize -Dcounters=$cts -Dtmode=M -Drepeat0=$repeat0 -Pfvecdiv.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/fvec.txt
+done
+done
+done
+done
+
+echo -e "\n"  >> results1/fvec.txt
+

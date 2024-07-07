@@ -1,0 +1,206 @@
+#!/bin/bash
+#                                                                    2018-04-09 Agner Fog
+# Compile and run PMCTest for testing branch prediction
+# (c) Copyright 2013-2017 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+# Detect CPU specific variables
+. vars.sh
+
+# Performance counters
+cts=$BranchPMCs
+
+echo -e "Branch prediction"  > results2/branch.txt
+
+repeat0=10
+
+echo -e "\n\nCase 1: Consecutive single loops"  >> results2/branch.txt
+case=1
+
+for count1 in  1 10 100 1000
+do
+for count2 in  2  4  8 10 12 15 16 17 20  31  32 33 36 37 38 39 40 63 64  128  256  512  1024
+do
+echo -e "\n\n$count1 consecutive loops with count $count2"  >> results2/branch.txt
+$ass -f elf64 -o b64.o -Dcount1=$count1 -Dcount2=$count2 -Dcounters=$cts -Dcase=$case -Drepeat0=$repeat0 -Pbranch.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/branch.txt
+
+done
+done
+
+echo -e "\n\nCase 2: Nested loops"  >> results2/branch.txt
+case=2
+
+for count1 in  1 10 100
+do
+for count2 in  3 10 31 64 256 1024
+do
+echo -e "\n\nouter loop = $count1, inner loop = $count2"  >> results2/branch.txt
+$ass -f elf64 -o b64.o -Dcount1=$count1 -Dcount2=$count2 -Dcounters=$cts -Dcase=$case -Drepeat0=$repeat0 -Pbranch.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/branch.txt
+done
+done
+
+echo -e "\n\nCase 3: One loop with multiple loops inside"  >> results2/branch.txt
+case=3
+
+for count1 in  1 10 100
+do
+for count2 in  3 10 31 64 256 1024
+do
+echo -e "\n\nouter loop = 1000, number of inner loops = $count1, inner loop = $count2"  >> results2/branch.txt
+$ass -f elf64 -o b64.o -Dcount1=$count1 -Dcount2=$count2 -Dcounters=$cts -Dcase=$case -Drepeat0=$repeat0 -Pbranch.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/branch.txt
+done
+done
+
+echo -e "\n\nCase 4: One loop with multiple branches inside"  >> results2/branch.txt
+case=4
+
+for count1 in  10 100
+do
+for count2 in  10 100 1000
+do
+echo -e "\n\nouter loop = $count1, number of inner branches = $count2"  >> results2/branch.txt
+$ass -f elf64 -o b64.o -Dcount1=$count1 -Dcount2=$count2 -Dcounters=$cts -Dcase=$case -Drepeat0=16 -Pbranch.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/branch.txt
+done
+done
+
+
+echo -e "\n\nCase 5: Loop with 1 alternating branch inside"  >> results2/branch.txt
+case=5
+count2=1
+
+for count1 in  1 10 100
+do
+echo -e "\n\nouter loop = $count1"  >> results2/branch.txt
+$ass -f elf64 -o b64.o -Dcount1=$count1 -Dcount2=$count2 -Dcounters=$cts -Dcase=$case -Drepeat0=$repeat0 -Pbranch.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/branch.txt
+done
+
+echo -e "\n\nCase 6: Loop with 2 alternating branches inside"  >> results2/branch.txt
+case=6
+for count1 in  1 10 100
+do
+echo -e "\n\nouter loop = $count1"  >> results2/branch.txt
+$ass -f elf64 -o b64.o -Dcount1=$count1 -Dcount2=$count2 -Dcounters=$cts -Dcase=$case -Drepeat0=$repeat0 -Pbranch.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/branch.txt
+done
+
+echo -e "\n\nCase 7: Loop with one branch having simple repetitive pattern of period count2 inside"  >> results2/branch.txt
+case=7
+for count1 in  10 100
+do
+for count2 in 3 4 5 6 7 8 9 12 13 20 25 32 64 71 113
+do
+echo -e "\n\nouter loop = $count1, pattern period = $count2"  >> results2/branch.txt
+$ass -f elf64 -o b64.o -Dcount1=$count1 -Dcount2=$count2 -Dcounters=$cts -Dcase=$case -Drepeat0=$repeat0 -Pbranch.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/branch.txt
+done
+done
+
+echo -e "\n\nCase 8: Loop with one branch having complex repetitive pattern of period count2 inside"  >> results2/branch.txt
+case=8
+for count1 in  10 100
+do
+for count2 in 3 4 5 6 7 8 9 12 13 20 25 32 64 71 113
+do
+echo -e "\n\nouter loop = $count1, pattern period = $count2"  >> results2/branch.txt
+$ass -f elf64 -o b64.o -Dcount1=$count1 -Dcount2=$count2 -Dcounters=$cts -Dcase=$case -Drepeat0=$repeat0 -Pbranch.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/branch.txt
+done
+done
+
+echo -e "\n\nCase 9: Loop with one 0011 branch and one 00011 branch inside"  >> results2/branch.txt
+case=9
+for count1 in  1 10 100
+do
+echo -e "\n\nouter loop = $count1"  >> results2/branch.txt
+$ass -f elf64 -o b64.o -Dcount1=$count1 -Dcount2=$count2 -Dcounters=$cts -Dcase=$case -Drepeat0=$repeat0 -Pbranch.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/branch.txt
+done
+
+echo -e "\n\nCase 10: Loop with alternating indirect branch inside"  >> results2/branch.txt
+case=10
+for count1 in  1 10 100
+do
+echo -e "\n\nouter loop = $count1"  >> results2/branch.txt
+$ass -f elf64 -o b64.o -Dcount1=$count1 -Dcount2=$count2 -Dcounters=$cts -Dcase=$case -Drepeat0=$repeat0 -Pbranch.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/branch.txt
+done
+
+echo -e "\n\nCase 11: Loop with 3-way indirect branch inside"  >> results2/branch.txt
+case=11
+for count1 in  1 10 100
+do
+echo -e "\n\nouter loop = $count1"  >> results2/branch.txt
+$ass -f elf64 -o b64.o -Dcount1=$count1 -Dcount2=$count2 -Dcounters=$cts -Dcase=$case -Drepeat0=$repeat0 -Pbranch.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/branch.txt
+done
+
+
+echo -e "\n\nCase 12: Loop with many never-taken branches inside"  >> results2/branch.txt
+case=12
+for count1 in  10 100
+do
+for count2 in  16 256
+do
+echo -e "\n\nLoop = $count1, with $count2 never-taken branches inside"  >> results2/branch.txt
+$ass -f elf64 -o b64.o -Dcount1=$count1 -Dcount2=$count2 -Dcounters=$cts -Dcase=$case -Drepeat0=$repeat0 -Pbranch.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/branch.txt
+done
+done
+
+echo -e "\n\nCase 13: Loop with many always-taken branches inside"  >> results2/branch.txt
+case=13
+for count1 in  10 100
+do
+for count2 in  16 256
+do
+echo -e "\n\nLoop = $count1, with $count2 always-taken branches inside"  >> results2/branch.txt
+$ass -f elf64 -o b64.o -Dcount1=$count1 -Dcount2=$count2 -Dcounters=$cts -Dcase=$case -Drepeat0=$repeat0 -Pbranch.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/branch.txt
+done
+done
+
+
+echo -e "\n"  >> results2/branch.txt

@@ -1,0 +1,1168 @@
+#!/bin/bash
+#                                                                        2021-01-25 Agner Fog
+#Test x87 style floating point instructions
+# (c) Copyright 2012 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+# Detect CPU specific variables
+. vars.sh
+
+echo -e "Test x87 style floating point instructions"  > results1/x87.txt
+
+echo -e "\n\nfxch Latency"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fxch -Dtmode=L -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+echo -e "\n\nffree Throughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=ffree -Dtmode=T -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+for instruct in fincstp fdecstp
+do
+
+echo -e "\n\n$instruct: Throughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dtmode=T -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+done
+
+instruct=fld
+echo -e "\n\n$instruct st0 + fstp: Throughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dtmode=T -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+echo -e "\n\n$instruct st0 + fstp: Latency"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dtmode=L  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+for msize in 32 64 80
+do
+echo -e "\n\n$instruct [m$msize] + fstp: Throughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dtmode=M -Dmsize=$msize -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+echo -e "\n\n$instruct [m$msize] + fstp [m$msize]: Latency"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dtmode=LM -Dmsize=$msize -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+instruct=fst
+echo -e "\n\n$instruct st: Throughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dtmode=T -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+echo -e "\n\n$instruct st: Latency"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dtmode=L  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+for msize in 32 64
+do
+echo -e "\n\nThroughput $instruct [m$msize]"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dmsize=$msize -Dtmode=M -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+done
+
+instruct=fstp
+echo -e "\n\n$instruct fstp + fld: Throughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dtmode=T -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+echo -e "\n\n$instruct fstp + fld: Latency"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dtmode=L  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+for msize in 32 64 80
+do
+echo -e "\n\nThroughput fstp [m$msize] + fld"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dmsize=$msize -Dtmode=M -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+done
+
+for instruct in fld1 fldz fldpi
+do
+
+echo -e "\n\n$instruct + fstp: Throughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dtmode=T -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+done
+
+echo -e "\n\nf2xm1 Latency, best case"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=f2xm1 -Dtmode=L -Dtcase=best -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+echo -e "\n\nf2xm1 + fcmov Latency, worst case"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=f2xm1 -Dtmode=L -Dtcase=worst -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+echo -e "\n\nfabs Latency"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fabs -Dtmode=L -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+echo -e "\n\nfabs+fxch Throughput"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fabs -Dtmode=T -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+echo -e "\n\nfadd Latency"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fadd -Dtmode=L -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+echo -e "\n\nfadd Throughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fadd -Dtmode=T -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+for msize in 32 64
+do
+echo -e "\n\nfadd [ m$msize ] Throughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fadd -Dtmode=M -Dmsize=$msize -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+done
+
+echo -e "\n\nfbld [m80] + fstp [m80] Latency"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fbld -Dtmode=L -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+echo -e "\n\nfbld [m80] + fstp st throughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fbld -Dtmode=T -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+echo -e "\n\nfchs Latency"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fchs -Dtmode=L -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+echo -e "\n\nfchs+fxch Throughput"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fchs -Dtmode=T  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+echo -e "\n\nfcmov Latency"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fcmov -Dtmode=L -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+echo -e "\n\nfcmov + fxch Throughput"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fcmov -Dtmode=T  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+echo -e "\n\nfcomi + fcmov Latency"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fcomi -Dtmode=L -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+echo -e "\n\nfcomi Throughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fcomi -Dtmode=T -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+echo -e "\n\nfcom + fnstsw ax + test + fcmov Latency"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fcom -Dtmode=L  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+echo -e "\n\nfcom Throughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fcom -Dtmode=T -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+for msize in 32 64
+do
+echo -e "\n\nfcom [ m$msize ] Throughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fcom -Dtmode=M -Dmsize=$msize -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+done
+
+echo -e "\n\nfcompp + fnstsw ax + test + fcmov + 2*fld Latency"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fcompp -Dtmode=L  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+echo -e "\n\nfcompp + 2*fld Throughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fcompp -Dtmode=T -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+echo -e "\n\nfcos + fcmov Latency, best case"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fcos -Dtmode=L -Dtcase=best  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+echo -e "\n\nfcos Latency, worst case"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fcos -Dtmode=L -Dtcase=worst -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+for tcase in best worst
+do
+echo -e "\n\nfdiv Latency, $tcase case"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fdiv -Dtmode=L -Dtcase=$tcase  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+echo -e "\n\nfdiv Throughput, $tcase case"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fdiv -Dtmode=T -Dtcase=$tcase -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+done
+
+for msize in 32 64
+do
+echo -e "\n\nfdiv [m$msize] Throughput, best case"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fdiv -Dtmode=M -Dtcase=best  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+echo -e "\n\nfiadd: Register latency"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fiadd -Dtmode=L -Dmsize=32 -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+for msize in 16 32
+do
+
+echo -e "\n\nfiadd [m$msize] troughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fiadd -Dtmode=T -Dmsize=$msize -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+done
+
+for msize in 16 32
+do
+
+echo -e "\n\nficom [m$msize] troughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=ficom -Dtmode=T -Dmsize=$msize -Dcounters=$cts -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+done
+
+echo -e "\n\nfidiv: Register latency, best case"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fidiv -Dtmode=L -Dmsize=32 -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+for msize in 16 32
+do
+echo -e "\n\nfidiv [m$msize] troughput, best case"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fidiv -Dtmode=T -Dmsize=$msize -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+done
+
+for msize in 16 32 64
+do
+echo -e "\n\nfild [m$msize] + fstp: Troughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fild -Dtmode=T -Dmsize=$msize -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+done
+
+echo -e "\n\nfild [m32] + fstp [m32]: Latency"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fild -Dtmode=L -Dmsize=32 -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+echo -e "\n\nfild [m32] + fistp [m32]: Latency"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fild -Dtmode=LL -Dmsize=32  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+echo -e "\n\nfimul: Register latency"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fimul -Dtmode=L -Dmsize=32 -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+for msize in 16 32
+do
+echo -e "\n\nfimul [m$msize] troughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fimul -Dtmode=T -Dmsize=$msize -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+done
+
+for msize in 16 32
+do
+
+echo -e "\n\nfist [m$msize]: Troughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fist -Dtmode=T -Dmsize=$msize -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+done
+
+echo -e "\n\nfistp [m32] + fld [m32]: Latency"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fist -Dtmode=L -Dmsize=32  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+echo -e "\n\nfistp [m32] + fild [m32]: Latency"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fist -Dtmode=LL -Dmsize=32  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+for msize in 16 32
+do
+echo -e "\n\nfisttp [m$msize] + fld st: Troughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fisttp -Dtmode=T -Dmsize=$msize -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+done
+
+echo -e "\n\nfldcw: Throughput, same value"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fldcw -Dtmode=T -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+echo -e "\n\nfldcw: Throughput, alternating value"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fldcw -Dtmode=TT  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+echo -e "\n\nfldcw + fnstcw: Latency, same value"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fldcw -Dtmode=L  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+echo -e "\n\nfnstcw: Throughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fnstcw -Dtmode=T -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+echo -e "\n\nfbstp + fld st: Throughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fbstp -Dtmode=T -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+echo -e "\n\nfbstp + fld [m64]: Latency"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fbstp -Dtmode=L  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+echo -e "\n\nfbstp + fld [m80]: Latency"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fbstp -Dtmode=LL -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+echo -e "\n\nfbstp + fbld [m80]: Latency"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fbstp -Dtmode=LLL -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+for msize in 16 32 64
+do
+echo -e "\n\nfistp [m$msize] + fld st: Throughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fistp -Dmsize=$msize -Dtmode=T -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+done
+
+echo -e "\n\nfistp [m32] + fld [m32]: Latency"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fistp -Dmsize=32 -Dtmode=L -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+for msize in 16 32 64
+do
+echo -e "\n\nfistp [m$msize] + fild [m$msize]: Latency"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fistp -Dmsize=$msize -Dtmode=LL  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+for msize in 32 64 80
+do
+
+echo -e "\n\nfstp [m$msize] + fld st: Throughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fstp -Dmsize=$msize -Dtmode=T -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+done
+
+for msize in 32 64 80
+do
+echo -e "\n\nfstp [m$msize] + fld [m$msize]: Latency"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fstp -Dmsize=$msize -Dtmode=L -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+echo -e "\n\nfstp [m32] + fld [m32] + fchs: Latency"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fstp -Dmsize=32 -Dtmode=LL  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+echo -e "\n\nfmul Latency"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fmul -Dtmode=L  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+echo -e "\n\nfmul Throughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fmul -Dtmode=T -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+for msize in 32 64
+do
+echo -e "\n\nfmul [ m$msize ] Throughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fmul -Dtmode=M -Dmsize=$msize -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+done
+
+for instruct in fnclex fninit fnop wait fwait
+do
+
+echo -e "\n\n$instruct: Throughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dtmode=T -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+done
+
+echo -e "\n\nfnsave: Throughput, 64 bit mode"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fnsave -Dtmode=T -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+if [ $support32bit -ne 0 ] ; then
+echo -e "\n\nfnsave: Throughput, 32 bit mode"  >> results1/x87.txt
+$ass -f elf32 -o b32.o -Dinstruct=fnsave -Dtmode=T -Px87.inc TemplateB32.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+if [ $support32bit -ne 0 ] ; then
+g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+fi
+fi
+
+echo -e "\n\nfrstor: Throughput, 64 bit mode"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=frstor -Dtmode=T -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+if [ $support32bit -ne 0 ] ; then
+echo -e "\n\nfrstor: Throughput, 32 bit mode"  >> results1/x87.txt
+$ass -f elf32 -o b32.o -Dinstruct=frstor -Dtmode=T -Px87.inc TemplateB32.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+if [ $support32bit -ne 0 ] ; then
+g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+fi
+fi
+
+echo -e "\n\nfnsave + frstor: Latency, 64 bit mode"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fnsave -Dtmode=L  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+echo -e "\n\nfxsave: Throughput, 64 bit mode"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fxsave -Dtmode=T -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+if [ $support32bit -ne 0 ] ; then
+echo -e "\n\nfxsave: Throughput, 32 bit mode"  >> results1/x87.txt
+$ass -f elf32 -o b32.o -Dinstruct=fxsave -Dtmode=T -Px87.inc TemplateB32.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+if [ $support32bit -ne 0 ] ; then
+g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+fi
+fi
+
+echo -e "\n\nfxrstor: Throughput, 64 bit mode"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fxrstor -Dtmode=T -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+if [ $support32bit -ne 0 ] ; then
+echo -e "\n\nfxrstor: Throughput, 32 bit mode"  >> results1/x87.txt
+$ass -f elf32 -o b32.o -Dinstruct=fxrstor -Dtmode=T -Dcounters=$cts -Px87.inc TemplateB32.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+if [ $support32bit -ne 0 ] ; then
+g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+fi
+fi
+
+echo -e "\n\nfxsave + fxrstor: Latency, 64 bit mode"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fxsave -Dtmode=L  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+
+if [ `./cpugetinfo -xsave` -ne 0 ] ; then
+
+echo -e "\n\nxsave: Throughput, 64 bit mode"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=xsave -Dtmode=T -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+if [ $support32bit -ne 0 ] ; then
+echo -e "\n\nxsave: Throughput, 32 bit mode"  >> results1/x87.txt
+$ass -f elf32 -o b32.o -Dinstruct=xsave -Dtmode=T -Px87.inc TemplateB32.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+fi
+
+
+echo -e "\n\nxrstor: Throughput, 64 bit mode"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=xrstor -Dtmode=T -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+if [ $support32bit -ne 0 ] ; then
+echo -e "\n\nxrstor: Throughput, 32 bit mode"  >> results1/x87.txt
+$ass -f elf32 -o b32.o -Dinstruct=xrstor -Dtmode=T -Px87.inc TemplateB32.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+fi
+
+echo -e "\n\nxsave + xrstor: Latency, 64 bit mode"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=xsave -Dtmode=L  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+fi # xsave
+
+
+echo -e "\n\nfnstsw ax: Throughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fnstsw -Dtmode=T -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+echo -e "\n\nfnstsw ax + test + fcmov + fcom: Latency"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fnstsw -Dtmode=L -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+echo -e "\n\nfnstsw [m16]: Throughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fnstsw -Dtmode=M -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+echo -e "\n\nfnstsw [m16] + test + fcmov + fcom: Latency"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fnstsw -Dtmode=L  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+for tcase in best worst
+do
+
+echo -e "\n\nfpatan + fld + fld + fstp: Throughput, $tcase case"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fpatan -Dtmode=T -Dtcase=$tcase -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+done
+
+for tcase in best worst
+do
+echo -e "\n\nfpatan + fld + fxch: Latency, $tcase case"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fpatan -Dtmode=L -Dtcase=$tcase  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+for instruct in fprem fprem1
+do
+for tcase in best worst
+do
+
+echo -e "\n\n$instruct + fld + fstp: Throughput, $tcase case"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dtmode=T -Dtcase=$tcase -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+done
+
+for tcase in best worst
+do
+echo -e "\n\n$instruct + fadd: Latency, $tcase case"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dtmode=L -Dtcase=$tcase  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+done
+
+for tcase in best worst
+do
+echo -e "\n\nfptan + fld + 2*fstp: Throughput, $tcase case"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fptan -Dtmode=T -Dtcase=$tcase  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+echo -e "\n\nfptan + fstp: Latency, best case"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fptan -Dtmode=L -Dtcase=best -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+echo -e "\n\nfptan + fadd: Latency, worst case"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fptan -Dtmode=L -Dtcase=worst  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+echo -e "\n\nfrndint + fld + fstp: Throughput"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=frndint -Dtmode=T -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+echo -e "\n\nfrndint: Latency"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=frndint -Dtmode=L -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+echo -e "\n\nfscale + fld + fstp: Throughput"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fscale -Dtmode=T  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+echo -e "\n\nfscale: Latency"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fscale -Dtmode=L -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+for tcase in best worst
+do
+echo -e "\n\nfsincos + fld + 2*fstp: Throughput, $tcase case"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fsincos -Dtmode=T -Dtcase=$tcase  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+echo -e "\n\nfsincos + fadd: Latency, worst case"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fsincos -Dtmode=L -Dtcase=$tcase -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+for tcase in best worst
+do
+echo -e "\n\nfsin + fld + fstp: Throughput, $tcase case"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fsin -Dtmode=T -Dtcase=$tcase  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+for tcase in best worst
+do
+echo -e "\n\nfsin + fadd: Latency, $tcase case"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fsin -Dtmode=L -Dtcase=$tcase -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+done
+
+for tcase in best worst
+do
+echo -e "\n\nfsqrt + fld + fstp: Throughput, $tcase case"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fsqrt -Dtmode=T -Dtcase=$tcase  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+for tcase in best worst
+do
+echo -e "\n\nfsqrt + fadd: Latency, $tcase case"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fsqrt -Dtmode=L -Dtcase=$tcase -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+done
+
+echo -e "\n\nftst: Throughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=ftst -Dtmode=T -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+echo -e "\n\nftst + fnstsw + test + fcmov: Latency"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=ftst -Dtmode=L  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+echo -e "\n\nfxam: Throughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fxam -Dtmode=T -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+echo -e "\n\nfxam + fnstsw + test + fcmov: Latency"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fxam -Dtmode=L  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+echo -e "\n\nfxtract + fld + 2*fstp: Throughput"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=fxtract -Dtmode=T  -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+
+echo -e "\n\nfxtract + fadd: Latency"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fxtract -Dtmode=L -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+for instruct in fyl2x fyl2xp1
+do
+for tcase in best worst
+do
+echo -e "\n\n$instruct + 2*fld + fstp: Throughput, $tcase case"  >> results1/x87.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dtmode=T -Dtcase=$tcase -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+for tcase in best worst
+do
+echo -e "\n\n$instruct + fld: Latency, $tcase case"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dtmode=L -Dtcase=$tcase -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+done
+done
+
+
+if [ `./cpugetinfo -XSAVEOPT` -ne 0 ] ; then
+
+echo -e "\n\nxsaveopt: Throughput"  >> results1/x87.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=xsaveopt -Dtmode=T -Dcounters=$cts -Px87.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/x87.txt
+done
+
+fi # xsaveopt
+
+echo -e "\n"  >> results1/x87.txt
+

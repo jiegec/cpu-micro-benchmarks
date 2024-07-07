@@ -1,0 +1,261 @@
+#!/bin/bash
+#                                                                2021-03-23 Agner Fog
+
+# Measure cache access and store forwarding penalties
+
+# (c) 2013-2021 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+. vars.sh
+
+echo -e "\n\nMeasure cache access"  > results2/store_forwarding.txt
+
+echo -e "\n\n\nMeasure store forwarding penalties\nCrossing boundaries\n"  >> results2/store_forwarding.txt
+
+if [ `./cpugetinfo -avx512f` -ne 0 ] ; then
+regsizelist="16 32 64 128 256 512"
+regsizelist2="32 64 128 256 512"
+regsizelist3="64 128 256 512"
+crossboundlist="0 4 8 16 32 64 128 256"
+elif [ `./cpugetinfo -avx` -ne 0 ] ; then
+regsizelist="16 32 64 128 256"
+regsizelist2="32 64 128 256"
+regsizelist3="64 128 256"
+crossboundlist="0 4 8 16 32 64 128 256"
+else
+regsizelist="16 32 64 128"
+regsizelist2="32 64 128"
+regsizelist3="64 128"
+crossboundlist="0 4 8 16 32 64 128"
+fi
+
+roffset=0
+multipart=1
+for regsize in $regsizelist
+do
+for crossbound in $crossboundlist
+do
+readsize=$regsize
+echo -e "\n\nregister read/write size $regsize bits, crossing $crossbound bytes boundary"  >> results2/store_forwarding.txt
+$ass -f elf64 -o b64.o -l list.txt -Droffset=$roffset -Dmultipart=$multipart -Dcrossbound=$crossbound -Dregsize=$regsize -Dreadsize=$readsize -Pstore_forwarding.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/store_forwarding.txt
+done
+done
+
+echo -e "\n\n\nMeasure store forwarding penalties with read offset\n"  >> results2/store_forwarding.txt
+crossbound=0
+for regsize in $regsizelist
+do
+let regsizebytes=$(($regsize/8))
+for roffset in  0 $(($regsizebytes/2))
+do
+readsize=$regsize
+echo -e "\n\nregister read/write size $regsize bits, read offset by $roffset bytes"  >> results2/store_forwarding.txt
+$ass -f elf64 -o b64.o -Droffset=$roffset -Dmultipart=$multipart -Dcrossbound=$crossbound -Dregsize=$regsize -Dreadsize=$readsize -Pstore_forwarding.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/store_forwarding.txt
+done
+done
+
+echo -e "\n\n\nMeasure store forwarding penalties with read half the size of write\n"  >> results2/store_forwarding.txt
+crossbound=0
+for regsize in $regsizelist
+do
+let readsize=$(($regsize/2))
+let readsizebytes=$(($readsize/8))
+
+for roffset in 0 $(($readsizebytes/2)) $readsizebytes
+do
+echo -e "\n\nwrite size $regsize, read size $readsize, read offset by $roffset bytes"  >> results2/store_forwarding.txt
+$ass -f elf64 -o b64.o -Droffset=$roffset -Dmultipart=$multipart -Dcrossbound=$crossbound -Dregsize=$regsize -Dreadsize=$readsize -Pstore_forwarding.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/store_forwarding.txt
+done
+done
+
+echo -e "\n\n\nMeasure store forwarding penalties with read 1/4 size of write\n"  >> results2/store_forwarding.txt
+crossbound=0
+for regsize in $regsizelist2
+do
+let readsize=$(($regsize/4))
+let readsizebytes=$(($readsize/8))
+
+for roffset in 0 $(($readsizebytes/2)) $readsizebytes $(($readsizebytes*3/2)) $(($readsizebytes*2))
+do
+echo -e "\n\nwrite size $regsize, read size $readsize, read offset by $roffset bytes"  >> results2/store_forwarding.txt
+$ass -f elf64 -o b64.o -Droffset=$roffset -Dmultipart=$multipart -Dcrossbound=$crossbound -Dregsize=$regsize -Dreadsize=$readsize -Pstore_forwarding.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/store_forwarding.txt
+done
+done
+
+if [ `./cpugetinfo -avx` -ne 0 ] ; then
+
+echo -e "\n\n\nMeasure store forwarding penalties with read 1/8 size of write\n"  >> results2/store_forwarding.txt
+crossbound=0
+for regsize in 256
+do
+let readsize=$(($regsize/8))
+let readsizebytes=$(($readsize/8))
+
+for roffset in 0 $(($readsizebytes/2)) $readsizebytes $(($readsizebytes*3/2)) $(($readsizebytes*2)) $(($readsizebytes*5/2)) $(($readsizebytes*3)) $(($readsizebytes*7/2)) $(($readsizebytes*4)) $(($readsizebytes*11/2)) $(($readsizebytes*6))
+do
+echo -e "\n\nwrite size $regsize, read size $readsize, read offset by $roffset bytes"  >> results2/store_forwarding.txt
+$ass -f elf64 -o b64.o -Droffset=$roffset -Dmultipart=$multipart -Dcrossbound=$crossbound -Dregsize=$regsize -Dreadsize=$readsize -Pstore_forwarding.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/store_forwarding.txt
+done
+done
+
+fi
+
+
+echo -e "\n\n\nMeasure store forwarding penalties with read split in two halves\n"  >> results2/store_forwarding.txt
+crossbound=0
+roffset=0
+multipart=2
+for regsize in $regsizelist
+do
+let readsize=$(($regsize/2))
+echo -e "\n\nwrite size $regsize, two reads of size $readsize"  >> results2/store_forwarding.txt
+$ass -f elf64 -o b64.o -Droffset=$roffset -Dmultipart=$multipart -Dcrossbound=$crossbound -Dregsize=$regsize -Dreadsize=$readsize -Pstore_forwarding.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/store_forwarding.txt
+done
+
+echo -e "\n\n\nMeasure store forwarding penalties with read split in four quarters\n"  >> results2/store_forwarding.txt
+crossbound=0
+roffset=0
+multipart=4
+for regsize in $regsizelist2
+do
+let readsize=$(($regsize/4))
+echo -e "\n\nwrite size $regsize, four reads of size $readsize"  >> results2/store_forwarding.txt
+$ass -f elf64 -o b64.o -Droffset=$roffset -Dmultipart=$multipart -Dcrossbound=$crossbound -Dregsize=$regsize -Dreadsize=$readsize -Pstore_forwarding.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/store_forwarding.txt
+done
+
+echo -e "\n\n\nMeasure store forwarding penalties with read split in eight eights\n"  >> results2/store_forwarding.txt
+crossbound=0
+roffset=0
+multipart=8
+for regsize in $regsizelist3
+do
+let readsize=$(($regsize/4))
+echo -e "\n\nwrite size $regsize, eight reads of size $readsize"  >> results2/store_forwarding.txt
+$ass -f elf64 -o b64.o -Droffset=$roffset -Dmultipart=$multipart -Dcrossbound=$crossbound -Dregsize=$regsize -Dreadsize=$readsize -Pstore_forwarding.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/store_forwarding.txt
+done
+
+echo -e "\n\n\nMeasure store forwarding penalties with two half writes followed by one full read"  >> results2/store_forwarding.txt
+crossbound=0
+roffset=0
+multipart=2
+
+regsize=32
+readsize=64
+echo -e "\n\nTwo writes of size $regsize, one read of size $readsize"  >> results2/store_forwarding.txt
+$ass -f elf64 -o b64.o -Droffset=$roffset -Dmultipart=$multipart -Dcrossbound=$crossbound -Dregsize=$regsize -Dreadsize=$readsize -Pstore_forwarding.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/store_forwarding.txt
+
+regsize=64
+readsize=128
+echo -e "\n\nTwo writes of size $regsize, one read of size $readsize"  >> results2/store_forwarding.txt
+$ass -f elf64 -o b64.o -Droffset=$roffset -Dmultipart=$multipart -Dcrossbound=$crossbound -Dregsize=$regsize -Dreadsize=$readsize -Pstore_forwarding.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/store_forwarding.txt
+
+if [ `./cpugetinfo -avx` -ne 0 ] ; then
+regsize=128
+readsize=256
+echo -e "\n\nTwo writes of size $regsize, one read of size $readsize"  >> results2/store_forwarding.txt
+$ass -f elf64 -o b64.o -Droffset=$roffset -Dmultipart=$multipart -Dcrossbound=$crossbound -Dregsize=$regsize -Dreadsize=$readsize -Pstore_forwarding.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/store_forwarding.txt
+fi
+
+
+echo -e "\n\n\nMeasure store forwarding penalties with different addressing modes\n"  >> results2/store_forwarding.txt
+roffset=0
+multipart=1
+crossbound=0
+
+addressmode=indirect
+
+for readsize in 8 16 32 64 128
+do
+regsize=$readsize
+echo -e "\n\nAddressing mode $addressmode, size $readsize"  >> results2/store_forwarding.txt
+$ass -f elf64 -o b64.o -Daddressmode=$addressmode -Droffset=$roffset -Dmultipart=$multipart -Dcrossbound=$crossbound -Dregsize=$regsize -Dreadsize=$readsize -Pstore_forwarding.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/store_forwarding.txt
+done
+
+if [ $support32bit -ne 0 ] ; then
+addressmode=abs32
+for readsize in 8 16 32 65 128
+do
+regsize=$readsize
+echo -e "\n\nAddressing mode $addressmode, size $readsize"  >> results2/store_forwarding.txt
+$ass -f elf32 -o b32.o -Daddressmode=$addressmode -Droffset=$roffset -Dmultipart=$multipart -Dcrossbound=$crossbound -Dregsize=$regsize -Dreadsize=$readsize -Pstore_forwarding.inc TemplateB32.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/store_forwarding.txt
+done
+fi
+ 
+addressmode=abs64
+for readsize in 8 16 32 64
+do
+regsize=$readsize
+echo -e "\n\nAddressing mode $addressmode, size $readsize"  >> results2/store_forwarding.txt
+$ass -f elf64 -o b64.o -Daddressmode=$addressmode -Droffset=$roffset -Dmultipart=$multipart -Dcrossbound=$crossbound -Dregsize=$regsize -Dreadsize=$readsize -Pstore_forwarding.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/store_forwarding.txt
+done
+
+addressmode=rip
+for readsize in 8 16 32 64 128
+do
+regsize=$readsize
+echo -e "\n\nAddressing mode $addressmode, size $readsize"  >> results2/store_forwarding.txt
+$ass -f elf64 -o b64.o -Daddressmode=$addressmode -Droffset=$roffset -Dmultipart=$multipart -Dcrossbound=$crossbound -Dregsize=$regsize -Dreadsize=$readsize -Pstore_forwarding.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/store_forwarding.txt
+done
+
+
+echo -e "\n"  >> results2/store_forwarding.txt
+

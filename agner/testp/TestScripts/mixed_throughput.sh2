@@ -1,0 +1,291 @@
+#!/bin/bash
+#                mixed_throughput.sh2             2021-03-15 Agner Fog
+#
+# PMC Test program for testing the throughput for mixed instructions
+#
+# Outputs number of instructions per clock and number of bytes per clock
+# NOTE: nbytes has not been checked. Numbers may be wrong
+#
+# (c) 2021 GNU General Public License www.gnu.org/licenses
+#
+# Parameters:
+#
+# tcase:     Test case as defined in file mixed_throughput.inc
+#
+# repeat1:  Repeat count for loop around testcode
+#
+# repeat2:  Repeat count for repeat macro around testcode
+
+# (You may change the parameters to focus near the limit of the buffer size)
+
+. vars.sh
+
+# Performance counters
+if  [ "$CPUbrand" = "Intel" -a $imodel -ne 28 ] ; then
+# This one is for Intel processors with uop cache:
+cts=$LoopPMCs
+else
+cts=$BranchPMCs
+fi
+
+echo -e "Test throughput for mixed instructions\n"  > results2/mixed_throughput.txt
+
+
+nthreads=1
+repeat1=100
+repeat2=100
+
+tcase=1
+echo -e "\n\nCase 1. 1-byte NOPs"  >> results2/mixed_throughput.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Dcounters=$cts -Pmixed_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/mixed_throughput.txt
+
+
+tcase=2
+echo -e "\n\nCase 2. 12-byte NOPs"  >> results2/mixed_throughput.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Dcounters=$cts -Pmixed_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/mixed_throughput.txt
+
+tcase=3
+echo -e "\n\nCase 3. integer 2 mov, 2 add, 2 and"  >> results2/mixed_throughput.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Dcounters=$cts -Pmixed_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/mixed_throughput.txt
+
+tcase=4
+echo -e "\n\nCase 4. integer 2 read, 1 write"  >> results2/mixed_throughput.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Dcounters=$cts -Pmixed_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/mixed_throughput.txt
+
+tcase=5
+echo -e "\n\nCase 5. integer 1 read, 2 write"  >> results2/mixed_throughput.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Dcounters=$cts -Pmixed_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/mixed_throughput.txt
+
+tcase=6
+echo -e "\n\nCase 6. integer 1 read, 1 write, 4 add"  >> results2/mixed_throughput.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Dcounters=$cts -Pmixed_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/mixed_throughput.txt
+
+tcase=7
+echo -e "\n\nCase 7. integer read, write, 2 mov, and, cmp/jump not taken"  >> results2/mixed_throughput.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Dcounters=$cts -Pmixed_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/mixed_throughput.txt
+
+tcase=10
+echo -e "\n\nCase 10. vector 2 read, 128 bits"  >> results2/mixed_throughput.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Dcounters=$cts -Pmixed_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/mixed_throughput.txt
+
+tcase=11
+echo -e "\n\nCase 11. vector 1 read, 1 write, 1 mov, 128 bits"  >> results2/mixed_throughput.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Dcounters=$cts -Pmixed_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/mixed_throughput.txt
+
+tcase=12
+echo -e "\n\nCase 12. vector 2 read, 1 write, 1 mov, 128 bits"  >> results2/mixed_throughput.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Dcounters=$cts -Pmixed_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/mixed_throughput.txt
+
+
+
+
+if  [ `grep -c -i "avx2"  cpuinfo.txt ` -ne 0 ] ; then
+
+tcase=20
+echo -e "\n\nCase 20. vector 2 read, 1 write, 1 padd, 256 bits"  >> results2/mixed_throughput.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Dcounters=$cts -Pmixed_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/mixed_throughput.txt
+
+tcase=21
+echo -e "\n\nCase 21. vector 1 read, 2 write, 1 padd, 256 bits"  >> results2/mixed_throughput.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Dcounters=$cts -Pmixed_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/mixed_throughput.txt
+
+tcase=22
+echo -e "\n\nCase 22. vector 1 read, 1 write, 2 padd, 1 pmul, 256 bits"  >> results2/mixed_throughput.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Dcounters=$cts -Pmixed_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/mixed_throughput.txt
+
+tcase=23
+echo -e "\n\nCase 23. vector 1 read, 1 write, 2 padd, 2 pmul, 256 bits"  >> results2/mixed_throughput.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Dcounters=$cts -Pmixed_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/mixed_throughput.txt
+
+tcase=24
+echo -e "\n\nCase 24. integer 2 read, 1 write, vector 1 read, 256 bits"  >> results2/mixed_throughput.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Dcounters=$cts -Pmixed_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/mixed_throughput.txt
+
+tcase=25
+echo -e "\n\nCase 25. integer 1 read, 1 write, vector 1 read, 256 bits"  >> results2/mixed_throughput.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Dcounters=$cts -Pmixed_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/mixed_throughput.txt
+
+tcase=26
+echo -e "\n\nCase 26. integer 1 read, 1 write, vector 1 write, 256 bits"  >> results2/mixed_throughput.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Dcounters=$cts -Pmixed_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/mixed_throughput.txt
+
+tcase=27
+echo -e "\n\nCase 27. integer 1 read, vector 1 read, 1 write, 256 bits"  >> results2/mixed_throughput.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Dcounters=$cts -Pmixed_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/mixed_throughput.txt
+
+tcase=28
+echo -e "\n\nCase 28. integer 2 read, vector 1 read, 256 bits"  >> results2/mixed_throughput.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Dcounters=$cts -Pmixed_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/mixed_throughput.txt
+
+tcase=29
+echo -e "\n\nCase 29. integer 2 read, vector 1 write, 256 bits"  >> results2/mixed_throughput.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Dcounters=$cts -Pmixed_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/mixed_throughput.txt
+
+tcase=30
+echo -e "\n\nCase 30. integer 1 read, vector 2 read, 256 bits"  >> results2/mixed_throughput.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Dcounters=$cts -Pmixed_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/mixed_throughput.txt
+
+tcase=60
+echo -e "\n\nCase 60. 2 float add, 2 float mul, 256 bits"  >> results2/mixed_throughput.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Dcounters=$cts -Pmixed_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/mixed_throughput.txt
+
+tcase=61
+echo -e "\n\nCase 61. 2 float add, 2 fma, 256 bits"  >> results2/mixed_throughput.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Dcounters=$cts -Pmixed_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/mixed_throughput.txt
+
+fi # AVX2
+
+
+if  [ `grep -c -i "avx512f"  cpuinfo.txt ` -ne 0 ] ; then
+
+tcase=40
+echo -e "\n\nCase 40. integer 1 read, 1 write, vector 1 read, 1 write, 512 bits"  >> results2/mixed_throughput.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Dcounters=$cts -Pmixed_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/mixed_throughput.txt
+
+tcase=41
+echo -e "\n\nCase 41. integer 2 add, 2 move, vector 1 read, 1 write, 512 bits"  >> results2/mixed_throughput.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Dcounters=$cts -Pmixed_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/mixed_throughput.txt
+
+tcase=42
+echo -e "\n\nCase 42. integer 1 read, 1 write, vector 1 add, 1 and, 2 move, 512 bits"  >> results2/mixed_throughput.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Dcounters=$cts -Pmixed_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/mixed_throughput.txt
+
+
+
+
+
+fi # AVX512F
+
+
+
+echo -e "\n"  >> results2/mixed_throughput.txt

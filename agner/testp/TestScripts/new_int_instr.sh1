@@ -1,0 +1,571 @@
+#!/bin/bash
+# Test newer integer / general purpose register instructions
+# (c) Copyright 2013 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+# Detect CPU specific variables
+. vars.sh
+
+echo -e "Test newer integer / general purpose register instructions"  > results1/new_int.txt
+
+
+# encryption instructions etc.
+
+if  [ `grep -c -i "sse4.2" cpuinfo.txt ` -gt 0 ] ; then
+echo -e "Encryption instructions etc."  > results1/new_int.txt
+
+instruct=crc32
+for regsize in 8 16 32
+do
+echo -e "\n\nLatency: $instruct r32,r$regsize"  >> results1/new_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dtmode=L -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+
+echo -e "\n\nThroughput: $instruct r32,r$regsize"  >> results1/new_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dtmode=T -Dcounters=$cts -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+done
+
+echo -e "\n\nThroughput: $instruct r32,[m$regsize]"  >> results1/new_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dtmode=M -Dcounters=$cts -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+done
+done
+
+fi
+
+if  [ `grep -c -i "pclmulqdq" cpuinfo.txt ` -gt 0 ] ; then
+instruct=pclmulqdq
+regsize=128
+for immvalue in 0 1 2 3
+do
+echo -e "\n\nLatency: $instruct xmm,xmm,$immvalue"  >> results1/new_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dnumimm=1 -Dimmvalue=$immvalue -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+done
+for immvalue in 0 1 2 3
+do
+echo -e "\n\nThroughput: $instruct xmm,xmm,$immvalue"  >> results1/new_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dnumimm=1 -Dimmvalue=$immvalue -Dtmode=T -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+done
+done
+
+immvalue=0
+echo -e "\n\nThroughput: $instruct xmm,[m128],$immvalue"  >> results1/new_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dnumimm=1 -Dimmvalue=$immvalue -Dtmode=M -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+done
+
+if  [ `grep -c -i "avx" cpuinfo.txt ` -gt 0 ] ; then
+instruct=vpclmulqdq
+immvalue=0
+echo -e "\n\nLatency: $instruct xmm,xmm,xmm,$immvalue"  >> results1/new_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=3 -Dnumimm=1 -Dimmvalue=$immvalue -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+
+echo -e "\n\nThroughput: $instruct xmm,xmm,xmm,$immvalue"  >> results1/new_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=3 -Dnumimm=1 -Dimmvalue=$immvalue -Dtmode=T -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+
+echo -e "\n\nThroughput: $instruct xmm,xmm,[m128],$immvalue"  >> results1/new_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=3 -Dnumimm=1 -Dimmvalue=$immvalue -Dtmode=M -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+fi  # avx
+fi  # pclmul
+
+if  [ `grep -c -i "aes" cpuinfo.txt ` -gt 0 ] ; then
+for instruct in aesdec aesdeclast aesenc aesenclast aesimc aeskeygenassist
+do
+if [ "$instruct" == "aeskeygenassist" ] ; then 
+numimm=1
+iii=",0" 
+else 
+numimm=0
+iii=" " 
+fi
+regsize=128
+Dimmvalue=0
+
+echo -e "\n\nLatency: $instruct xmm,xmm $iii"  >> results1/new_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dnumimm=$numimm -Dimmvalue=$immvalue -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+
+echo -e "\n\nThroughput: $instruct xmm,xmm $iii"  >> results1/new_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dnumimm=$numimm -Dimmvalue=$immvalue -Dtmode=T -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+done
+
+echo -e "\n\nThroughput: $instruct xmm,[m128] $iii"  >> results1/new_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dnumimm=$numimm -Dimmvalue=$immvalue -Dtmode=M -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+done
+
+if [ "$instruct" == "aesimc" -o "$instruct" == "aeskeygenassist" ] ; then 
+echo -e "\n\nLatency: v$instruct xmm,xmm $iii"  >> results1/new_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=v$instruct -Dregsize=$regsize -Dnumop=2 -Dnumimm=$numimm -Dimmvalue=$immvalue -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+else
+echo -e "\n\nLatency: v$instruct xmm,xmm,xmm $iii"  >> results1/new_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=v$instruct -Dregsize=$regsize -Dnumop=3 -Dnumimm=$numimm -Dimmvalue=$immvalue -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+fi
+
+done
+fi
+
+
+
+# Bit manipulation instructions
+
+if  [ `grep -c -i "bmi1" cpuinfo.txt ` -gt 0 ] ; then 
+echo -e "\n\nBit manipulation instructions BMI1"  >> results1/new_int.txt
+
+for instruct in tzcnt
+do
+for regsize in 16 32 64
+do
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize"  >> results1/new_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize"  >> results1/new_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dtmode=T -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+done
+
+echo -e "\n\nThroughput: $instruct r$regsize,m$regsize"  >> results1/new_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dtmode=M -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+done
+done
+done
+
+for instruct in blsi blsmsk blsr
+do
+for regsize in 32 64
+do
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize"  >> results1/new_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize"  >> results1/new_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dtmode=T -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+done
+
+echo -e "\n\nThroughput: $instruct r$regsize,m$regsize"  >> results1/new_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dtmode=M -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+
+done
+done
+
+for instruct in andn
+do
+for regsize in 32 64
+do
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,r$regsize"  >> results1/new_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=3 -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize,r$regsize"  >> results1/new_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=3 -Dtmode=T -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+done
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize,m$regsize"  >> results1/new_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=3 -Dtmode=M -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+done
+done
+done
+
+for instruct in bextr
+do
+for regsize in 32 64
+do
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,r$regsize"  >> results1/new_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=3 -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize,r$regsize"  >> results1/new_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=3 -Dtmode=T -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+done
+
+echo -e "\n\nThroughput: $instruct r$regsize,m$regsize,r$regsize"  >> results1/new_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=3 -Dtmode=M2 -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+done
+done
+done
+
+fi   # BMI1
+
+if  [ `grep -c -i "bmi2" cpuinfo.txt ` -gt 0 ] ; then 
+echo -e "Bit manipulation instructions BMI2"  >> results1/new_int.txt
+
+for instruct in mulx pdep pext
+do
+for regsize in 32 64
+do
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,r$regsize"  >> results1/new_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=3 -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize,r$regsize"  >> results1/new_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=3 -Dtmode=T -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+done
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize,m$regsize"  >> results1/new_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=3 -Dtmode=M -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+done
+done
+done
+
+for instruct in bzhi sarx shlx shrx
+do
+for regsize in 32 64
+do
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,r$regsize"  >> results1/new_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=3 -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize,r$regsize"  >> results1/new_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=3 -Dtmode=T -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+done
+
+echo -e "\n\nThroughput: $instruct r$regsize,m$regsize,r$regsize"  >> results1/new_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=3 -Dtmode=M2 -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+done
+done
+done
+
+for instruct in rorx
+do
+for regsize in 32 64
+do
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,imm"  >> results1/new_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dnumimm=1 -Dimmvalue=1 -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize,imm"  >> results1/new_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dnumimm=1 -Dimmvalue=1 -Dtmode=T -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+done
+
+echo -e "\n\nThroughput: $instruct r$regsize,m$regsize,imm"  >> results1/new_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dnumimm=1 -Dimmvalue=1 -Dtmode=M -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+done
+done
+done
+
+fi   # BMI2
+
+if  [ `grep -c -i "lzcnt" cpuinfo.txt ` -gt 0 ] ; then 
+
+instruct=lzcnt
+
+for regsize in 16 32 64
+do
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize"  >> results1/new_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize"  >> results1/new_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dtmode=T -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+done
+
+echo -e "\n\nThroughput: $instruct r$regsize,m$regsize"  >> results1/new_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dtmode=M -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+done
+done
+
+fi   # LZCNT
+
+if  [ `grep -c -i "movbe" cpuinfo.txt ` -gt 0 ] ; then 
+
+instruct=movbe
+for regsize in 16 32 64
+do
+echo -e "\n\nThroughput: $instruct r$regsize,[m$regsize]"  >> results1/new_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dnumimm=0 -Dtmode=M -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+done
+done
+
+for regsize in 16 32 64
+do
+echo -e "\n\nThroughput: $instruct [m$regsize],r$regsize"  >> results1/new_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dnumimm=0 -Dtmode=MR -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+done
+done
+
+fi  # movbe
+
+if  [ `grep -c -i "rdrand" cpuinfo.txt ` -gt 0 ] ; then 
+echo -e "\n\nRandom number generation"  >> results1/new_int.txt
+
+instruct=rdrand
+for regsize in 16 32 64
+do
+echo -e "\n\nThroughput: $instruct r$regsize"  >> results1/new_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=1 -Dnumimm=0 -Dtmode=T -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+done
+done
+
+regsize=64
+echo -e "\n\nThroughput: $instruct r$regsize, multiple threads"  >> results1/new_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=1 -Dnumimm=0 -Dtmode=T -Dnthreads=3 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+
+fi   # rdrand
+
+if  [ `grep -c -i "rdseed" cpuinfo.txt ` -gt 0 ] ; then 
+echo -e "Random number generation"  >> results1/new_int.txt
+
+instruct=rdseed
+for regsize in 16 32 64
+do
+echo -e "\n\nThroughput: $instruct r$regsize"  >> results1/new_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=1 -Dnumimm=0 -Dtmode=T -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+done
+done
+
+regsize=64
+echo -e "\n\nThroughput: $instruct r$regsize, multiple threads"  >> results1/new_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=1 -Dnumimm=0 -Dtmode=T -Dnthreads=3 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+
+fi   # rdseed
+
+if  [ `grep -c -i "adx" cpuinfo.txt ` -gt 0 ] ; then 
+
+for instruct in  adcx adox
+do
+for regsize in 32 64
+do
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize"  >> results1/new_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dnumimm=0 -Dtmode=T -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+done
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize"  >> results1/new_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dnumimm=0 -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/new_int.txt
+done
+done
+
+fi  # adx
+
+echo -e "\n"  >> results1/new_int.txt
+

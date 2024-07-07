@@ -1,0 +1,121 @@
+#!/bin/bash
+#                                                                        2014-01-30 AgF
+
+# Measure cache access with different strides
+
+# (c) 2013 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+echo -e "\nMeasure cache throughput by different memory sizes"  > results2/cache_throughput.txt
+echo -e "Test modes:"  >> results2/cache_throughput.txt
+echo -e "R:    read only"  >> results2/cache_throughput.txt
+echo -e "W:    write only"  >> results2/cache_throughput.txt
+echo -e "RW:   read, then write to same address"  >> results2/cache_throughput.txt
+echo -e "R_W:  read and write to different address"  >> results2/cache_throughput.txt
+echo -e "RR_W: two reads and one write to different address"  >> results2/cache_throughput.txt
+echo -e "NTR:  non-temporal read"  >> results2/cache_throughput.txt
+echo -e "NTW:  non-temporal write"  >> results2/cache_throughput.txt
+
+# get CPU specific counters
+. vars.sh
+
+# C++ code for allocating memory
+g++ -fno-pie -no-pie -m64 -O2 -c -o c64.o shufflelist.cpp
+
+linesize=`./cpugetinfo cachelinesize`
+alignby=$linesize
+
+cachesize=`./cpugetinfo cachesize`
+if [ $cachesize -le 1048576 ] ; then
+cachesize=1048576
+fi
+cachesize_kb=$cachesize/1024
+let maxsize_kb=$cachesize_kb*8
+
+
+for tmode in R W RW R_W RR_W NTR NTW
+do
+
+# The modes are:
+# R:    read only
+# W:    write only
+# RW:   read, then write to same address
+# R_W:  read and write to different address
+# RR_W: two reads and one write to different address
+# NTR:  non-temporal read
+# NTW: non-temporal write
+
+echo -e "\n\n===========================================\n"  >> results2/cache_throughput.txt
+echo -e "test mode = $tmode\n"  >> results2/cache_throughput.txt
+echo -e "===========================================\n\n"  >> results2/cache_throughput.txt
+
+size_kb=1
+
+while [ $size_kb -le $maxsize_kb ] ; do
+
+for stride in $linesize 
+do
+
+let numacc=$size_kb*1024/$stride
+
+echo -e "\n\nSize = $size_kb kB, stride = $stride Bytes, align = $alignby, total accesses = $numacc"  >> results2/cache_throughput.txt
+$ass -f elf64 -o b64.o -Dallocsize=$size_kb -Dblocksize=$size_kb -Dstride=$stride -Dalignby=$alignby -Dtmode=$tmode -Dcounters=$CachePMCs -Pcache_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o c64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/cache_throughput.txt
+if [ $? -ne 0 ] ; then exit ; fi  # Stop script if allocation error
+
+done
+
+# double size_kb for each repetition
+let size_kb=$size_kb+$size_kb
+
+done
+done
+
+
+echo -e "\n\n===========================================\n"  >> results2/cache_throughput.txt
+echo -e "3 threads"  >> results2/cache_throughput.txt
+echo -e "===========================================\n\n"  >> results2/cache_throughput.txt
+
+nthreads=3
+
+for tmode in R W RW
+do
+
+# The modes are:
+# R:    read only
+# W:    write only
+# RW:   read, then write to same address
+# R_W:  read and write to different address
+# RR_W: two reads and one write to different address
+# NTR:  non-temporal read
+# NTW: non-temporal write
+
+echo -e "\n\n===========================================\n"  >> results2/cache_throughput.txt
+echo -e "test mode = $tmode\n"  >> results2/cache_throughput.txt
+echo -e "===========================================\n\n"  >> results2/cache_throughput.txt
+
+size_kb=4
+
+while [ $size_kb -le $maxsize_kb ] ; do
+
+for stride in $linesize 
+do
+
+let numacc=$size_kb*1024/$stride
+
+echo -e "\n\nSize = $size_kb kB, stride = $stride Bytes, align = $alignby, total accesses = $numacc"  >> results2/cache_throughput.txt
+$ass -f elf64 -o b64.o  -Dallocsize=$size_kb -Dblocksize=$size_kb -Dstride=$stride -Dalignby=$alignby -Dtmode=$tmode -Dnthreads=$nthreads -Dcounters=$CachePMCs -Pcache_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o c64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/cache_throughput.txt
+
+done
+
+# double size_kb for each repetition
+let size_kb=$size_kb+$size_kb
+
+done
+done

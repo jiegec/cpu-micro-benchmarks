@@ -1,0 +1,95 @@
+#!/bin/bash
+#                                                                        2012-01-26 AgF
+# Compile and run PMCTest for integer multiplication instructions
+# looping through list of instructions
+# (c) Copyright 2012 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+# Detect CPU specific variables
+. vars.sh
+
+echo -e "Multiplication instructions latency and throughput\n"  > results1/mul.txt
+
+# single operand:
+
+for i in  mul imul
+do
+
+for r in 8 16 32 64
+do
+
+echo -e "\n\nLatency: $i , registersize $r "  >> results1/mul.txt
+
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dnumop=1 -Dregsize=$r -Dtmode=L -Pmul.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/mul.txt
+
+echo -e "\n\nThroughput: $i , registersize $r (subtract 1 uop)"  >> results1/mul.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dnumop=1 -Dregsize=$r -Dtmode=T -Dcounters=$cts -Pmul.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/mul.txt
+done
+
+echo -e "\n\nThroughput with memory operand: $i , registersize $r (subtract 1 uop)" >> results1/mul.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dnumop=1 -Dregsize=$r -Dtmode=M -Dcounters=$cts -Pmul.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/mul.txt
+done
+done
+done
+
+echo -e "\n"  >> results1/mul.txt
+
+# 2 - 3 operands:
+
+for i in  imul
+do
+
+for n in  2 3
+do
+
+for r in 16 32 64
+do
+
+echo -e "\n\nLatency: $i , regsize $r, numop $n"  >> results1/mul.txt
+
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dnumop=$n -Dtmode=L -Dregsize=$r -Pmul.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/mul.txt
+
+echo -e "\n\nThroughput: $i , regsize $r, numop $n"  >> results1/mul.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dnumop=$n -Dtmode=T -Dregsize=$r -Dcounters=$cts -Pmul.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/mul.txt
+done
+
+echo -e "\n\nThroughput with memory operand: $i , regsize $r, numop $n"  >> results1/mul.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dnumop=$n -Dtmode=M -Dregsize=$r -Dcounters=$cts -Pmul.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/mul.txt
+done
+done
+done
+done
+
+echo -e "\n"  >> results1/mul.txt
+

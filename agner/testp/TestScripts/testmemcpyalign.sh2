@@ -1,0 +1,22 @@
+#!/bin/bash
+#                                                  2013-08-07 Agner Fog
+
+# Compile and run PMCTest for different implementations of memcpy
+# (c) 2012 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+. vars.sh
+
+# Assemble testmemcpyal.nasm file
+$ass -f elf64 -o t64.o testmemcpyal.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+
+# Compile cpp file and link
+g++ -O2 -m64 testmemcpyalign.cpp t64.o -ox.exe
+if [ $? -ne 0 ] ; then exit ; fi
+
+echo -e "Test if memory copying has penalty for false dependence between source and destination addressses\n" > results2/testmemcpyalign.txt
+
+# Run test
+./x.exe  >> results2/testmemcpyalign.txt
+
+echo -e "\n"  >> results2/testmemcpyalign.txt

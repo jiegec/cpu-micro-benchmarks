@@ -1,0 +1,236 @@
+#!/bin/bash
+#                resource_sharing.sh2             2013-07-09 Agner Fog
+#
+# PMC Test program for testing whether various resources are shared between
+# multiple CPU cores.
+#
+# (c) 2013 GNU General Public License www.gnu.org/licenses
+
+# Test cases:
+#   1: Instruction fetch. Execute 12-byte long NOPs
+#   2: Instruction decode. Execute short NOPs
+#   3: Integer instructions, Add
+#   4: Integer instructions, Multiply
+#   5: Integer instructions, Divide
+#   6: Conditional jumps
+#   7: Floating point x87 instructions, Add
+#   8: Integer vector instructions, Add + multiply. Define regsize = data size. 128 = SSE2, 256 = AVX2
+#   9: Floating point vector instructions, Add + multiply. Define regsize = data size. 128 = SSE2, 256 = AVX
+#  10: Floating point vector instructions, Divide. Define regsize = data size. 128 = SSE2, 256 = AVX
+#  11: Memory read. Define regsize = data size. 256 requires AVX
+#  12: Memory write. Define regsize = data size. 256 requires AVX
+#  13: Memory read + write. Define regsize = data size. 256 requires AVX
+
+. vars.sh
+
+nthreads=3
+
+echo -e "Test resource sharing between CPU cores"  > results2/resource_sharing.txt
+
+echo -e "\n\nTest case 1: Instruction fetch. Execute 12-byte long NOPs\n"    >> results2/resource_sharing.txt
+
+$ass -f elf64 -o b64.o -Dtcase=1 -Dnthreads=$nthreads -Dregsize=64 -Presource_sharing.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/resource_sharing.txt
+
+echo -e "\n\nTest case 2: Instruction decode. Execute short NOPs\n"    >> results2/resource_sharing.txt
+
+$ass -f elf64 -o b64.o -Dtcase=2 -Dnthreads=$nthreads -Dregsize=64 -Presource_sharing.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/resource_sharing.txt
+
+echo -e "\n\nTest case 3: Integer instructions, Add\n"    >> results2/resource_sharing.txt
+
+$ass -f elf64 -o b64.o -Dtcase=3 -Dnthreads=$nthreads -Dregsize=64 -Presource_sharing.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/resource_sharing.txt
+
+echo -e "\n\nTest case 4: Integer instructions, Multiply\n"    >> results2/resource_sharing.txt
+
+$ass -f elf64 -o b64.o -Dtcase=4 -Dnthreads=$nthreads -Dregsize=64 -Presource_sharing.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/resource_sharing.txt
+
+echo -e "\n\nTest case 5: Integer instructions, Divide\n"    >> results2/resource_sharing.txt
+
+$ass -f elf64 -o b64.o -Dtcase=5 -Dnthreads=$nthreads -Dregsize=64 -Presource_sharing.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/resource_sharing.txt
+
+echo -e "\n\nTest case 6: Conditional jumps\n"    >> results2/resource_sharing.txt
+
+$ass -f elf64 -o b64.o -Dtcase=6 -Dnthreads=$nthreads -Dregsize=64 -Dcounters=$BranchPMCs -Presource_sharing.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/resource_sharing.txt
+
+echo -e "\n\nTest case 7: Floating point x87 instructions, Add\n"    >> results2/resource_sharing.txt
+
+$ass -f elf64 -o b64.o -Dtcase=7 -Dnthreads=$nthreads -Dregsize=64 -Presource_sharing.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/resource_sharing.txt
+
+echo -e "\n\nTest case 8: Integer vector instructions, Add + multiply. 128 bit\n"    >> results2/resource_sharing.txt
+
+$ass -f elf64 -o b64.o -Dtcase=8 -Dnthreads=$nthreads -Dregsize=128 -Presource_sharing.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/resource_sharing.txt
+
+# Check if AVX2 supported
+if  [ `grep -c -i "avx2"  cpuinfo.txt ` -ne 0 ] ; then
+
+echo -e "\n\nTest case 8: Integer vector instructions, Add + multiply. 256 bit\n"    >> results2/resource_sharing.txt
+
+$ass -f elf64 -o b64.o -Dtcase=8 -Dnthreads=$nthreads -Dregsize=128 -Presource_sharing.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/resource_sharing.txt
+
+fi  # avx2
+
+echo -e "\n\nTest case 9: Floating point vector instructions, Add + multiply. 128 bit\n"    >> results2/resource_sharing.txt
+
+$ass -f elf64 -o b64.o -Dtcase=9 -Dnthreads=$nthreads -Dregsize=128 -Presource_sharing.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/resource_sharing.txt
+
+# Check if AVX supported
+if  [ `grep -c -i "avx"  cpuinfo.txt ` -ne 0 ] ; then
+
+echo -e "\n\nTest case 9: Floating point vector instructions, Add + multiply. 256 bit\n"    >> results2/resource_sharing.txt
+
+$ass -f elf64 -o b64.o -Dtcase=9 -Dnthreads=$nthreads -Dregsize=256 -Presource_sharing.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/resource_sharing.txt
+
+fi  # avx
+
+echo -e "\n\nTest case 10: Floating point vector instructions, Divide. 128 bit\n"    >> results2/resource_sharing.txt
+
+$ass -f elf64 -o b64.o -Dtcase=10 -Dnthreads=$nthreads -Dregsize=128 -Presource_sharing.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/resource_sharing.txt
+
+# Check if AVX supported
+if  [ `grep -c -i "avx"  cpuinfo.txt ` -ne 0 ] ; then
+
+echo -e "\n\nTest case 10: Floating point vector instructions, Divide. 256 bit\n"    >> results2/resource_sharing.txt
+
+$ass -f elf64 -o b64.o -Dtcase=10 -Dnthreads=$nthreads -Dregsize=256 -Presource_sharing.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/resource_sharing.txt
+
+fi  # avx
+
+echo -e "\n\nTest case 11: Memory read. 32 bits\n"    >> results2/resource_sharing.txt
+
+$ass -f elf64 -o b64.o -Dtcase=11 -Dnthreads=$nthreads -Dregsize=32 -Presource_sharing.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/resource_sharing.txt
+
+echo -e "\n\nTest case 11: Memory read. 128 bits\n"    >> results2/resource_sharing.txt
+
+$ass -f elf64 -o b64.o -Dtcase=11 -Dnthreads=$nthreads -Dregsize=128 -Presource_sharing.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/resource_sharing.txt
+
+# Check if AVX supported
+if  [ `grep -c -i "avx"  cpuinfo.txt ` -ne 0 ] ; then
+
+echo -e "\n\nTest case 11: Memory read. 256 bits\n"    >> results2/resource_sharing.txt
+
+$ass -f elf64 -o b64.o -Dtcase=11 -Dnthreads=$nthreads -Dregsize=256 -Presource_sharing.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/resource_sharing.txt
+
+fi  # avx
+
+echo -e "\n\nTest case 12: Memory write. 32 bits\n"    >> results2/resource_sharing.txt
+
+$ass -f elf64 -o b64.o -Dtcase=12 -Dnthreads=$nthreads -Dregsize=32 -Presource_sharing.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/resource_sharing.txt
+
+echo -e "\n\nTest case 12: Memory write. 128 bits\n"    >> results2/resource_sharing.txt
+
+$ass -f elf64 -o b64.o -Dtcase=12 -Dnthreads=$nthreads -Dregsize=128 -Presource_sharing.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/resource_sharing.txt
+
+# Check if AVX supported
+if  [ `grep -c -i "avx"  cpuinfo.txt ` -ne 0 ] ; then
+
+echo -e "\n\nTest case 12: Memory write. 256 bits\n"    >> results2/resource_sharing.txt
+
+$ass -f elf64 -o b64.o -Dtcase=12 -Dnthreads=$nthreads -Dregsize=256 -Presource_sharing.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/resource_sharing.txt
+
+fi  # avx
+
+echo -e "\n\nTest case 13: Memory read + write. 32 bits\n"    >> results2/resource_sharing.txt
+
+$ass -f elf64 -o b64.o -Dtcase=13 -Dnthreads=$nthreads -Dregsize=32 -Presource_sharing.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/resource_sharing.txt
+
+echo -e "\n\nTest case 13: Memory read + write. 128 bits\n"    >> results2/resource_sharing.txt
+
+$ass -f elf64 -o b64.o -Dtcase=13 -Dnthreads=$nthreads -Dregsize=128 -Presource_sharing.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/resource_sharing.txt
+
+# Check if AVX supported
+if  [ `grep -c -i "avx"  cpuinfo.txt ` -ne 0 ] ; then
+
+echo -e "\n\nTest case 13: Memory read + write. 256 bits\n"    >> results2/resource_sharing.txt
+
+$ass -f elf64 -o b64.o -Dtcase=13 -Dnthreads=$nthreads -Dregsize=256 -Presource_sharing.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/resource_sharing.txt
+
+fi  # avx
+
+echo -e "\n"  >> results2/resource_sharing.txt

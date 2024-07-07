@@ -1,0 +1,183 @@
+#!/bin/bash
+#                                                                        2016-10-28 Agner Fog
+# Compile and run PMCTest for shift and rotate instructions
+# looping through list of instructions
+# (c) Copyright 2012-2016 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+. vars.sh
+
+echo -e "Shift instructions latency and throughput\n"  > results1/shift.txt
+
+
+for i in  shl shr sar rol ror rcl rcr
+do
+
+for cntop in 1 4 cl
+do
+
+for r in 8 16 32 64
+do
+
+echo -e "\n\nLatency: $i , $cntop regsize $r "  >> results1/shift.txt
+
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dcntop=$cntop -Dtmode=L -Pshift.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/shift.txt
+
+echo -e "\n\nThroughput: $i , $cntop regsize $r"  >> results1/shift.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dcntop=$cntop -Dtmode=T -Dcounters=$cts -Pshift.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/shift.txt
+done
+
+echo -e "\n\nthroughput with memory operand: $i , $cntop regsize $r"  >> results1/shift.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dcntop=$cntop -Dtmode=M -Dcounters=$cts -Pshift.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/shift.txt
+done
+done
+done
+done
+
+echo -e "\n"  >> results1/shift.txt
+
+for i in  shld shrd
+do
+
+for cntop in 1 6 cl
+do
+
+for regsize in 16 32 64
+do
+
+echo -e "\n\nLatency: $i , $cntop regsize $regsize "  >> results1/shift.txt
+
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dcntop=$cntop -Dtmode=L -Dregsize=$regsize -Pshift.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/shift.txt
+
+echo -e "\n\nThroughput: $i , $cntop regsize $regsize "  >> results1/shift.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dcntop=$cntop -Dtmode=T -Dregsize=$regsize -Dcounters=$cts -Pshift.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/shift.txt
+done
+
+echo -e "\n\nThroughput with memory operand: $i , $cntop regsize $regsize "  >> results1/shift.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dcntop=$cntop -Dtmode=M -Dregsize=$regsize -Dcounters=$cts -Pshift.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/shift.txt
+done
+done
+done
+done
+
+echo -e "\n"  >> results1/shift.txt
+
+for i in  bt btr bts btc
+do
+
+cntop=5
+
+for regsize in 16 32 64
+do
+echo -e "\n\nLatency: $i r$regsize, $cntop "  >> results1/shift.txt
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dcntop=$cntop -Dregsize=$regsize -Dtmode=L -Pshift.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/shift.txt
+done
+
+regsize=32
+cntop=ecx
+echo -e "\n\nLatency: $i r$regsize, $cntop "  >> results1/shift.txt
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dcntop=$cntop -Dregsize=$regsize -Dtmode=L -Pshift.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/shift.txt
+
+
+regsize=16
+cntop=cx
+echo -e "\n\nThroughput: $i r$regsize, $cntop  "  >> results1/shift.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dcntop=$cntop -Dregsize=$regsize -Dtmode=T -Dcounters=$cts -Pshift.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/shift.txt
+done
+
+regsize=32
+cntop=ecx
+echo -e "\n\nThroughput: $i r$regsize, $cntop  "  >> results1/shift.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dcntop=$cntop -Dregsize=$regsize -Dtmode=T -Dcounters=$cts -Pshift.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/shift.txt
+done
+
+regsize=64
+cntop=rcx
+echo -e "\n\nThroughput: $i r$regsize, $cntop  "  >> results1/shift.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dcntop=$cntop -Dregsize=$regsize -Dtmode=T -Dcounters=$cts -Pshift.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/shift.txt
+done
+
+regsize=32
+cntop=ecx
+echo -e "\n\nWith memory operand: $i m$regsize, $cntop  "  >> results1/shift.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dcntop=$cntop -Dregsize=$regsize -Dtmode=M -Dcounters=$cts -Pshift.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/shift.txt
+done
+
+regsize=32
+cntop=4
+echo -e "\n\nWith memory operand: $i m$regsize, $cntop  "  >> results1/shift.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dcntop=$cntop -Dregsize=$regsize -Dtmode=M -Dcounters=$cts -Pshift.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/shift.txt
+done
+
+done
+echo -e "\n"  >> results1/shift.txt
+

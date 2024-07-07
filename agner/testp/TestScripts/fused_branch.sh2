@@ -1,0 +1,84 @@
+#!/bin/bash
+#                                                                        2021-03-15 AgF
+
+# Compile and run PMCTest for various combinations of arithmetic instructions and branch instructions
+# to test for instruction fusion
+
+# (c) Copyright 2013 - 2021 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+# Detect CPU specific variables
+. vars.sh
+
+
+echo -e "Test instruction fusion\n"  > results2/fused_branch.txt
+
+let case=0
+
+for instr1 in cmp test add sub and or xor
+do
+for instr2 in jz ja jb jg jl js jo jp
+do
+
+let optype=0
+for xoptype in  reg,reg  reg,imm
+do
+let optype+=1
+
+echo -e "\n\n$instr1 $xoptype / $instr2 \n"  >> results2/fused_branch.txt
+$ass -f elf64 -o b64.o -Dcase=$case -Doptype=$optype -Dtaken=0 -Dinstr1=$instr1 -Dinstr2=$instr2 -Dcounters=$BranchPMCs -Pfused_branch.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/fused_branch.txt
+
+done
+done
+done
+
+let case=1
+
+for instr1 in inc dec neg not
+do
+for instr2 in jz ja jb jg jl js jo
+do
+
+let optype=0
+for xoptype in  reg,reg  reg,imm
+do
+let optype+=1
+
+echo -e "\n\n$instr1 $xoptype / $instr2 \n"  >> results2/fused_branch.txt
+$ass -f elf64 -o b64.o -Dcase=$case -Doptype=$optype -Dtaken=0 -Dinstr1=$instr1 -Dinstr2=$instr2 -Dcounters=$BranchPMCs -Pfused_branch.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/fused_branch.txt
+
+done
+done
+done
+
+
+let optype=1
+xoptype="reg,reg"
+let case=12
+
+for xcase in  ADC+JC/JNC  OR+JZ/JNZ  NOT+JZ/JNZ  SHR+JC/JNC  JECXZ  Boundary_before_jz  Boundary_in_jz
+do
+let case+=1
+let taken=-1
+for xtaken in no yes
+do
+let taken+=1
+
+echo -e "\n\n$xcase $xoptype, taken: $xtaken\n"  >> results2/fused_branch.txt
+# $ass -f elf64 -o b64.o -l fusedb$case.lst -Dcase=$case -Doptype=$optype -Dtaken=$taken -Dcounters=$BranchPMCs -Pfused_branch.inc
+$ass -f elf64 -o b64.o -Dcase=$case -Doptype=$optype -Dtaken=$taken -Dcounters=$BranchPMCs -Pfused_branch.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/fused_branch.txt
+done
+done
+
+echo -e "\n"  >> results2/fused_branch.txt

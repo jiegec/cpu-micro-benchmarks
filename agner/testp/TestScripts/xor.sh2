@@ -1,0 +1,297 @@
+#!/bin/bash
+#                                                                        2016-11-19 AgF
+# Compile and run PMCTest for various instructions
+# to test if they are independent of input operands
+# (c) 2012-2016 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+# Detect CPU specific variables
+. vars.sh
+
+echo -e "Integer instructions with two operands\n"  > results2/xor.txt
+
+for instruct in xor sub sbb cmp
+do
+
+for regsize in 16 32 64
+do
+
+numop=2
+numimm=0
+
+if [ $regsize -eq 8 ] ; then instruct2=add ; else instruct2=imul ; fi
+
+if [ "$instruct" == "sbb" ] ; then clearflags=1 ; else clearflags=0 ; fi
+if [ "$instruct" == "cmp" ] ; then readflags=1 ; else readflags=0 ; fi
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize (different register)"  >> results2/xor.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dtmode=1 -Dnumop=$numop -Dnumimm=$numimm -Dclearflags=$clearflags -Dreadflags=$readflags -Pxor.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/xor.txt
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize (same register)"  >> results2/xor.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dtmode=2 -Dnumop=$numop -Dnumimm=$numimm -Dclearflags=$clearflags -Dreadflags=$readflags -Pxor.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/xor.txt
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize (different register) + $instruct2"  >> results2/xor.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dinstruct2=$instruct2 -Dregsize=$regsize -Dtmode=3 -Dnumop=$numop -Dnumimm=$numimm -Dclearflags=$clearflags -Dreadflags=$readflags -Pxor.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/xor.txt
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize (same register) + $instruct2"  >> results2/xor.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dinstruct2=$instruct2 -Dregsize=$regsize -Dtmode=4 -Dnumop=$numop -Dnumimm=$numimm -Dclearflags=$clearflags -Dreadflags=$readflags -Pxor.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/xor.txt
+
+done
+done
+
+
+echo -e "\n\n\nxmm instructions with two operands\n"  >> results2/xor.txt
+
+for instruct in pxor pandn psubb psubw psubd psubq psubusb psubusw psubsb psubsw pcmpeqb pcmpeqw pcmpeqd pcmpeqq pcmpgtb pcmpgtw pcmpgtd pcmpgtq
+do
+
+for regsize in 65 128
+do
+
+if [ $regsize -eq 65 ] ; then 
+if [ "$instruct" == "pcmpeqq" -o "$instruct" == "pcmpgtq" ] ; then continue ; fi
+fi
+
+numop=2
+numimm=0
+instruct2=pmullw
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize (different register)"  >> results2/xor.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dtmode=1 -Dnumop=$numop -Dnumimm=$numimm -Dclearflags=$clearflags -Pxor.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/xor.txt
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize (same register)"  >> results2/xor.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dtmode=2 -Dnumop=$numop -Dnumimm=$numimm -Dclearflags=$clearflags -Pxor.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/xor.txt
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize (different register) + $instruct2"  >> results2/xor.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dinstruct2=$instruct2 -Dregsize=$regsize -Dtmode=3 -Dnumop=$numop -Dnumimm=$numimm -Dclearflags=$clearflags -Pxor.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/xor.txt
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize (same register) + $instruct2"  >> results2/xor.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dinstruct2=$instruct2 -Dregsize=$regsize -Dtmode=4 -Dnumop=$numop -Dnumimm=$numimm -Dclearflags=$clearflags -Pxor.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/xor.txt
+
+done
+done
+
+if  [ `grep -c -i "avx" cpuinfo.txt ` -gt 0 ] ; then
+
+if  [ `grep -c -i "avx2" cpuinfo.txt ` -gt 0 ] ; then
+list2="vpxor vpandn vpsubw vpcmpeqd vpcmpgtq"
+else
+list2=
+fi
+
+echo -e "\n\n\nxmm/ymm instructions with three operands\n"  >> results2/xor.txt
+
+for instruct in vcmpeqps vxorps vxorpd vandnps vandnpd $list2
+do
+
+for regsize in 128 256
+do
+
+numop=3
+numimm=0
+instruct2=vandps
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,r$regsize (different register)"  >> results2/xor.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dtmode=1 -Dnumop=$numop -Dnumimm=$numimm -Pxor.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/xor.txt
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,r$regsize (same register)"  >> results2/xor.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dtmode=2 -Dnumop=$numop -Dnumimm=$numimm -Pxor.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/xor.txt
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,r$regsize (different register) + $instruct2"  >> results2/xor.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dinstruct2=$instruct2 -Dregsize=$regsize -Dtmode=3 -Dnumop=$numop -Dnumimm=$numimm -Pxor.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/xor.txt
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,r$regsize (same register) + $instruct2"  >> results2/xor.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dinstruct2=$instruct2 -Dregsize=$regsize -Dtmode=4 -Dnumop=$numop -Dnumimm=$numimm -Pxor.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/xor.txt
+
+done
+done
+
+fi  # avx
+
+if  [ `grep -c -i "avx512" cpuinfo.txt ` -gt 0 ] ; then
+  echo -e "\n\n\nzmm instructions with three operands\n"  >> results2/xor.txt
+  regsize=512
+  numop=3
+  numimm=0
+
+  if  [ `grep -c -i "avx512dq" cpuinfo.txt ` -gt 0 ] ; then
+    list2="vxorps vxorpd vandnps"
+  else
+    list2=
+  fi
+
+  for instruct in vpxord vpxorq vpsubd $list2 ; do
+
+    echo -e "\n\nLatency: $instruct r$regsize,r$regsize,r$regsize (different register)"  >> results2/xor.txt
+    $ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dtmode=1 -Dnumop=$numop -Dnumimm=$numimm -Pxor.inc TemplateB64.nasm
+    if [ $? -ne 0 ] ; then exit ; fi
+    g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+    if [ $? -ne 0 ] ; then exit ; fi
+    ./x >> results2/xor.txt
+
+    echo -e "\n\nLatency: $instruct r$regsize,r$regsize,r$regsize (same register)"  >> results2/xor.txt
+    $ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dtmode=2 -Dnumop=$numop -Dnumimm=$numimm -Pxor.inc TemplateB64.nasm
+    if [ $? -ne 0 ] ; then exit ; fi
+    g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+    if [ $? -ne 0 ] ; then exit ; fi
+    ./x >> results2/xor.txt
+
+  done
+fi  # avx512
+
+
+if  [ `grep -c -i "bmi1" cpuinfo.txt ` -ne 0 ] ; then
+
+echo -e "\n\n\nBMI1 ANDN instruction\n"  >> results2/xor.txt
+
+instruct=ANDN
+numop=3
+numimm=0
+instruct2=imul
+
+for regsize in 32 64
+do
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,r$regsize (different register)"  >> results2/xor.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dtmode=1 -Dnumop=$numop -Dnumimm=$numimm -Pxor.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/xor.txt
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,r$regsize (same register)"  >> results2/xor.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dtmode=2 -Dnumop=$numop -Dnumimm=$numimm -Pxor.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/xor.txt
+
+done
+
+fi # bmi1
+
+if  [ `grep -c -i "avx512" cpuinfo.txt ` -ne 0 ] ; then
+
+echo -e "\n\n\nMask register instructions\n"  >> results2/xor.txt
+
+numop=3
+numimm=0
+regsize=16
+instruct2=kandw
+
+for instruct in kxorw kxnorw kandnw ; do
+
+echo -e "\n\nLatency: $instruct k$regsize,k$regsize,k$regsize (different register)"  >> results2/xor.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregtype=k -Dregsize=$regsize -Dtmode=1 -Dnumop=$numop -Dnumimm=$numimm -Pxor.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/xor.txt
+
+echo -e "\n\nLatency: $instruct k$regsize,k$regsize,k$regsize (same register)"  >> results2/xor.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregtype=k -Dregsize=$regsize -Dtmode=2 -Dnumop=$numop -Dnumimm=$numimm -Pxor.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/xor.txt
+
+done
+fi # AVX512 mask registers
+
+
+
+if  [ `grep -c -i " xop" cpuinfo.txt ` -eq 0 ] ; then exit ; fi
+
+echo -e "\n\n\nAMD XOP instructions\n"  >> results2/xor.txt
+
+for instruct in vpcomb vpcomw vpcomd vpcomq
+do
+
+for immvalue in 0 2 4 6 7
+do
+
+regsize=128
+numop=3
+numimm=1
+instruct2=pmullw
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,r$regsize,$immvalue (different register)"  >> results2/xor.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dtmode=1 -Dnumop=$numop -Dnumimm=$numimm -Dimmvalue=$immvalue -Pxor.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/xor.txt
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,r$regsize,$immvalue (same register)"  >> results2/xor.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dtmode=1 -Dnumop=$numop -Dnumimm=$numimm -Dimmvalue=$immvalue -Pxor.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/xor.txt
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,r$regsize,$immvalue (different register) + $instruct2"  >> results2/xor.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dinstruct2=$instruct2 -Dregsize=$regsize -Dtmode=1 -Dnumop=$numop -Dnumimm=$numimm -Dimmvalue=$immvalue -Pxor.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/xor.txt
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,r$regsize,$immvalue (same register) + $instruct2"  >> results2/xor.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dinstruct2=$instruct2 -Dregsize=$regsize -Dtmode=1 -Dnumop=$numop -Dnumimm=$numimm -Dimmvalue=$immvalue -Pxor.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/xor.txt
+
+done
+done
+
+
+echo -e "\n"  >> results2/xor.txt
+

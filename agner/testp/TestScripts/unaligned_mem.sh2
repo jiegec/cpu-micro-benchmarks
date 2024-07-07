@@ -1,0 +1,46 @@
+#!/bin/bash
+#                                                                               2014-01-31 AgF
+
+# Test unaligned memory read and write throughput
+# (c) 2014 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+# Parameters:
+#
+# regsize:   size of read or write operand, default = 32
+# roffset:   offset to aligned boundary, default = 0
+# alignment: alignment of boundary to cross
+# tmode:     R: read, W: write, WR: write, then read (store forwarding)
+
+
+. vars.sh
+
+echo -e "\n\nMeasure unaligned read/write throughput\n"  > results2/unaligned_mem.txt
+
+cachelinesize=`./cpugetinfo cachelinesize`
+
+for tmode in R W WR
+do
+
+for alignment in $(($cachelinesize/2)) $cachelinesize 4096
+do
+
+for regsize in 32 128
+do
+
+for roffset in 0 $(($regsize/8/4)) $(($regsize/8/2))
+do
+
+
+echo -e "\n\ntmode = $tmode, alignment = $alignment, register size = $regsize, offset = -$roffset \n"  >> results2/unaligned_mem.txt
+$ass -f elf64 -o b64.o -Dtmode=$tmode -Dalignment=$alignment -Droffset=$roffset -Dregsize=$regsize -Punaligned_mem.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/unaligned_mem.txt
+
+done
+done
+done
+done
+
+echo -e "\n"  >> results2/unaligned_mem.txt

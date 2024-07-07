@@ -1,0 +1,150 @@
+#!/bin/bash
+#                                                                        2017-04-11 AgF
+# Compile and run PMCTest for various instructions to see how many can be contained in uop cache
+# (c) Copyright 2017 by Agner Fog. GNU General Public License v. 3. www.gnu.org/licenses
+
+
+# Test cases:
+#           1. nop8
+#           2. nop12
+#           3. 2*add r,[r+o] / nop12
+#           4. 2* cmp r,[r+r*4] / nop12
+#           5. cmp r,[r+r*4+o] / nop13
+#           6. 2*xchg r,r / nop12
+#           7. vmovaps y,y / nop8
+#           8. xchg r,r / vmovaps y,y
+#
+# repeat1:      Number of repetitions of loop
+#
+# repeat2:      Number of consequtive NOPs inside a loop
+
+. vars.sh
+
+repeat1=100
+repeat2=100
+repeatlist="500 1000 2000 4000"
+warmupcount=100000000
+
+echo -e "Testing how many instructions fit into uop cache\n"  > results2/ucache_size.txt
+
+tcase=1
+echo -e "\n************\n1. nop8\n"    >> results2/ucache_size.txt
+
+for repeat2 in $repeatlist
+do
+echo -e "\n$repeat1 * $repeat2 times" >> results2/ucache_size.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -DWARMUPCOUNT=$warmupcount -Dcounters=$LoopPMCs -Pucache_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/ucache_size.txt
+if [ $? -ne 0 ] ; then echo "Error. Failed\n" >> results2/ucache_size.txt
+fi
+done
+
+tcase=2
+echo -e "\n************\n2. nop12\n"  >> results2/ucache_size.txt
+
+for repeat2 in $repeatlist
+do
+echo -e "\n$repeat1 * $repeat2 times" >> results2/ucache_size.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -DWARMUPCOUNT=$warmupcount -Dcounters=$LoopPMCs -Pucache_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/ucache_size.txt
+if [ $? -ne 0 ] ; then echo "Error. Failed\n" >> results2/ucache_size.txt
+fi
+done
+
+tcase=3
+echo -e "\n************\n3. add eax,[rsi+200h] / add ebx,[rdi+200h] / nop12\n"  >> results2/ucache_size.txt
+
+for repeat2 in $repeatlist
+do
+echo -e "\n$repeat1 * $repeat2 times" >> results2/ucache_size.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -DWARMUPCOUNT=$warmupcount -Dcounters=$LoopPMCs -Pucache_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/ucache_size.txt
+if [ $? -ne 0 ] ; then echo "Error. Failed\n" >> results2/ucache_size.txt
+fi
+done
+
+tcase=4
+echo -e "\n************\n4. cmp eax,[rsi+rbx*4] / cmp ecx,[rdi+rbx*4] / nop12\n"  >> results2/ucache_size.txt
+
+for repeat2 in $repeatlist
+do
+echo -e "\n$repeat1 * $repeat2 times" >> results2/ucache_size.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -DWARMUPCOUNT=$warmupcount -Dcounters=$LoopPMCs -Pucache_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/ucache_size.txt
+if [ $? -ne 0 ] ; then echo "Error. Failed\n" >> results2/ucache_size.txt
+fi
+done
+
+tcase=5
+echo -e "\n************\n5. cmp eax,[rsi+rbx*4+200h] / nop13\n"  >> results2/ucache_size.txt
+
+for repeat2 in $repeatlist
+do
+echo -e "\n$repeat1 * $repeat2 times" >> results2/ucache_size.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -DWARMUPCOUNT=$warmupcount -Dcounters=$LoopPMCs -Pucache_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/ucache_size.txt
+if [ $? -ne 0 ] ; then echo "Error. Failed\n" >> results2/ucache_size.txt
+fi
+done
+
+tcase=6
+echo -e "\n************\n6. xchg rbx,rcx / xchg rdx,rdi / nop12\n"  >> results2/ucache_size.txt
+
+for repeat2 in $repeatlist
+do
+echo -e "\n$repeat1 * $repeat2 times" >> results2/ucache_size.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -DWARMUPCOUNT=$warmupcount -Dcounters=$LoopPMCs -Pucache_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/ucache_size.txt
+if [ $? -ne 0 ] ; then echo "Error. Failed\n" >> results2/ucache_size.txt
+fi
+done
+
+tcase=7
+echo -e "\n************\n7. vmovaps ymm1,ymm2 / vmovapd ymm3,ymm4 / nop8\n"  >> results2/ucache_size.txt
+
+for repeat2 in $repeatlist
+do
+echo -e "\n$repeat1 * $repeat2 times" >> results2/ucache_size.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -DWARMUPCOUNT=$warmupcount -Dcounters=$LoopPMCs -Pucache_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/ucache_size.txt
+if [ $? -ne 0 ] ; then echo "Error. Failed\n" >> results2/ucache_size.txt
+fi
+done
+
+tcase=8
+echo -e "\n************\n8. xchg ebx,ecx / vmovaps ymm1,ymm2 / nop10\n"  >> results2/ucache_size.txt
+
+for repeat2 in $repeatlist
+do
+echo -e "\n$repeat1 * $repeat2 times" >> results2/ucache_size.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Drepeat1=$repeat1 -Drepeat2=$repeat2 -DWARMUPCOUNT=$warmupcount -Dcounters=$LoopPMCs -Pucache_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/ucache_size.txt
+if [ $? -ne 0 ] ; then echo "Error. Failed\n" >> results2/ucache_size.txt
+fi
+done
+
+echo -e "\n"  >> results2/ucache_size.txt

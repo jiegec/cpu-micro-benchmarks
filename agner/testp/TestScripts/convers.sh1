@@ -1,0 +1,473 @@
+#!/bin/bash
+#                                                                        2012-02-01 AgF
+# Compile and run PMCTest for various type conversion instructions that have
+# different register types for input and output
+# (c) Copyright 2012 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+# Detect CPU specific variables
+. vars.sh
+
+
+echo -e "Conversion instructions latency and throughput\n"  > results1/convers.txt
+
+# define instruction pairs with register types:
+# Each set contains six elements separated by commas without spaces:
+# 1. Instruction to convert from A to B
+# 2. Instruction to convert from B to A
+# 3. Register type for A (r32, r64, mmx, xmm, ymm)
+# 4. Register type for B (r32, r64, mmx, xmm, ymm)
+# 5. Immediate operand for instruction 1, n for none
+# 6. Test mode:
+#    Default = test latencies and throughputs. 
+#    T    = throughput for instruction 1 only
+#    M    = throughput for instruction 1 with memory source operand
+#    L3o  = 3 instruction latency, third instruction = OR
+#    L3p  = 3 instruction latency, third instruction = POR
+#    L3f  = 3 instruction latency, third instruction = MAXPS
+#    L3d  = 3 instruction latency, third instruction = MAXPD
+#    L3vp = 3 instruction latency, third instruction = VPOR
+#    L3vf = 3 instruction latency, third instruction = VMAXPS
+#    L3vd = 3 instruction latency, third instruction = VMAXPD
+#
+# The sets are separated by space
+
+
+# Note: these fail on nasm v. 2.10.07:
+#   movntdqa,movdqa,m128,xmm          
+#   movlpd,movlpd,xmm,m64
+# Work when memory size specifier removed
+
+# Lists of instruction specifications:
+
+list1=" 
+   mov,mov,r8,r8h
+   mov,mov,r8h,r8h
+   mov,mov,r8,m8
+   mov,mov,r8h,m8
+   mov,mov,m8,r8h
+   mov,mov,r16,m16
+   mov,mov,r32,m32
+   mov,mov,r64,m64
+   movq,movq,xmm,m64
+   movdqa,movdqa,xmm,m128   
+   movdqu,movdqu,xmm,m128   
+   movaps,movaps,xmm,m128
+   movd,movd,r32,mmx
+   movq,movq,r64,mmx
+   movd,movd,r32,xmm
+   movq,movq,r64,xmm
+   movd,movd,m32,xmm
+   movq,movq,m64,xmm
+   movdq2q,movq2dq,xmm,mmx
+   pmovmskb,movd,xmm,r32  
+   pextrb,movd,xmm,r32,1  
+   pextrb,movd,xmm,m8,1,T 
+   pextrw,movd,mmx,r32,1  
+   pextrw,movd,xmm,r32,1  
+   pextrw,movd,xmm,m16,1,T
+   pextrd,movd,xmm,r32,1  
+   pextrd,movd,xmm,m32,1,T
+   pextrq,movq,xmm,r64,1  
+   pextrq,movq,xmm,m64,1,T
+   pinsrb,movd,r32,xmm,1  
+   pinsrb,movd,m8,xmm,1,T 
+   pinsrw,movd,r32,mmx,1  
+   pinsrw,movd,r32,xmm,1  
+   pinsrw,movd,m16,xmm,1,T
+   pinsrd,movd,r32,xmm,1  
+   pinsrd,movd,m32,xmm,1,T
+   pinsrq,movq,r64,xmm,1  
+   pinsrq,movq,m64,xmm,1,T
+   "
+   
+list2=" 
+   movss,movss,xmm,xmm
+   movss,movss,xmm,m32
+   movsd,movsd,xmm,xmm
+   movsd,movsd,xmm,m64
+   movaps,movaps,xmm,m128
+   movups,movaps,xmm,m128
+   movaps,movups,xmm,m128
+   movapd,movapd,xmm,m128
+   movdqa,movdqa,xmm,m128
+   movdqu,movdqu,xmm,m128
+   lddqu,movdqa,m128,xmm 
+   movq,movq,xmm,m64     
+   movq,movq,mmx,m64     
+   movntps,movaps,xmm,m128
+   movntpd,movaps,xmm,m128
+   movntq,movq,mmx,m64    
+   movntdq,movdqa,xmm,m128
+   movntdqa,movdqa,m,xmm  
+   movnti,mov,r32,m32     
+   movlhps,movlhps,xmm,xmm
+   movhps,movhps,xmm,m64  
+   movlps,movlps,xmm,m64  
+   movlpd,movlpd,xmm,m    
+   movmskps,movd,xmm,r32  
+   movmskpd,movd,xmm,r32  
+   movaps,movaps,xmm,xmm,n,L3p
+   movaps,movaps,xmm,xmm,n,L3f
+   movdqa,movdqa,xmm,xmm,n,L3p
+   movdqa,movdqa,xmm,xmm,n,L3f   
+   "
+   
+list3=" 
+   cvtpd2ps,cvtps2pd,xmm,xmm
+   cvtpd2ps,cvtps2pd,m128,xmm,n,M
+   cvtps2pd,cvtpd2ps,m64,xmm,n,M
+   cvtsd2ss,cvtss2sd,xmm,xmm
+   cvtsd2ss,cvtss2sd,m64,xmm,n,T
+   cvtss2sd,cvtsd2ss,m32,xmm,n,T   
+   cvtsd2ss,cvtss2sd,xmm,xmm,n,L3p
+   cvtsd2ss,cvtss2sd,xmm,xmm,n,L3d
+   cvtdq2ps,cvtps2dq,xmm,xmm
+   cvtdq2ps,cvtps2dq,m,xmm,n,M
+   cvtps2dq,cvtdq2ps,m,xmm,n,M   
+   cvtdq2ps,cvtps2dq,xmm,xmm,n,L3p
+   cvtdq2ps,cvtps2dq,xmm,xmm,n,L3f
+   cvtdq2pd,cvtpd2dq,xmm,xmm
+   cvtdq2pd,cvtpd2dq,m64,xmm,n,M
+   cvtpd2dq,cvtdq2pd,m128,xmm,n,M   
+   cvtdq2pd,cvtpd2dq,xmm,xmm,n,L3p
+   cvtdq2pd,cvtpd2dq,xmm,xmm,n,L3d
+   cvtpi2ps,cvtps2pi,mmx,xmm
+   cvtpi2ps,cvtps2pi,m,xmm,n,M
+   cvtps2pi,cvtpi2ps,m,mmx,n,M   
+   cvtpi2ps,cvtps2pi,mmx,xmm,n,L3p
+   cvtps2pi,cvtpi2ps,xmm,mmx,n,L3p
+   cvtps2pi,cvtpi2ps,xmm,mmx,n,L3f
+   cvtpi2pd,cvtpd2pi,mmx,xmm
+   cvtpi2pd,cvtpd2pi,m,xmm,n,M
+   cvtpd2pi,cvtpi2pd,m,mmx,n,M   
+   cvtpi2pd,cvtpd2pi,mmx,xmm,n,L3p
+   cvtpd2pi,cvtpi2pd,xmm,mmx,n,L3p
+   cvtpd2pi,cvtpi2pd,xmm,mmx,n,L3d
+   cvtsi2ss,cvtss2si,r32,xmm
+   cvtsi2ss,cvtss2si,r64,xmm
+   cvtsi2ss,cvtss2si,m32,xmm,n,M
+   cvtss2si,cvtsi2ss,m32,r32,n,M   
+   cvtsi2ss,cvtss2si,r32,xmm,n,L3o
+   cvtss2si,cvtsi2ss,xmm,r32,n,L3p
+   cvtss2si,cvtsi2ss,xmm,r32,n,L3f
+   cvtsi2sd,cvtsd2si,r32,xmm
+   cvtsi2sd,cvtsd2si,m32,xmm,n,M
+   cvtsd2si,cvtsi2sd,m64,r32,n,M   
+   cvtsi2sd,cvtsd2si,r32,xmm,n,L3o
+   cvtsd2si,cvtsi2sd,xmm,r32,n,L3p
+   cvtsd2si,cvtsi2sd,xmm,r32,n,L3d
+   cvtsi2sd,cvtsd2si,r64,xmm
+   cvtsi2sd,cvtsd2si,m64,xmm,n,M
+   cvtsd2si,cvtsi2sd,m64,r64,n,M   
+   cvtsi2sd,cvtsd2si,r64,xmm,n,L3o
+   cvtsd2si,cvtsi2sd,xmm,r64,n,L3p
+   cvtsd2si,cvtsi2sd,xmm,r64,n,L3d
+   "
+   
+#  AVX instructions   
+if  [ `grep -c -i "avx" cpuinfo.txt ` -eq 0 ] ; then 
+list4=""
+else
+list4=" 
+   vmovaps,vmovaps,ymm,m256 
+   vmovapd,vmovapd,m256,ymm 
+   vmovupd,vmovupd,ymm,m256 
+   vmovntps,vmovaps,ymm,m
+   vmovntpd,vmovaps,ymm,m256
+   vmovntdq,vmovdqa,ymm,m
+   vcvtpd2ps,vcvtps2pd,ymm,xmm
+   vcvtpd2ps,vcvtps2pd,m256,xmm,n,M
+   vcvtps2pd,vcvtpd2ps,m128,ymm,n,M   
+   vcvtdq2ps,vcvtps2dq,ymm,ymm
+   vcvtdq2ps,vcvtps2dq,m256,ymm,n,M
+   vcvtps2dq,vcvtdq2ps,m256,ymm,n,M   
+   vcvtdq2pd,vcvtpd2dq,xmm,ymm
+   vcvtdq2pd,vcvtpd2dq,m128,ymm,n,M
+   vcvtpd2dq,vcvtdq2pd,m256,xmm,n,M   
+   vmovaps,vmovaps,ymm,ymm,n,L3vp
+   vmovaps,vmovaps,ymm,ymm,n,L3vf
+   vmovdqa,vmovdqa,ymm,ymm,n,L3vp
+   vmovdqa,vmovdqa,ymm,ymm,n,L3vf
+   "   
+fi
+
+#  AVX2 instructions   
+if  [ `grep -c -i "avx2" cpuinfo.txt ` -eq 0 ] ; then 
+list5=""
+else
+list5=" 
+   vmovntdqa,vmovdqa,m,ymm
+   "   
+fi   
+   
+#  F16C instructions   
+if  [ `grep -c -i "f16c" cpuinfo.txt ` -eq 0 ] ; then 
+list6=""
+else
+list6=" 
+   vcvtps2ph,vcvtph2ps,xmm,xmm,0
+   vcvtps2ph,vcvtph2ps,xmm,xmm,0,L3vp
+   vcvtps2ph,vcvtph2ps,xmm,xmm,0,L3vf
+   vcvtps2ph,vcvtph2ps,ymm,xmm,0
+   vcvtps2ph,vcvtph2ps,xmm,m64,0,T
+   vcvtps2ph,vcvtph2ps,ymm,m128,0,T
+   vcvtph2ps,vcvtps2ph,m64,xmm,n,T
+   vcvtph2ps,vcvtps2ph,m128,ymm,n,T
+   "
+fi
+   
+#   vcvtps2ph,vcvtph2ps,xmm,m64,0,M
+#   vcvtph2ps,vcvtps2ph,m64,xmm,0,T
+#   vcvtps2ph,vcvtph2ps,xmm,m64,0,T
+#   vcvtph2ps,vcvtps2ph,m128,ymm,0,M
+
+repeat1=100
+
+# Loop through all lists   
+for instrpair in  $list1 $list2 $list3 $list4 $list5 $list6
+do
+
+# split each set into its four elements by the commas:
+elements=( $(echo $instrpair | tr ',' ' ') )
+instruct1=${elements[0]}
+instruct2=${elements[1]}
+regtype1=${elements[2]}
+regtype2=${elements[3]}
+immvalue=${elements[4]}
+ttmode=${elements[5]}
+
+if [ "$immvalue" == "n" -o "$immvalue" == "" ] ; then
+numimm=0
+else
+numimm=1
+fi
+
+
+# echo $instruct1 $instruct2 $regtype1 $regtype2 $immvalue $ttmode
+
+if [ "$ttmode" == "T" ] ; then
+
+if [ $numimm -eq 0 ] ; then
+echo -e "\n\nThroughput: $instruct1 $regtype2,$regtype1"  >> results1/convers.txt
+else
+echo -e "\n\nThroughput: $instruct1 $regtype2,$regtype1,$immvalue"  >> results1/convers.txt
+fi
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct1=$instruct1 -Dregtype1=$regtype1 -Dregtype2=$regtype2 -Dnumimm=$numimm -Dimmvalue=$immvalue -Drepeat1=$repeat1 -Dcounters=$cts -Dtmode=T1 -Pconvers.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then 
+  echo "assembling $instruct1 failed."
+  echo "assembling $instruct1 failed." >> results1/convers.txt
+else
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers.txt
+fi
+done
+
+elif [ "$ttmode" == "M" ] ; then
+
+if [ $numimm -eq 0 ] ; then
+echo -e "\n\nThroughput: $instruct1 $regtype2,[$regtype1]"  >> results1/convers.txt
+else
+echo -e "\n\nThroughput: $instruct1 $regtype2,[$regtype1],$immvalue"  >> results1/convers.txt
+fi
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -lTTT -Dinstruct1=$instruct1 -Dregtype1=$regtype1 -Dregtype2=$regtype2 -Dnumimm=$numimm -Dimmvalue=$immvalue -Drepeat1=$repeat1 -Dcounters=$cts -Dtmode=M1 -Pconvers.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then 
+  echo "assembling $instruct1 failed."
+  echo "assembling $instruct1 failed." >> results1/convers.txt
+  exit #!!
+else
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers.txt
+fi
+done
+
+elif  [ "$ttmode" == "L3o" ] ; then
+
+instruct3=OR
+echo -e "\n\nLatency: $instruct1 $regtype2, $regtype1 / $instruct2 $regtype1, $regtype2 / $instruct3 $regtype1,$regtype1" >> results1/convers.txt
+$ass -f elf64 -o b64.o -Dinstruct1=$instruct1 -Dinstruct2=$instruct2 -Dinstruct3=$instruct3 -Dregtype1=$regtype1 -Dregtype2=$regtype2 -Dnumimm=$numimm -Dimmvalue=$immvalue -Drepeat1=$repeat1 -Dtmode=L123 -Pconvers.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then 
+  echo "assembling $instruct1 failed"
+  echo "assembling $instruct1 failed" >> results1/convers.txt
+else
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers.txt
+fi
+
+elif  [ "$ttmode" == "L3p" ] ; then
+
+instruct3=POR
+echo -e "\n\nLatency: $instruct1 $regtype2, $regtype1 / $instruct2 $regtype1, $regtype2 / $instruct3 $regtype1,$regtype1" >> results1/convers.txt
+$ass -f elf64 -o b64.o -Dinstruct1=$instruct1 -Dinstruct2=$instruct2 -Dinstruct3=$instruct3 -Dregtype1=$regtype1 -Dregtype2=$regtype2 -Dnumimm=$numimm -Dimmvalue=$immvalue -Drepeat1=$repeat1 -Dtmode=L123 -Pconvers.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then 
+  echo "assembling $instruct1 failed"
+  echo "assembling $instruct1 failed" >> results1/convers.txt
+else
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers.txt
+fi
+
+elif  [ "$ttmode" == "L3vp" ] ; then
+
+if  [ `grep -c -i "avx2" cpuinfo.txt ` -ne 0 ] ; then 
+instruct3=VPOR
+else
+instruct3=VMOVDQA
+fi   
+
+echo -e "\n\nLatency: $instruct1 $regtype2, $regtype1 / $instruct2 $regtype1, $regtype2 / $instruct3 $regtype1,$regtype1" >> results1/convers.txt
+$ass -f elf64 -o b64.o -Dinstruct1=$instruct1 -Dinstruct2=$instruct2 -Dinstruct3=$instruct3 -Dregtype1=$regtype1 -Dregtype2=$regtype2 -Dnumimm=$numimm -Dimmvalue=$immvalue -Drepeat1=$repeat1 -Dtmode=L123 -Pconvers.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then 
+  echo "assembling $instruct1 failed"
+  echo "assembling $instruct1 failed" >> results1/convers.txt
+else
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers.txt
+fi
+
+elif  [ "$ttmode" == "L3f" ] ; then
+instruct3=MAXPS
+echo -e "\n\nLatency: $instruct1 $regtype2, $regtype1 / $instruct2 $regtype1, $regtype2 / $instruct3 $regtype1,$regtype1" >> results1/convers.txt
+$ass -f elf64 -o b64.o -Dinstruct1=$instruct1 -Dinstruct2=$instruct2 -Dinstruct3=$instruct3 -Dregtype1=$regtype1 -Dregtype2=$regtype2 -Dnumimm=$numimm -Dimmvalue=$immvalue -Drepeat1=$repeat1 -Dtmode=L123 -Pconvers.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then 
+  echo "assembling $instruct1 failed"
+  echo "assembling $instruct1 failed" >> results1/convers.txt
+else
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers.txt
+fi
+
+elif  [ "$ttmode" == "L3vf" ] ; then
+instruct3=VMAXPS
+echo -e "\n\nLatency: $instruct1 $regtype2, $regtype1 / $instruct2 $regtype1, $regtype2 / $instruct3 $regtype1,$regtype1" >> results1/convers.txt
+$ass -f elf64 -o b64.o -Dinstruct1=$instruct1 -Dinstruct2=$instruct2 -Dinstruct3=$instruct3 -Dregtype1=$regtype1 -Dregtype2=$regtype2 -Dnumimm=$numimm -Dimmvalue=$immvalue -Drepeat1=$repeat1 -Dtmode=L123 -Pconvers.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then 
+  echo "assembling $instruct1 failed"
+  echo "assembling $instruct1 failed" >> results1/convers.txt
+else
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers.txt
+fi
+
+elif  [ "$ttmode" == "L3d" ] ; then
+instruct3=MAXPD
+echo -e "\n\nLatency: $instruct1 $regtype2, $regtype1 / $instruct2 $regtype1, $regtype2 / $instruct3 $regtype1,$regtype1" >> results1/convers.txt
+$ass -f elf64 -o b64.o -Dinstruct1=$instruct1 -Dinstruct2=$instruct2 -Dinstruct3=$instruct3 -Dregtype1=$regtype1 -Dregtype2=$regtype2 -Dnumimm=$numimm -Dimmvalue=$immvalue -Drepeat1=$repeat1 -Dtmode=L123 -Pconvers.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then 
+  echo "assembling $instruct1 failed"
+  echo "assembling $instruct1 failed" >> results1/convers.txt
+else
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers.txt
+fi
+
+elif  [ "$ttmode" == "L3vd" ] ; then
+instruct3=VMAXPD
+echo -e "\n\nLatency: $instruct1 $regtype2, $regtype1 / $instruct2 $regtype1, $regtype2 / $instruct3 $regtype1,$regtype1" >> results1/convers.txt
+$ass -f elf64 -o b64.o -Dinstruct1=$instruct1 -Dinstruct2=$instruct2 -Dinstruct3=$instruct3 -Dregtype1=$regtype1 -Dregtype2=$regtype2 -Dnumimm=$numimm -Dimmvalue=$immvalue -Drepeat1=$repeat1 -Dtmode=L123 -Pconvers.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then 
+  echo "assembling $instruct1 failed"
+  echo "assembling $instruct1 failed" >> results1/convers.txt
+else
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers.txt
+fi
+
+
+else  # default test modes
+
+if [ $numimm -eq 0 ] ; then
+echo -e "\n\nThroughput: $instruct1 $regtype2,$regtype1"  >> results1/convers.txt
+else
+echo -e "\n\nThroughput: $instruct1 $regtype2,$regtype1,$immvalue"  >> results1/convers.txt
+fi
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct1=$instruct1 -Dregtype1=$regtype1 -Dregtype2=$regtype2 -Dnumimm=$numimm -Dimmvalue=$immvalue -Drepeat1=$repeat1 -Dcounters=$cts -Dtmode=T1 -Pconvers.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then 
+  echo "assembling $instruct1 failed"
+  echo "assembling $instruct1 failed" >> results1/convers.txt
+else
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers.txt
+fi
+done
+
+if [ "$regtype1" == "$regtype2" ] ; then
+
+if [ $numimm -eq 0 ] ; then
+echo -e "\n\nLatency: $instruct1 $regtype2,$regtype1"  >> results1/convers.txt
+else
+echo -e "\n\nLatency: $instruct1 $regtype2,$regtype1,$immvalue"  >> results1/convers.txt
+fi
+$ass -f elf64 -o b64.o -Dinstruct1=$instruct1 -Dregtype1=$regtype1 -Dregtype2=$regtype2 -Dnumimm=$numimm -Dimmvalue=$immvalue -Drepeat1=$repeat1 -Dtmode=L1 -Pconvers.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then 
+  echo "assembling $instruct1 failed"
+  echo "assembling $instruct1 failed" >> results1/convers.txt
+else
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers.txt
+fi
+fi
+
+echo -e "\n\nThroughput: $instruct2 $regtype1, $regtype2"  >> results1/convers.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct1=$instruct2 -Dregtype1=$regtype2 -Dregtype2=$regtype1 -Dnumimm=0 -Drepeat1=$repeat1 -Dcounters=$cts -Dtmode=T1 -Pconvers.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then 
+  echo "assembling $instruct1 failed"
+  echo "assembling $instruct1 failed" >> results1/convers.txt
+else
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers.txt
+fi
+done
+
+if [ "$regtype1" == "$regtype2" ] ; then
+echo -e "\n\nLatency: $instruct2 $regtype1, $regtype2"  >> results1/convers.txt
+$ass -f elf64 -o b64.o -Dinstruct1=$instruct2 -Dregtype1=$regtype1 -Dregtype2=$regtype2 -Dnumimm=0 -Drepeat1=$repeat1 -Dtmode=L1 -Pconvers.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then 
+  echo "assembling $instruct1 failed"
+  echo "assembling $instruct1 failed" >> results1/convers.txt
+else
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers.txt
+fi
+fi
+
+if [ $numimm -eq 0 ] ; then
+echo -e "\n\nLatency: $instruct1 $regtype2, $regtype1 / $instruct2 $regtype1, $regtype2"  >> results1/convers.txt
+else
+echo -e "\n\nLatency: $instruct1 $regtype2, $regtype1,$immvalue / $instruct2 $regtype1, $regtype2"  >> results1/convers.txt
+fi
+$ass -f elf64 -o b64.o -Dinstruct1=$instruct1 -Dinstruct2=$instruct2 -Dregtype1=$regtype1 -Dregtype2=$regtype2 -Dnumimm=$numimm -Dimmvalue=$immvalue -Drepeat1=$repeat1 -Dtmode=L12 -Pconvers.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then 
+  echo "assembling $instruct1 failed"
+  echo "assembling $instruct1 failed" >> results1/convers.txt
+else
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers.txt
+fi
+
+fi
+
+done
+
+echo -e "\n"  >> results1/convers.txt

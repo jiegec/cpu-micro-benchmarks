@@ -1,0 +1,213 @@
+#!/bin/bash
+#                decoder_throughput.sh2          2021-03-16 Agner Fog
+#
+# PMC Test program for testing any loop buffer or microop cache
+# Uses different instructions to see if they fit in the microop cache
+#
+# (c) 2021 GNU General Public License www.gnu.org/licenses
+#
+# Parameters:
+#
+# tcase:     Test case:
+#            1: short NOPs
+#            2: long NOPs, 12 bytes
+#            3: long NOPs, 15 bytes
+#            4: mixed integer and vector instructions, 6 instructions
+#            5: 3 short nops and one alu/branch pair
+#            6: 4 short nops and one alu/branch pair
+#            7: 2 short nops and two alu/branch pairs
+#            8: 3 short nops and two alu/branch pairs
+#            9: 4 short nops and two alu/branch pairs
+#           10: 3 short nops and three alu/branch pairs
+#           11: two alu/branch pairs
+#
+#
+# numinstr:  Total number of instructions in loop
+# 
+# nopsize:   Size of NOP instructions
+# 
+# noptype:   Type of NOPs for tcase 1
+#            2: long NOPs (0F 1F ...)
+#            3: 66 NOPs (simple NOP with up to 14 operand size prefixes)
+#            4: long NOPs up to 11, then other instructions with max 3 prefixes up to 14 (for processors that have penalties for > 3 prefixes)
+# 
+# repeatn:   Number of loop repetitions
+
+# (You may change the parameters to focus near the limit of the buffer size)
+
+. vars.sh
+
+# Performance counters
+if  [ "$CPUbrand" = "Intel" -a $imodel -ne 28 ] ; then
+# This one is for Intel processors with uop cache:
+cts=$LoopPMCs
+else
+cts=$BranchPMCs
+fi
+
+# number of instructions in loop:
+numberlist="100 1000 2000 4000 8000 10000 20000"
+
+echo -e "Test decoding on loops bigger than microop cache size"  > results2/decoder_throughput.txt
+
+echo -e "\nCase 1. Loop with short NOPs"  >> results2/decoder_throughput.txt
+
+nthreads=1
+repeatn=100
+tcase=1
+noptype=2
+nopsize=1
+
+for numinstr in $numberlist
+do
+echo -e "\n\nNumber of instructions = $numinstr"  >> results2/decoder_throughput.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Pdecoder_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decoder_throughput.txt
+done
+
+echo -e "\nCase 2. Loop with 12 byte NOPs"  >> results2/decoder_throughput.txt
+tcase=2
+nopsize=12
+
+for numinstr in $numberlist
+do
+echo -e "\n\nNumber of instructions = $numinstr"  >> results2/decoder_throughput.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Pdecoder_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decoder_throughput.txt
+done
+
+echo -e "\nCase 3. Loop with 15 byte NOPs"  >> results2/decoder_throughput.txt
+tcase=3
+nopsize=15
+
+for numinstr in $numberlist
+do
+echo -e "\n\nNumber of instructions = $numinstr"  >> results2/decoder_throughput.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Pdecoder_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decoder_throughput.txt
+done
+
+echo -e "\nCase 4. mixed integer and vector instructions, 6 instructions"  >> results2/decoder_throughput.txt
+tcase=4
+nopsize=1
+
+for numinstr in $numberlist
+do
+echo -e "\n\nNumber of instructions = $numinstr"  >> results2/decoder_throughput.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Pdecoder_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decoder_throughput.txt
+done
+
+echo -e "\nCase 5. 3 nops and one alu/branch pair"  >> results2/decoder_throughput.txt
+tcase=5
+nopsize=1
+
+for numinstr in $numberlist
+do
+echo -e "\n\nNumber of instructions = $numinstr"  >> results2/decoder_throughput.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Pdecoder_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decoder_throughput.txt
+done
+
+echo -e "\nCase 6. 4 nops and one alu/branch pair"  >> results2/decoder_throughput.txt
+tcase=6
+nopsize=1
+
+for numinstr in $numberlist
+do
+echo -e "\n\nNumber of instructions = $numinstr"  >> results2/decoder_throughput.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Pdecoder_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decoder_throughput.txt
+done
+
+echo -e "\nCase 7. 2 nops and two alu/branch pairs"  >> results2/decoder_throughput.txt
+tcase=7
+nopsize=1
+
+for numinstr in $numberlist
+do
+echo -e "\n\nNumber of instructions = $numinstr"  >> results2/decoder_throughput.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Pdecoder_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decoder_throughput.txt
+done
+
+echo -e "\nCase 8. 3 nops and two alu/branch pairs"  >> results2/decoder_throughput.txt
+tcase=8
+nopsize=1
+
+for numinstr in $numberlist
+do
+echo -e "\n\nNumber of instructions = $numinstr"  >> results2/decoder_throughput.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Pdecoder_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decoder_throughput.txt
+done
+
+echo -e "\nCase 9. 4 nops and two alu/branch pairs"  >> results2/decoder_throughput.txt
+tcase=9
+nopsize=1
+
+for numinstr in $numberlist
+do
+echo -e "\n\nNumber of instructions = $numinstr"  >> results2/decoder_throughput.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Pdecoder_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decoder_throughput.txt
+done
+
+echo -e "\nCase 10. 3 nops and three alu/branch pairs"  >> results2/decoder_throughput.txt
+tcase=10
+nopsize=1
+
+for numinstr in $numberlist
+do
+echo -e "\n\nNumber of instructions = $numinstr"  >> results2/decoder_throughput.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Pdecoder_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decoder_throughput.txt
+done
+
+echo -e "\nCase 11. Two alu/branch pairs"  >> results2/decoder_throughput.txt
+tcase=11
+nopsize=1
+
+for numinstr in $numberlist
+do
+echo -e "\n\nNumber of instructions = $numinstr"  >> results2/decoder_throughput.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Pdecoder_throughput.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decoder_throughput.txt
+done
+
+
+
+echo -e "\n"  >> results2/decoder_throughput.txt

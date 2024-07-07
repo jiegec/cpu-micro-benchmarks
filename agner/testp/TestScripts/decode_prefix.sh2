@@ -1,0 +1,251 @@
+#!/bin/bash
+#                                                                        2021-01-25 Agner Fog
+# Compile and run PMCTest for instructions with combinations of prefixe s
+# (c) Copyright 2017-2021 by Agner Fog. GNU General Public License v. 3. www.gnu.org/licenses
+
+
+# Test cases:
+#           1. length changing prefix 66
+#           2. length changing prefix REX.W
+#           3. length changing prefix 67
+#           4. lzcnt 66 F3 0F
+#           5. lzcnt F3 48 0F
+#           6. 66 0F long nop
+#           7. 66 0F 38 movapd
+#           8. 66 0F 38 pabsw
+#           9. segment + REX mov rax,rbx
+#          10. segment + VEX2 vmovaps
+#          11. segment + VEX3 vmovaps 
+#          12. segment + EVEX4 vmovaps xmm1 {k1}, xmm2
+#
+#          NUM_PREF = number of extra prefixes, must be at least 1 
+# 
+# repeat1:      Number of repetitions of loop
+#
+# repeat2:      Number of consequtive NOPs inside a loop
+
+. vars.sh
+
+repeat1=100
+repeat2=100
+repeatlist="100 1000 10000"
+preflist="1 2 3 4 5 6"
+warmupcount=100000000
+
+echo -e "Decoding of instructions with multiple prefixes\n"  > results2/decode_prefix.txt
+
+tcase=1
+echo -e "\n************\n1. Length-changing prefix 66: mov ax,1000h\n"    >> results2/decode_prefix.txt
+
+for repeat2 in $repeatlist
+do
+for num_pref in $preflist
+do
+echo -e "\n$repeat1 * $repeat2 instructions, $num_pref prefixes" >> results2/decode_prefix.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnum_pref=$num_pref -Drepeat1=$repeat1 -Drepeat2=$repeat2 -DWARMUPCOUNT=$warmupcount -Dcounters=$LoopPMCs -Pdecode_prefix.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decode_prefix.txt
+if [ $? -ne 0 ] ; then echo "Error. Failed\n" >> results2/decode_prefix.txt
+fi
+done
+done
+
+tcase=2
+echo -e "\n************\n2. length changing prefix REX.W: mov rax,constant\n"  >> results2/decode_prefix.txt
+
+for repeat2 in $repeatlist
+do
+for num_pref in $preflist
+do
+echo -e "\n$repeat1 * $repeat2 instructions, $num_pref prefixes" >> results2/decode_prefix.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnum_pref=$num_pref -Drepeat1=$repeat1 -Drepeat2=$repeat2 -DWARMUPCOUNT=$warmupcount -Dcounters=$LoopPMCs -Pdecode_prefix.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decode_prefix.txt
+if [ $? -ne 0 ] ; then echo "Error. Failed\n" >> results2/decode_prefix.txt
+fi
+done
+done
+
+if  [ `grep -c -i "no32bit" cpuinfo.txt ` -eq 0 ] ; then
+tcase=3
+echo -e "\n************\n3. length changing prefix 67, 32 bit mode: lea eax,[bx+1000h]\n"  >> results2/decode_prefix.txt
+
+for repeat2 in $repeatlist
+do
+for num_pref in $preflist
+do
+echo -e "\n$repeat1 * $repeat2 instructions, $num_pref prefixes" >> results2/decode_prefix.txt
+$ass -f elf32 -o b32.o -Dtcase=$tcase -Dnum_pref=$num_pref -Drepeat1=$repeat1 -Drepeat2=$repeat2 -DWARMUPCOUNT=$warmupcount -Dcounters=$LoopPMCs -Pdecode_prefix.inc TemplateB32.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decode_prefix.txt
+if [ $? -ne 0 ] ; then echo "Error. Failed\n" >> results2/decode_prefix.txt
+fi
+done
+done
+
+fi # 32 bit
+
+tcase=4
+echo -e "\n************\n4. 66 F3 0F: lzcnt ax, bx\n"  >> results2/decode_prefix.txt
+for repeat2 in $repeatlist
+do
+for num_pref in $preflist
+do
+echo -e "\n$repeat1 * $repeat2 instructions, $num_pref prefixes" >> results2/decode_prefix.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnum_pref=$num_pref -Drepeat1=$repeat1 -Drepeat2=$repeat2 -DWARMUPCOUNT=$warmupcount -Dcounters=$LoopPMCs -Pdecode_prefix.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decode_prefix.txt
+if [ $? -ne 0 ] ; then echo "Error. Failed\n" >> results2/decode_prefix.txt
+fi
+done
+done
+
+tcase=5
+echo -e "\n************\n5. F3 REX 0F: lzcnt rax, rbx\n"  >> results2/decode_prefix.txt
+for repeat2 in $repeatlist
+do
+for num_pref in $preflist
+do
+echo -e "\n$repeat1 * $repeat2 instructions, $num_pref prefixes" >> results2/decode_prefix.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnum_pref=$num_pref -Drepeat1=$repeat1 -Drepeat2=$repeat2 -DWARMUPCOUNT=$warmupcount -Dcounters=$LoopPMCs -Pdecode_prefix.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decode_prefix.txt
+if [ $? -ne 0 ] ; then echo "Error. Failed\n" >> results2/decode_prefix.txt
+fi
+done
+done
+
+tcase=6
+echo -e "\n************\n6. 66 0F: long nop\n"  >> results2/decode_prefix.txt
+for repeat2 in $repeatlist
+do
+for num_pref in $preflist
+do
+echo -e "\n$repeat1 * $repeat2 instructions, $num_pref prefixes" >> results2/decode_prefix.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnum_pref=$num_pref -Drepeat1=$repeat1 -Drepeat2=$repeat2 -DWARMUPCOUNT=$warmupcount -Dcounters=$LoopPMCs -Pdecode_prefix.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decode_prefix.txt
+if [ $? -ne 0 ] ; then echo "Error. Failed\n" >> results2/decode_prefix.txt
+fi
+done
+done
+
+tcase=7
+echo -e "\n************\n7. 66 0F: movapd\n"  >> results2/decode_prefix.txt
+for repeat2 in $repeatlist
+do
+for num_pref in $preflist
+do
+echo -e "\n$repeat1 * $repeat2 instructions, $num_pref prefixes" >> results2/decode_prefix.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnum_pref=$num_pref -Drepeat1=$repeat1 -Drepeat2=$repeat2 -DWARMUPCOUNT=$warmupcount -Dcounters=$LoopPMCs -Pdecode_prefix.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decode_prefix.txt
+if [ $? -ne 0 ] ; then echo "Error. Failed\n" >> results2/decode_prefix.txt
+fi
+done
+done
+
+tcase=8
+echo -e "\n************\n8. 66 0F 38 pabsw\n"  >> results2/decode_prefix.txt
+for repeat2 in $repeatlist
+do
+for num_pref in $preflist
+do
+echo -e "\n$repeat1 * $repeat2 instructions, $num_pref prefixes" >> results2/decode_prefix.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnum_pref=$num_pref -Drepeat1=$repeat1 -Drepeat2=$repeat2 -DWARMUPCOUNT=$warmupcount -Dcounters=$LoopPMCs -Pdecode_prefix.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decode_prefix.txt
+if [ $? -ne 0 ] ; then echo "Error. Failed\n" >> results2/decode_prefix.txt
+fi
+done
+done
+
+tcase=9
+echo -e "\n************\n9. segment + REX: mov rax,rbx\n"  >> results2/decode_prefix.txt
+for repeat2 in $repeatlist
+do
+for num_pref in $preflist
+do
+echo -e "\n$repeat1 * $repeat2 instructions, $num_pref prefixes" >> results2/decode_prefix.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnum_pref=$num_pref -Drepeat1=$repeat1 -Drepeat2=$repeat2 -DWARMUPCOUNT=$warmupcount -Dcounters=$LoopPMCs -Pdecode_prefix.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decode_prefix.txt
+if [ $? -ne 0 ] ; then echo "Error. Failed\n" >> results2/decode_prefix.txt
+fi
+done
+done
+
+if  [ `grep -c -i "AVX" cpuinfo.txt ` -ne 0 ] ; then
+tcase=10
+echo -e "\n************\n10. segment + VEX2: vmovaps xmm1, xmm2\n"  >> results2/decode_prefix.txt
+for repeat2 in $repeatlist
+do
+for num_pref in $preflist
+do
+echo -e "\n$repeat1 * $repeat2 instructions, $num_pref prefixes" >> results2/decode_prefix.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnum_pref=$num_pref -Drepeat1=$repeat1 -Drepeat2=$repeat2 -DWARMUPCOUNT=$warmupcount -Dcounters=$LoopPMCs -Pdecode_prefix.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decode_prefix.txt
+if [ $? -ne 0 ] ; then echo "Error. Failed\n" >> results2/decode_prefix.txt
+fi
+done
+done
+
+tcase=11
+echo -e "\n************\n11. segment + VEX3: vmovaps xmm8, xmm9\n"  >> results2/decode_prefix.txt
+fi # avx
+for repeat2 in $repeatlist
+do
+for num_pref in $preflist
+do
+echo -e "\n$repeat1 * $repeat2 instructions, $num_pref prefixes" >> results2/decode_prefix.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnum_pref=$num_pref -Drepeat1=$repeat1 -Drepeat2=$repeat2 -DWARMUPCOUNT=$warmupcount -Dcounters=$LoopPMCs -Pdecode_prefix.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decode_prefix.txt
+if [ $? -ne 0 ] ; then echo "Error. Failed\n" >> results2/decode_prefix.txt
+fi
+done
+done
+
+if  [ `grep -c -i "AVX512VL" cpuinfo.txt ` -ne 0 ] ; then
+tcase=12
+echo -e "\n************\n12. segment + EVEX4: vmovaps xmm1 {k1}, xmm2\n"  >> results2/decode_prefix.txt
+for repeat2 in $repeatlist
+do
+for num_pref in $preflist
+do
+echo -e "\n$repeat1 * $repeat2 instructions, $num_pref prefixes" >> results2/decode_prefix.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnum_pref=$num_pref -Drepeat1=$repeat1 -Drepeat2=$repeat2 -DWARMUPCOUNT=$warmupcount -Dcounters=$LoopPMCs -Pdecode_prefix.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decode_prefix.txt
+if [ $? -ne 0 ] ; then echo "Error. Failed\n" >> results2/decode_prefix.txt
+fi
+done
+done
+fi # avx512vl
+
+echo -e "\n"  >> results2/decode_prefix.txt
