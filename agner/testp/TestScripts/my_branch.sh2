@@ -1,0 +1,6 @@
+#!/bin/bash
+nasm -f elf64 -l b64.lst -o b64.o -Dcounters=1,9,201,207 -Pmy_branch.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x
