@@ -415,7 +415,7 @@ void gen_ghr_gadget() {
 // generate gadget for ghr2 test
 // https://cseweb.ucsd.edu/~dstefan/pubs/yavarzadeh:2023:half.pdf
 void gen_ghr2_gadget() {
-  int min_branch_align = 15;
+  int min_branch_align = 13;
   int max_branch_align = 19;
   int min_target_align = 3;
   int max_target_align = 8;
@@ -444,7 +444,7 @@ void gen_ghr2_gadget() {
       // NOTE: do not generate more loops: they contribute to branch misses due
       // to history limit do not generate a chain of loops: btb will become a
       // bottleneck eax = 194 means 193 taken branches
-      fprintf(fp, "\tmov eax, 194\n");
+      fprintf(fp, "\tmov eax, 195\n");
       fprintf(fp, "\tjmp ghr2_size_%d_%d_dummy_target\n", branch_align,
               target_align);
 
@@ -468,14 +468,14 @@ void gen_ghr2_gadget() {
 
       // first random branch
       // place alignment on branch & target
+      // test ebx, ebx: 2 bytes
       fprintf(fp, "\ttest ebx, ebx\n");
-      fprintf(fp, "\talign %d\n", 1 << branch_align);
       if (target_align >= 7) {
         // 6 bytes jnz
-        fprintf(fp, "\t%%rep %d\n", (1 << branch_align) - 6);
+        fprintf(fp, "\t%%rep %d\n", (1 << branch_align) - 6 - 2);
       } else {
         // 2 bytes jnz
-        fprintf(fp, "\t%%rep %d\n", (1 << branch_align) - 2);
+        fprintf(fp, "\t%%rep %d\n", (1 << branch_align) - 2 - 2);
       }
       fprintf(fp, "\tnop\n");
       fprintf(fp, "\t%%endrep\n");
