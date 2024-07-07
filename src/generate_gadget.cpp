@@ -488,6 +488,8 @@ void gen_ghr2_gadget() {
               target_align);
 
       // second random branch
+      // add alignment to second branch to avoid pc[5] partitioning
+      fprintf(fp, "\talign %d\n", 1 << 6);
       fprintf(fp, "\tjnz ghr2_size_%d_%d_second_target\n", branch_align,
               target_align);
       fprintf(fp, "\tghr2_size_%d_%d_second_target:\n", branch_align,
