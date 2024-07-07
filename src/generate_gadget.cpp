@@ -442,8 +442,8 @@ void gen_ghr2_gadget() {
 
       // loop
       // NOTE: do not generate more loops: they contribute to branch misses due
-      // to history limit do not generate a chain of loops: btb will become a
-      // bottleneck eax = 194 means 193 taken branches
+      // to history limit. do not generate a chain of loops: btb will become a
+      // bottleneck. eax = 195 means 194 taken branches
       fprintf(fp, "\tmov eax, 195\n");
       fprintf(fp, "\tjmp ghr2_size_%d_%d_dummy_target\n", branch_align,
               target_align);
