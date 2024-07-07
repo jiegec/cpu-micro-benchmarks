@@ -1,0 +1,145 @@
+#!/bin/bash
+#                                                                   2016-11-02
+
+# Compile and run PMCTest for different implementations of memcpy
+# (c) 2012-2016 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+. vars.sh
+
+# Compile A file if modified
+if [ PMCTestA.cpp -nt a64.o ] ; then
+g++ -O2 -c -m64 -oa64.o PMCTestA.cpp
+fi
+
+# Assemble memcpy file
+$ass -f elf64 -o c64.o memcpy64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+
+# get CPU specific variables
+. vars.sh
+
+echo -e "Test of different implementations of memcpy\n"  > results2/memcpy.txt
+echo -e "MEMCPYR:    Use REP MOVS instruction\n"    >> results2/memcpy.txt
+echo -e "MEMCPYS2:   Use SSE2 instruction set, 16 bytes aligned load/stores\n"    >> results2/memcpy.txt
+echo -e "MEMCPYS3:   Use SSSE3 instruction set, 16 bytes aligned load/stores\n"    >> results2/memcpy.txt
+echo -e "MEMCPYU:    Use unaligned 16 bytes loads, aligned stores\n"    >> results2/memcpy.txt
+echo -e "MEMCPYNT:   Use non-temporal stores, 16 bytes\n"    >> results2/memcpy.txt
+echo -e "MEMCPYNT32: Use non-temporal stores, 32 bytes\n"    >> results2/memcpy.txt
+echo -e "MEMCPYAVXA: Use AVX instruction set, 16 bytes aligned load/stores\n"    >> results2/memcpy.txt
+echo -e "MEMCPYAVXU: Use AVX instruction set, 32 bytes unaligned loads, aligned stores\n"    >> results2/memcpy.txt
+echo -e "MEMCPYXOP:  Use AMD XOP instruction set, 16 bytes aligned load/stores\n"    >> results2/memcpy.txt
+echo -e "MEMCPYAVX512F: Use AVX512F instruction set, 64 bytes unaligned load/stores\n"    >> results2/memcpy.txt
+echo -e "MEMCPYAVX512BW: Use AVX512BW instruction set, 64 bytes unaligned load/stores\n"    >> results2/memcpy.txt
+
+# lists of methods supported on this computer
+
+list1="MEMCPYR MEMCPYS2 MEMCPYU"
+if  [ `grep -c -i "SSSE3"    cpuinfo.txt ` -gt 0 ] ; then list2="MEMCPYS3"              ; else list2="" ; fi
+if  [ `grep -c -i "AVX"      cpuinfo.txt ` -gt 0 ] ; then list3="MEMCPYAVXA MEMCPYAVXU" ; else list3="" ; fi
+if  [ `grep -c -i "XOP"      cpuinfo.txt ` -gt 0 ] ; then list4="MEMCPYXOP"             ; else list4="" ; fi
+list5="MEMCPYNT"
+if  [ `grep -c -i "AVX"      cpuinfo.txt ` -gt 0 ] ; then list6="MEMCPYNT32"            ; else list6="" ; fi
+if  [ `grep -c -i "AVX512"   cpuinfo.txt ` -gt 0 ] ; then list7="MEMCPYAVX512F"         ; else list7="" ; fi
+if  [ `grep -c -i "AVX512BW" cpuinfo.txt ` -gt 0 ] ; then list8="MEMCPYAVX512BW"        ; else list8="" ; fi
+
+counters=$PMCs
+nthreads=1
+
+# loop for size
+for dsize in  7 67 135 256 1024 5000 15009 34000 550000 9000000
+do
+
+echo -e "\n\n"  >> results2/memcpy.txt
+
+for srcoff in  0 4
+do
+
+for dstoff in  0 10
+do
+
+for mversion in $list1 $list2 $list3 $list4 $list5 $list6 $list7 $list8
+do
+
+echo -e "\n\nsize: $dsize, src offs: $srcoff, dst offs: $dstoff, method: $mversion "  >> results2/memcpy.txt
+
+$ass -f elf64 -o b64.o -Dmversion=$mversion -Ddsize=$dsize -Dsrcoff=$srcoff -Ddstoff=$dstoff -Dcounters=$counters -Dnthreads=$nthreads -Pmemcpy.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o c64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/memcpy.txt
+if [ $? -ne 0 ] ; then 
+  echo -e "Error: Execution failed!" >> results2/memcpy.txt
+fi
+
+done
+done
+done
+done
+
+# Test with multiple threads
+
+nthreads=3
+
+echo -e "\n\nTest with $nthreads threads:"  >> results2/memcpy.txt
+
+# loop for size
+for dsize in  100 1024 5000 15000 34000 550000
+do
+
+srcoff=0
+dstoff=0
+
+for mversion in $list1 $list2 $list3 $list4 $list5 $list6 $list7 $list8
+do
+
+echo -e "\n\nsize: $dsize, src offs: $srcoff, dst offs: $dstoff, method: $mversion "  >> results2/memcpy.txt
+$ass -f elf64 -o b64.o -Dmversion=$mversion -Ddsize=$dsize -Dsrcoff=$srcoff -Ddstoff=$dstoff -Dcounters=$counters -Dnthreads=$nthreads -Pmemcpy.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o c64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/memcpy.txt
+
+done
+
+srcoff=8
+dstoff=12
+
+for mversion in $list1 $list2 $list3 $list4 $list5 $list6 $list7 $list8
+do
+
+echo -e "\n\nsize: $dsize, src offs: $srcoff, dst offs: $dstoff, method: $mversion "  >> results2/memcpy.txt
+$ass -f elf64 -o b64.o -Dmversion=$mversion -Ddsize=$dsize -Dsrcoff=$srcoff -Ddstoff=$dstoff -Dcounters=$counters -Dnthreads=$nthreads -Pmemcpy.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o c64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/memcpy.txt
+
+done
+
+done
+
+
+echo -e "\n"  >> results2/memcpy.txt
+
+# Verify that all versions are correct
+
+# Assemble memcpy file
+$ass -f elf64 -o c64.o memcpy64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+
+echo -e "\nVerifying that all versions are correct\n"
+
+for mversion in $list1 $list2 $list3 $list4 $list5 $list6 $list7 $list8
+do
+
+echo -e "method: $mversion " 
+
+# g++ -fno-pie -no-pie -m64 -Dmversion=MEMCPYAVX512BW testmemcpy.cpp c64.o
+
+
+g++ -fno-pie -no-pie -m64 -ox -Dmversion=$mversion testmemcpy.cpp c64.o
+if [ $? -ne 0 ] ; then exit ; fi
+./x
+
+done
+

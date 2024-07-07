@@ -1,0 +1,153 @@
+#!/bin/bash
+#                                                            2015-12-20 Agner Fog
+#
+# Test chains of instructions to determine delays between different execution domains
+#
+# (c) Copyright 2013-2015 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+# Detect CPU specific variables
+. vars.sh
+
+echo -e "Test chains of instructions to determine delays between different execution domains\n"  > results2/exec_domain.txt
+
+# define instruction pairs with register types:
+# Each set contains six elements separated by commas without spaces:
+# 1. Instruction to test
+# 2. Chain instruction for domain A (e.g. integer vector domain)
+# 3. Chain instruction for domain B (e.g. f.p. vector domain)
+# 4. Third operand for instruction 1, n for none, r for register, any integer for immediate
+# 5. Register type for source and destination (r32, r64, mmx, xmm, ymm)
+# 6. Test mode:
+#    0 = test latency of instruction
+#    1 = test latency of instruction + chain instruction A
+#    2 = test latency of instruction + chain instruction B
+#    3 = all of the above
+#    4 = test latency of instruction + A + B / B + A
+#
+# The sets are separated by space
+
+#  FMA instructions   
+if  [ `grep -c -i "fma[ 3,\t]" cpuinfo.txt ` -gt 0 ] ; then
+list2="vfmadd132ps,addps,maxps,r,xmm,3  vfmadd132ps,addps,maxps,r,xmm,4"
+else
+list2=""
+fi
+
+for instrpair in                      \
+   por,por,por,n,xmm,0                \
+   maxps,por,maxps,n,xmm,3            \
+   maxps,por,orps,n,xmm,3             \
+   maxpd,por,orpd,n,xmm,3             \
+   addps,maxps,maxpd,n,xmm,3          \
+   addps,addps,addpd,n,xmm,3          \
+   addpd,por,orpd,n,xmm,3             \
+   paddw,por,orps,n,xmm,3             \
+   maxps,paddw,maxps,n,xmm,3          \
+   orps,por,maxps,n,xmm,3             \
+   movaps,por,maxps,n,xmm,3           \
+   movdqa,por,maxps,n,xmm,3           \
+   movss,por,maxps,n,xmm,3            \
+   movsd,por,maxpd,n,xmm,3            \
+   shufps,por,maxps,1,xmm,3           \
+   shufpd,por,maxpd,1,xmm,3           \
+   pshufd,por,maxpd,1,xmm,3           \
+   pshufd,paddd,maxpd,1,xmm,3         \
+   pshufd,paddd,addps,1,xmm,3         \
+   shufps,paddd,addps,1,xmm,3         \
+   blendps,por,maxps,1,xmm,3          \
+   pblendw,por,maxpd,1,xmm,3          \
+   movddup,por,maxpd,n,xmm,3          \
+   movsldup,por,maxps,n,xmm,3         \
+   movhlps,por,maxps,n,xmm,3          \
+   unpcklps,por,maxps,n,xmm,3         \
+   insertps,por,maxps,1,xmm,3         \
+   addps,por,maxps,n,xmm,3            \
+   mulps,por,maxps,n,xmm,3            \
+   haddps,por,maxps,n,xmm,3           \
+   haddps,por,maxps,n,xmm,4           \
+   cvtps2pd,por,maxps,n,xmm,3         \
+   cvtpd2ps,por,maxps,n,xmm,3         \
+   cvtdq2ps,por,maxps,n,xmm,3         \
+   cvtdq2ps,por,maxps,n,xmm,4         \
+   cvtps2dq,por,maxps,n,xmm,3         \
+   cvtps2dq,por,maxps,n,xmm,4         \
+   roundps,por,maxps,0,xmm,3          \
+   dpps,por,maxps,0,xmm,3             \
+   dpps,por,maxps,0,xmm,4             \
+   dppd,por,maxpd,0,xmm,3             \
+   dppd,por,maxpd,0,xmm,4             \
+   sqrtps,por,maxps,n,xmm,3           \
+   andps,por,maxps,n,xmm,3            \
+   $list2
+do
+
+# split each set into its six elements by the commas:
+elements=( $(echo $instrpair | tr ',' ' ') )
+instruct1=${elements[0]}
+instruct2=${elements[1]}
+instruct3=${elements[2]}
+immvalue=${elements[3]}
+regtype1=${elements[4]}
+ttmode=${elements[5]}
+
+if [ "$immvalue" == "n" -o "$immvalue" == "" ] ; then
+numimm=0
+numop1=2
+elif [ "$immvalue" == "r" ] ; then
+numimm=0
+numop1=3
+else
+numimm=1
+numop1=2
+fi
+
+repeat1=100
+
+if [ $ttmode -eq 0 -o $ttmode -eq 3 ] ; then
+echo -e "\n\nLatency: $instruct1 $regtype1,$regtype1"  >> results2/exec_domain.txt
+$ass -f elf64 -o b64.o -Dinstruct1=$instruct1 -Dregtype1=$regtype1 -Dregtype2=$regtype1 -Dnumimm=$numimm -Dimmvalue=$immvalue -Dnumop1=$numop1 -Drepeat1=$repeat1 -Dtmode=L1 -Pconvers.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/exec_domain.txt
+fi
+
+if [ $ttmode -eq 1 -o $ttmode -eq 3 ] ; then
+echo -e "\n\nLatency: $instruct1 $regtype1,$regtype1 + $instruct2 $regtype1,$regtype1"  >> results2/exec_domain.txt
+$ass -f elf64 -o b64.o -Dinstruct1=$instruct1 -Dinstruct2=$instruct2 -Dregtype1=$regtype1 -Dregtype2=$regtype1 -Dnumimm=$numimm -Dimmvalue=$immvalue -Dnumop1=$numop1 -Drepeat1=$repeat1 -Dtmode=L12 -Pconvers.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/exec_domain.txt
+fi
+
+if [ $ttmode -eq 2 -o $ttmode -eq 3 ] ; then
+echo -e "\n\nLatency: $instruct1 $regtype1,$regtype1 + $instruct3 $regtype1,$regtype1"  >> results2/exec_domain.txt
+$ass -f elf64 -o b64.o -Dinstruct1=$instruct1 -Dinstruct2=$instruct3 -Dregtype1=$regtype1 -Dregtype2=$regtype1 -Dnumimm=$numimm -Dimmvalue=$immvalue -Dnumop1=$numop1 -Drepeat1=$repeat1 -Dtmode=L12 -Pconvers.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/exec_domain.txt
+fi
+
+if [ $ttmode -eq 4 ] ; then
+echo -e "\n\nLatency: $instruct1 + $instruct2 + $instruct3 $regtype1,$regtype1"  >> results2/exec_domain.txt
+$ass -f elf64 -o b64.o -Dinstruct1=$instruct1 -Dinstruct2=$instruct2 -Dinstruct3=$instruct3 -Dregtype1=$regtype1 -Dregtype2=$regtype1 -Dnumimm=$numimm -Dimmvalue=$immvalue -Dnumop1=$numop1 -Drepeat1=$repeat1 -Dtmode=L123 -Pconvers.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/exec_domain.txt
+echo -e "\n\nLatency: $instruct1 + $instruct3 + $instruct2 $regtype1,$regtype1"  >> results2/exec_domain.txt
+$ass -f elf64 -o b64.o -Dinstruct1=$instruct1 -Dinstruct2=$instruct3 -Dinstruct3=$instruct2 -Dregtype1=$regtype1 -Dregtype2=$regtype1 -Dnumimm=$numimm -Dimmvalue=$immvalue -Dnumop1=$numop1 -Drepeat1=$repeat1 -Dtmode=L123 -Pconvers.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/exec_domain.txt
+fi
+
+#elif
+
+done
+
+echo -e "\n"  >> results2/exec_domain.txt
+

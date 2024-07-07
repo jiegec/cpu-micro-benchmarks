@@ -1,0 +1,106 @@
+#!/bin/bash
+#                                                                        2022-11-01 Agner Fog
+# Compile and run PMCTest for different kinds of NOP instructions
+# looping through NOP length
+# (c) Copyright 2012-2022 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+# noptype:      1: pseudo-NOPs such as LEA eax,[eax+0]
+#               2: long NOPs (0F 1F ...)
+#               3: 66 NOPs (simple NOP with up to 14 operand size prefixes)
+#               4: long NOPs up to 11, then other instructions with max 3 prefixes up to 14 (for processors that have penalties for > 3 prefixes)
+#               5: seg NOPs (simple NOP with up to 14 segment prefixes)
+# 
+# nopsize:      Length of each NOP in bytes, 1 - 15
+# 
+# repeat1:      Number of repetitions of loop
+#
+# repeat2:      Number of consequtive NOPs inside a loop
+
+. vars.sh
+
+
+repeat1=1000
+repeat2=100
+
+echo -e "NOP instructions throughput\n"  > results2/decode_nops.txt
+echo -e "\n\nShort sequence:"  >> results2/decode_nops.txt
+echo -e "$repeat1 * $repeat2 NOPs\n"    >> results2/decode_nops.txt
+
+# warmup
+$ass -f elf64 -o b64.o -Dnoptype=2 -Dnopsize=3 -Drepeat2=10 -Drepeat1=4 -DWARMUPCOUNT=100000000 -Pdecode_nops.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> /dev/null
+
+for nt in 2 3
+do
+
+if [ $nt -eq 1 ]; then echo -e "\n\npseudo-NOPs\n" >> results2/decode_nops.txt ; fi
+if [ $nt -eq 2 ]; then echo -e "\n\nlong NOPs\n" >> results2/decode_nops.txt ; fi
+if [ $nt -eq 3 ]; then echo -e "\n\n66 NOPs\n" >> results2/decode_nops.txt ; fi
+if [ $nt -eq 4 ]; then echo -e "\n\nvarious, with max 3 prefixes up to 14\n" >> results2/decode_nops.txt ; fi
+if [ $nt -eq 5 ]; then echo -e "\n\nseg-prefix NOPs\n" >> results2/decode_nops.txt ; fi
+
+for ns in {1..15}
+do
+
+echo -e "\n\nNopsize: $ns "  >> results2/decode_nops.txt
+
+$ass -f elf64 -o b64.o -Dnoptype=$nt -Dnopsize=$ns -Drepeat2=$repeat2 -Drepeat1=$repeat1 -DWARMUPCOUNT=100000000 -Dcounters=$LoopPMCs -Pdecode_nops.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decode_nops.txt
+
+done
+done
+
+
+echo -e "\n\n3 threads in parallel:"  >> results2/decode_nops.txt
+
+repeat2=10000
+repeat1=100
+echo -e "\n\nLong sequence:"  >> results2/decode_nops.txt
+echo -e "$repeat1 * $repeat2 NOPs\n"    >> results2/decode_nops.txt
+
+for nt in {2..3}
+do
+
+if [ $nt -eq 1 ]; then echo -e "\n\npseudo-NOPs\n" >> results2/decode_nops.txt ; fi
+if [ $nt -eq 2 ]; then echo -e "\n\nlong NOPs\n" >> results2/decode_nops.txt ; fi
+if [ $nt -eq 3 ]; then echo -e "\n\n66 NOPs\n" >> results2/decode_nops.txt ; fi
+if [ $nt -eq 4 ]; then echo -e "\n\nvarious, with max 3 prefixes up to 14\n" >> results2/decode_nops.txt ; fi
+if [ $nt -eq 5 ]; then echo -e "\n\nseg-prefix NOPs\n" >> results2/decode_nops.txt ; fi
+
+for ns in {1..15}
+do
+
+echo -e "\n\n3 threads. Nopsize: $ns. $repeat1 * $repeat2 NOPs"  >> results2/decode_nops.txt
+
+$ass -f elf64 -o b64.o -Dnoptype=$nt -Dnopsize=$ns -Drepeat2=$repeat2 -Drepeat1=$repeat1 -DWARMUPCOUNT=100000000 -Dcounters=$LoopPMCs -Dnthreads=3 -Pdecode_nops.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decode_nops.txt
+
+done
+done
+
+nt=2
+repeat2=100000
+for ns in {1..15}
+do
+
+echo -e "\n\n3 threads. Nopsize: $ns. $repeat1 * $repeat2 NOPs"  >> results2/decode_nops.txt
+
+$ass -f elf64 -o b64.o -Dnoptype=$nt -Dnopsize=$ns -Drepeat2=$repeat2 -Drepeat1=$repeat1 -DWARMUPCOUNT=100000000 -Dcounters=$LoopPMCs -Dnthreads=3 -Pdecode_nops.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decode_nops.txt
+
+done
+
+echo -e "\n"  >> results2/decode_nops.txt
+

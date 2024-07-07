@@ -1,0 +1,58 @@
+#!/bin/bash
+#                length_chg_prefix.sh2             2021-01-21 Agner Fog
+#
+# PMC Test program for testing any loop buffer or microop cache
+#
+# (c) 2013-2021 GNU General Public License www.gnu.org/licenses
+#
+# Parameters:
+#
+# tcase:   1: mov register,constant
+#          2: add register,constant
+#          3: test register,constant
+#          4: neg or not register (bogus length-changing prefix)
+#          5: lea with address size prefix (must run in 32-bit mode)
+#
+# tmode:   1: instructions with length-changing prefix, aligned by 16
+#          2: instructions with length-changing prefix, crossing 16-bytes boundary
+#          3: similar instructions with non-length-changing prefix, aligned by 16
+
+. vars.sh
+
+nthreads=1
+
+echo -e "Test length-changing prefixes"  > results2/length_chg_prefix.txt
+
+for tcase in {1..5}
+do
+
+if [ $tcase -eq 1 ]; then echo -e "\n\nCase 1: mov register,constant\n" >> results2/length_chg_prefix.txt ; fi
+if [ $tcase -eq 2 ]; then echo -e "\n\nCase 2: add register,constant\n" >> results2/length_chg_prefix.txt ; fi
+if [ $tcase -eq 3 ]; then echo -e "\n\nCase 3: test register,constant\n" >> results2/length_chg_prefix.txt ; fi
+if [ $tcase -eq 4 ]; then echo -e "\n\nCase 4: neg or not register (bogus length-changing prefix)\n" >> results2/length_chg_prefix.txt ; fi
+if [ $tcase -eq 5 ]; then echo -e "\n\nCase 5: lea with address size prefix\n" >> results2/length_chg_prefix.txt ; fi
+
+for tmode in {1..3}
+do
+if [ $tmode -eq 1 ]; then echo -e "\nA. Instructions with length-changing prefix, aligned by 16" >> results2/length_chg_prefix.txt ; fi
+if [ $tmode -eq 2 ]; then echo -e "\nB. Instructions with length-changing prefix, crossing 16-bytes boundary" >> results2/length_chg_prefix.txt ; fi
+if [ $tmode -eq 3 ]; then echo -e "\nC. Similar instructions with non-length-changing prefix" >> results2/length_chg_prefix.txt ; fi
+
+if [[ $support32bit == 1 ]] ; then
+  $ass -f elf32 -o b32.o -l b32.lst -Dnthreads=$nthreads -Dtcase=$tcase -Dtmode=$tmode -Plength_chg_prefix.inc TemplateB32.nasm
+  if [ $? -ne 0 ] ; then exit ; fi
+  g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+  if [ $? -ne 0 ] ; then exit ; fi
+  ./x >> results2/length_chg_prefix.txt
+else # must use 64 bits
+  $ass -f elf64 -o b64.o -l b64.lst -Dnthreads=$nthreads -Dtcase=$tcase -Dtmode=$tmode -Plength_chg_prefix.inc TemplateB64.nasm
+  if [ $? -ne 0 ] ; then exit ; fi
+  g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+  if [ $? -ne 0 ] ; then exit ; fi
+  ./x >> results2/length_chg_prefix.txt
+fi
+
+done
+done
+
+echo -e "\n"  >> results2/length_chg_prefix.txt

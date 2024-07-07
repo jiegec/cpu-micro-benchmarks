@@ -1,0 +1,140 @@
+#!/bin/bash
+#                                                                        2012-01-26 AgF
+# Compile and run PMCTest for integer division instructions
+# (c) Copyright 2012 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+# Detect CPU specific variables
+. vars.sh
+
+echo -e "Division instructions latency and throughput\n"  > results1/div.txt
+echo -e "OBS: Subtract 2 from instructions/uops count\nSubtract 1 clock from latencies"  >> results1/div.txt
+
+# single operand:
+
+for i in  div idiv
+do
+
+for r in 8 16 32 64
+do
+
+echo -e "\n\nLatency: $i , registersize $r, 1 / 1 "  >> results1/div.txt
+
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dregsize=$r -Ddivlo=1 -Ddivhi=0 -Ddivisor=1 -Dtmode=L -Pdiv.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/div.txt
+
+echo -e "\n\nThroughput: $i , registersize $r, 1 / 1 "  >> results1/div.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dregsize=$r -Ddivlo=1 -Ddivhi=0 -Ddivisor=1 -Dtmode=T -Dcounters=$cts -Pdiv.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/div.txt
+done
+
+echo -e "\n\nThroughput with memory operand: $i , registersize $r, 1 / 1 "  >> results1/div.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dregsize=$r -Ddivlo=1 -Ddivhi=0 -Ddivisor=1 -Dtmode=M -Dcounters=$cts -Pdiv.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/div.txt
+done
+done
+done
+
+echo -e "\n"  >> results1/div.txt
+
+for i in  div idiv
+do
+
+######## 8
+
+echo -e "\n\nLatency: $i , registersize 8 "  >> results1/div.txt
+
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dregsize=8 -Ddivlo=1 -Ddivhi=51 -Ddivisor=123 -Dtmode=L -Pdiv.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/div.txt
+
+echo -e "\n\nThroughput: $i , registersize 8 "  >> results1/div.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dregsize=8 -Ddivlo=1 -Ddivhi=51 -Ddivisor=123 -Dtmode=T -Dcounters=$cts -Pdiv.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/div.txt
+done
+
+######## 16
+
+echo -e "\n\nLatency: $i , registersize 16 "  >> results1/div.txt
+
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dregsize=16 -Ddivlo=133 -Ddivhi=0x343a -Ddivisor=0x75e6 -Dtmode=L -Pdiv.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/div.txt
+
+echo -e "\n\nThroughput: $i , registersize 16 "  >> results1/div.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dregsize=16 -Ddivlo=133 -Ddivhi=0x343a -Ddivisor=0x75e6 -Dtmode=T -Dcounters=$cts -Pdiv.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/div.txt
+done
+
+
+######## 32
+
+echo -e "\n\nLatency: $i , registersize 32 "  >> results1/div.txt
+
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dregsize=32 -Ddivlo=133 -Ddivhi=0x343a9ed7 -Ddivisor=0x75e6e44f -Dtmode=L -Pdiv.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/div.txt
+
+echo -e "\n\nThroughput: $i , registersize 32 "  >> results1/div.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dregsize=32 -Ddivlo=133 -Ddivhi=0x343a9ed7 -Ddivisor=0x75e6e44f -Dtmode=T -Dcounters=$cts -Pdiv.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/div.txt
+done
+
+######## 64
+
+echo -e "\n\nLatency: $i , registersize 64 "  >> results1/div.txt
+
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dregsize=64 -Ddivlo=133 -Ddivhi=0x343a9ed744556677 -Ddivisor=0x75e6e44fccddeeff -Dtmode=L -Pdiv.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/div.txt
+
+echo -e "\n\nThroughput: $i , registersize 64 "  >> results1/div.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dregsize=64 -Ddivlo=133 -Ddivhi=0x343a9ed766778899 -Ddivisor=0x75e6e44fccdd4455 -Dtmode=T -Dcounters=$cts -Pdiv.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/div.txt
+done
+
+
+done
+
+echo -e "\n"  >> results1/div.txt
+

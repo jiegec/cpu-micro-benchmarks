@@ -1,0 +1,213 @@
+#!/bin/bash
+#                                                                     2021-01-25 Agner Fog
+
+# Compile and run PMCTest for testing decoding speed of complex instructions
+
+# (c) Copyright 2013-2021 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+# Detect CPU specific variables
+. vars.sh
+
+# if [ "$CPUbrand" = "Intel" ] ; then
+# cts="1,9,100,104,24,25"
+# else
+# cts=$PMCs
+# fi
+
+cts=$LoopPMCs
+
+echo -e "Test decoding speed of complex instructions\n"  > results2/decode_double.txt
+echo -e "Note!: The script needs individual adjustment for each processor type.\n"  >> results2/decode_double.txt
+
+repeat0=10
+repeat1=100
+nthreads=1
+sequencelengths="100 1000 10000"
+
+let tcase=1
+echo -e "\n\ncase $tcase: 1-1-1-1 single instructions\n"  >> results2/decode_double.txt
+for repeat2 in $sequencelengths ; do
+echo -e "\nsequence $repeat2 times * loop $repeat1 times"  >> results2/decode_double.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pdecode_double.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decode_double.txt
+done
+
+let tcase=2
+echo -e "\n\ncase $tcase: 2-2 double instructions, integer\n"  >> results2/decode_double.txt
+for repeat2 in $sequencelengths ; do
+echo -e "\nsequence $repeat2 times * loop $repeat1 times"  >> results2/decode_double.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pdecode_double.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decode_double.txt
+done
+
+let tcase=3
+echo -e "\n\ncase $tcase: 2-2 double instructions, vector\n"  >> results2/decode_double.txt
+for repeat2 in $sequencelengths ; do
+echo -e "\nsequence $repeat2 times * loop $repeat1 times"  >> results2/decode_double.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pdecode_double.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decode_double.txt
+done
+
+let tcase=4
+echo -e "\n\ncase $tcase: 2-2 double instructions, mixed type\n"  >> results2/decode_double.txt
+for repeat2 in $sequencelengths ; do
+echo -e "\nsequence $repeat2 times * loop $repeat1 times"  >> results2/decode_double.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pdecode_double.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decode_double.txt
+done
+
+let tcase=5
+echo -e "\n\ncase $tcase: 2-1-2-1\n"  >> results2/decode_double.txt
+for repeat2 in $sequencelengths ; do
+echo -e "\nsequence $repeat2 times * loop $repeat1 times"  >> results2/decode_double.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pdecode_double.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decode_double.txt
+done
+
+let tcase=6
+echo -e "\n\ncase $tcase: 2-1-1\n"  >> results2/decode_double.txt
+for repeat2 in $sequencelengths ; do
+echo -e "\nsequence $repeat2 times * loop $repeat1 times"  >> results2/decode_double.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pdecode_double.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decode_double.txt
+done
+
+let tcase=7
+echo -e "\n\ncase $tcase: 2-1-1-1\n"  >> results2/decode_double.txt
+for repeat2 in $sequencelengths ; do
+echo -e "\nsequence $repeat2 times * loop $repeat1 times"  >> results2/decode_double.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pdecode_double.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decode_double.txt
+done
+
+let tcase=8
+echo -e "\n\ncase $tcase: 2-2-1\n"  >> results2/decode_double.txt
+for repeat2 in $sequencelengths ; do
+echo -e "\nsequence $repeat2 times * loop $repeat1 times"  >> results2/decode_double.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pdecode_double.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decode_double.txt
+done
+
+let tcase=9
+echo -e "\n\ncase $tcase: 3-1\n"  >> results2/decode_double.txt
+for repeat2 in $sequencelengths ; do
+echo -e "\nsequence $repeat2 times * loop $repeat1 times"  >> results2/decode_double.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pdecode_double.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decode_double.txt
+done
+
+let tcase=10
+echo -e "\n\ncase $tcase: 3-1-1\n"  >> results2/decode_double.txt
+for repeat2 in $sequencelengths ; do
+echo -e "\nsequence $repeat2 times * loop $repeat1 times"  >> results2/decode_double.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pdecode_double.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decode_double.txt
+done
+
+let tcase=11
+echo -e "\n\ncase $tcase: 4-1\n"  >> results2/decode_double.txt
+for repeat2 in $sequencelengths ; do
+echo -e "\nsequence $repeat2 times * loop $repeat1 times"  >> results2/decode_double.txt
+if [ "$CPUbrand" = "AMD" ] ; then  # use 32-bit mode instruction 'into'
+if [ $support32bit -ne 0 ] ; then
+  $ass -f elf32 -o b32.o -Dtcase=$tcase -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pdecode_double.inc TemplateB32.nasm
+  if [ $? -ne 0 ] ; then exit ; fi
+  g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+  if [ $? -ne 0 ] ; then exit ; fi
+fi
+else
+  $ass -f elf64 -o b64.o -Dtcase=$tcase -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pdecode_double.inc TemplateB64.nasm
+  if [ $? -ne 0 ] ; then exit ; fi
+  g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+  if [ $? -ne 0 ] ; then exit ; fi
+fi 
+./x >> results2/decode_double.txt
+done
+
+let tcase=12
+echo -e "\n\ncase $tcase: 3-2-1-2\n"  >> results2/decode_double.txt
+for repeat2 in $sequencelengths ; do
+echo -e "\nsequence $repeat2 times * loop $repeat1 times"  >> results2/decode_double.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pdecode_double.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decode_double.txt
+done
+
+let tcase=13
+echo -e "\n\ncase $tcase: 3-1-2-1\n"  >> results2/decode_double.txt
+for repeat2 in $sequencelengths ; do
+echo -e "\nsequence $repeat2 times * loop $repeat1 times"  >> results2/decode_double.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pdecode_double.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decode_double.txt
+done
+
+let tcase=14
+echo -e "\n\ncase $tcase: 3-1-1-1-1 last instruction OR, not fuseable\n"  >> results2/decode_double.txt
+for repeat2 in $sequencelengths ; do
+echo -e "\nsequence $repeat2 times * loop $repeat1 times"  >> results2/decode_double.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pdecode_double.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decode_double.txt
+done
+
+let tcase=15
+echo -e "\n\ncase $tcase: 3-1-1-1-(1+1) last instruction AND + jnz fused\n"  >> results2/decode_double.txt
+for repeat2 in $sequencelengths ; do
+echo -e "\nsequence $repeat2 times * loop $repeat1 times"  >> results2/decode_double.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pdecode_double.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decode_double.txt
+done
+
+let tcase=16
+echo -e "\n\ncase $tcase: 3-1-1-(1+1)-1 3rd instruction AND + jnz fused\n"  >> results2/decode_double.txt
+for repeat2 in $sequencelengths ; do
+echo -e "\nsequence $repeat2 times * loop $repeat1 times"  >> results2/decode_double.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pdecode_double.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/decode_double.txt
+done
+
+
+echo -e "\n"  >> results2/decode_double.txt

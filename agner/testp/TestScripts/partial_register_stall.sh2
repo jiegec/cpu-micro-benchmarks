@@ -1,0 +1,55 @@
+#!/bin/bash
+#                                        2022-11-02 Agner Fog
+
+# Test the maximum number of memory reads and writes per clock cycle
+
+# (c) 2013-2022 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+echo -e "\nTest if partial register access causes stall, synchronization uops, or false dependencies"  > results2/partial_register_stall.txt
+
+. vars.sh
+
+# Check if AVX supported
+if  [ `grep -c -i "avx"  cpuinfo.txt ` -ne 0 ] ; then
+lastcase=16
+else
+lastcase=13
+fi
+
+for ((tcase=1; tcase <=$lastcase; tcase++))
+do
+
+if [ $tcase -eq 1 ] ; then echo -e "\n\n1: al, ax (reading modified and unmodified parts)" >> results2/partial_register_stall.txt ; fi
+if [ $tcase -eq 2 ] ; then echo -e "\n\n2: ah, eax (reading modified and unmodified parts)" >> results2/partial_register_stall.txt ; fi
+if [ $tcase -eq 3 ] ; then echo -e "\n\n3: bx, ebx (reading modified and unmodified parts)" >> results2/partial_register_stall.txt ; fi
+if [ $tcase -eq 4 ] ; then echo -e "\n\n4: al, ah (possible false dependence)" >> results2/partial_register_stall.txt ; fi
+if [ $tcase -eq 5 ] ; then echo -e "\n\n5: inc, jc (reading unmodified bit. Beware of instruction fusion!)" >> results2/partial_register_stall.txt ; fi
+if [ $tcase -eq 6 ] ; then echo -e "\n\n6: inc, jbe (reading modified and unmodified bits. Beware of instruction fusion!)" >> results2/partial_register_stall.txt ; fi
+if [ $tcase -eq 7 ] ; then echo -e "\n\n7: inc, cmovbe (reading modified and unmodified bits)" >> results2/partial_register_stall.txt ; fi
+if [ $tcase -eq 8 ] ; then echo -e "\n\n8: inc, pushf (reading modified and unmodified bits)" >> results2/partial_register_stall.txt ; fi
+if [ $tcase -eq 9 ] ; then echo -e "\n\n9: sahf, jg (reading modified and unmodified bits)" >> results2/partial_register_stall.txt ; fi
+if [ $tcase -eq 10 ] ; then echo -e "\n\n10: bt, cmovbe (reading modified and unmodified bits)" >> results2/partial_register_stall.txt ; fi
+if [ $tcase -eq 11 ] ; then echo -e "\n\n11: shr, setbe (reading modified bits)" >> results2/partial_register_stall.txt ; fi
+if [ $tcase -eq 12 ] ; then echo -e "\n\n12: ror, setc (reading modified flag after rotate)" >> results2/partial_register_stall.txt ; fi
+if [ $tcase -eq 13 ] ; then echo -e "\n\n13: movss, orps (reading modified and unmodified parts)" >> results2/partial_register_stall.txt ; fi
+if [ $tcase -eq 14 ] ; then echo -e "\n\n14: movlps,orps (reading modified and unmodified parts)" >> results2/partial_register_stall.txt ; fi
+if [ $tcase -eq 15 ] ; then echo -e "\n\n15: xmm, ymm (VEX <-> non-VEX transition)" >> results2/partial_register_stall.txt ; fi
+if [ $tcase -eq 16 ] ; then echo -e "\n\n16: VEX vs. non-VEX dirty state false dependence" >> results2/partial_register_stall.txt ; fi
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dtmode=1 -Ppartial_register_stall.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/partial_register_stall.txt
+
+echo -e "\n\nComparison case whithout partial dependence:"  >> results2/partial_register_stall.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dtmode=2 -Ppartial_register_stall.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/partial_register_stall.txt
+
+done
+
+echo -e "\n"  >> results2/partial_register_stall.txt

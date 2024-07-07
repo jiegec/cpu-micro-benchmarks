@@ -1,0 +1,95 @@
+#!/bin/bash
+#                loop_buffer.sh2             2020-08-26 Agner Fog
+#
+# PMC Test program for testing any loop buffer or microop cache
+#
+# (c) 2013-2020 GNU General Public License www.gnu.org/licenses
+#
+# Parameters:
+#
+# nopsize:   Size of NOP instructions (1 - 15)
+# 
+# noptype:   2: long NOPs (0F 1F ...)
+#            3: 66 NOPs (simple NOP with up to 14 operand size prefixes)
+#            4: long NOPs up to 11, then other instructions with max 3 prefixes up to 14 (for processors that have penalties for > 3 prefixes)
+# 
+# repeat1:   Number of loop repetitions
+#
+# repeat2:   Number of NOPs in loop
+#
+# nthreads:  Number of simultaneous threads
+
+# (You may change the parameters to focus near the limit of the buffer size)
+
+. vars.sh
+
+nthreads=1
+
+repeat1=1000
+
+nopsize=12
+
+echo -e "Test loop buffer size"  > results2/loop_buffer.txt
+
+for noptype in 2 3
+do
+for repeat2 in 2 10 20 30 32 40 50 100 1000 2000 2200 2500 2800 3000 4000 10000 20000
+do
+
+totalsize=$(expr 5 + $repeat2 \* $nopsize )
+
+echo -e "\n\nNumber of NOPs = $repeat2, noptype = $noptype, nopsize = $nopsize, total size = $totalsize"  >> results2/loop_buffer.txt
+
+$ass -f elf64 -o b64.o -Dnthreads=$nthreads -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnoptype=$noptype -Dnopsize=$nopsize -Ploop_buffer.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_buffer.txt
+
+done
+done
+
+nopsize=14
+noptype=2
+
+for repeat2 in 10 30 100 1000 2000 2200 2500 2800 3000 4000 10000 20000
+do
+
+totalsize=$(expr 5 + $repeat2 \* $nopsize )
+
+echo -e "\n\nNumber of NOPs = $repeat2, noptype = $noptype, nopsize = $nopsize, total size = $totalsize"  >> results2/loop_buffer.txt
+
+$ass -f elf64 -o b64.o -Dnthreads=$nthreads -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnoptype=$noptype -Dnopsize=$nopsize -Ploop_buffer.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_buffer.txt
+
+done
+
+
+
+
+
+echo -e "\n\n\nTest with multiple threads"  >> results2/loop_buffer.txt
+nthreads=3
+
+for repeat2 in 100 1000 2000 2500 3000 10000 100000
+do
+for noptype in 2
+do
+
+totalsize=$(expr 5 + $repeat2 \* $nopsize )
+
+echo -e "\n\nNumber of NOPs = $repeat2, noptype = $noptype, nopsize = $nopsize, total size = $totalsize"  >> results2/loop_buffer.txt
+
+$ass -f elf64 -o b64.o -Dnthreads=$nthreads -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnoptype=$noptype -Dnopsize=$nopsize -Ploop_buffer.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_buffer.txt
+
+done
+done
+
+echo -e "\n"  >> results2/loop_buffer.txt

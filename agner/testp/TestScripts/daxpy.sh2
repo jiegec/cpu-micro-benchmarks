@@ -1,0 +1,84 @@
+#!/bin/bash
+#                                                                   2016-11-02 Agner Fog
+
+# Compile and run PMCTest for different implementations of DAXPY algorithm
+# (c) 2012-2016 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+
+echo -e "Different implementations of DAXPY\n"  > results2/daxpy.txt
+
+. vars.sh
+
+ndat=2000
+repeat1=100
+tcase=1
+nthreads=1
+
+echo -e "\n\n$repeat1 * $ndat double precision elements\n"  >> results2/daxpy.txt
+
+echo -e "\n\nCase 1: SSE2, 128 bit"  >> results2/daxpy.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dndat=$ndat -Drepeat1=$repeat1 -Dnthreads=$nthreads -Pdaxpy.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/daxpy.txt
+
+if  [ `grep -c -i "avx"   cpuinfo.txt ` -gt 0 ] ; then
+tcase=2
+echo -e "\n\nCase 2: AVX, 256 bit"  >> results2/daxpy.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dndat=$ndat -Drepeat1=$repeat1 -Dnthreads=$nthreads -Pdaxpy.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/daxpy.txt
+fi
+
+if  [ `grep -c -i "fma[ 3,\b]"   cpuinfo.txt ` -gt 0 ] ; then  # FMA3
+tcase=3
+echo -e "\n\nCase 3: FMA3, 128 bit"  >> results2/daxpy.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dndat=$ndat -Drepeat1=$repeat1 -Dnthreads=$nthreads -Pdaxpy.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/daxpy.txt
+
+tcase=4
+echo -e "\n\nCase 4: FMA3, 256 bit"  >> results2/daxpy.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dndat=$ndat -Drepeat1=$repeat1 -Dnthreads=$nthreads -Pdaxpy.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/daxpy.txt
+fi
+
+if  [ `grep -c -i "fma4"   cpuinfo.txt ` -gt 0 ] ; then  # FMA4
+tcase=5
+echo -e "\n\nCase 5: FMA4, 128 bit"  >> results2/daxpy.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dndat=$ndat -Drepeat1=$repeat1 -Dnthreads=$nthreads -Pdaxpy.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/daxpy.txt
+
+tcase=6
+echo -e "\n\nCase 6: FMA4, 256 bit"  >> results2/daxpy.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dndat=$ndat -Drepeat1=$repeat1 -Dnthreads=$nthreads -Pdaxpy.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/daxpy.txt
+fi
+
+if  [ `grep -c -i "avx512" cpuinfo.txt ` -gt 0 ] ; then  # AVX512
+tcase=7
+echo -e "\n\nCase 7: AVX512, 512 bit"  >> results2/daxpy.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dndat=$ndat -Drepeat1=$repeat1 -Dnthreads=$nthreads -Pdaxpy.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/daxpy.txt
+fi
+
+
+echo -e "\n"  >> results2/daxpy.txt
+

@@ -1,0 +1,14 @@
+*.zip
+x
+*.o
+*.mod
+*.mod.c
+a.out
+*.lst
+*.ko
+*.order
+*.symvers
+*.cmd
+*.exe
+*.sys
+*.obj

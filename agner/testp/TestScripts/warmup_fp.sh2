@@ -1,0 +1,104 @@
+#!/bin/bash
+#                warmup_fp.sh2             2015-12-21 Agner Fog
+#
+# PMC Test program for testing warm up effect of floating point unit
+#
+# (c) 2013 - 2015 GNU General Public License www.gnu.org/licenses
+#
+# Parameters:
+#
+# tcase:   1: integer multiplication
+#          2: x87 floating point multiplication
+#          3: xmm floating point scalar multiplication
+#          4: xmm 128-bit floating point vector multiplication
+#          5: ymm 256-bit floating point vector multiplication
+
+# Does not work. Cannot verify effect on Ivy Bridge
+# Try again on Sandy Bridge.
+
+. vars.sh
+
+# Adjust repeat counts to get visible effect
+repeat0=20
+repeat1=20
+repeat2=50
+nthreads=1
+
+
+echo -e "Test warm up effect of floating point unit"  > results2/warmup_fp.txt
+
+tcase=1
+echo -e "\ninteger multiplication" >> results2/warmup_fp.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnthreads=$nthreads -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Pwarmup_fp.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/warmup_fp.txt
+
+tcase=2
+echo -e "\n\nx87 floating point multiplication" >> results2/warmup_fp.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnthreads=$nthreads -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Pwarmup_fp.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/warmup_fp.txt
+
+tcase=3
+echo -e "\n\nxmm floating point scalar multiplication" >> results2/warmup_fp.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnthreads=$nthreads -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Pwarmup_fp.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/warmup_fp.txt
+
+tcase=4
+echo -e "\n\nxmm 128-bit floating point vector multiplication" >> results2/warmup_fp.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnthreads=$nthreads -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Pwarmup_fp.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/warmup_fp.txt
+
+# AVX only
+if  [ `grep -c -i "avx"  cpuinfo.txt ` -eq 0 ] ; then
+echo -e "\n"  >> results2/warmup_fp.txt
+exit
+fi 
+
+tcase=5
+echo -e "\n\nymm 256-bit floating point vector multiplication latency" >> results2/warmup_fp.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnthreads=$nthreads -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Pwarmup_fp.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/warmup_fp.txt
+
+tcase=6
+echo -e "\n\nymm 256-bit floating point vector multiplication throughput" >> results2/warmup_fp.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnthreads=$nthreads -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Pwarmup_fp.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/warmup_fp.txt
+
+echo -e "\n\nymm 256-bit floating point vector multiplication throughput with ymm priming followed by delay" >> results2/warmup_fp.txt
+
+for primingdelay in 1 10000 20000 50000 53000 54000 55000 100000 1000000 2000000 2250000 2500000 2600000 2700000 2750000 3000000
+do
+
+echo -e "\n\nDelay after priming = $primingdelay" >> results2/warmup_fp.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnthreads=$nthreads -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dprimingdelay=$primingdelay -Pwarmup_fp.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/warmup_fp.txt
+
+done 
+
+echo -e "\n"  >> results2/warmup_fp.txt

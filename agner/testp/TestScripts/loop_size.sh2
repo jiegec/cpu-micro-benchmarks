@@ -1,0 +1,669 @@
+#!/bin/bash
+#                loop_size.sh2             2022-05-19 Agner Fog
+#
+# PMC Test program for testing any loop buffer or microop cache
+# Uses different instructions to see if they fit in the microop cache
+#
+# (c) 2013-2021 GNU General Public License www.gnu.org/licenses
+#
+# Parameters:
+#
+# tcase:     Test case:
+#            1: loop with NOPs
+#            2: loop with short instructions, 2 bytes each
+#            3: loop with long instructions with big constants, 10 bytes each
+#            4: loop with short instructions and a branch inside
+#            5: loop with long instructions (by prefixes) and a branch inside
+#            6: Same as 3 but 32-bit constants instead of 64-bit. 5 bytes
+#            7: Same as 6 but extended with redundant prefixes to 10 bytes
+#            8: Instructions with 64 bit constants, 10 bytes each
+#            9: Instructions with 32 bit addr offset + 32 bit imm. constants, 10 bytes each
+#           10: Instructions with  8 bit addr offset + 32 bit imm. constants, 10 bytes each
+#           11: Instructions with 32 bit addr offset +  8 bit imm. constants, 10 bytes each
+#           12: Instructions with  8 bit addr offset +  8 bit imm. constants, 10 bytes each
+#           13: Instructions with 32 bit addr offset + 16 bit imm. constants, 10 bytes each
+#           14: Instructions with  8 bit addr offset + 16 bit imm. constants, 10 bytes each
+#           15: Instructions with rip relative addr  + 16 bit imm. constants, 10 bytes each
+#           16: Instructions with rip relative addr  + 32 bit imm. constants, 10 bytes each
+#           17: Instructions with rip relative addr (big) + 32 bit imm. constants, 10 bytes each
+#           18: Instructions with 64 bit abs address, 10 bytes each
+#           19: One inst. w. 64 bit constant and three with 32 bits, 10 bytes each
+#           20: Instructions with 32 bit absolute addr + 32 bit imm. constants, 10 bytes each
+#           21: Instructions with 32 bit absolute addr + 16 bit imm. constants, 10 bytes each
+#           22: Instructions with 32 bit absolute addr +  8 bit imm. constants, 10 bytes each
+#           23: Instructions with 32 bit absolute addr +  0 bit imm. constants, 10 bytes each
+#           24: Instructions with base + index + 0 bit offset + 32 bit imm. constants, 10 bytes each
+#           25: Instructions with base + index + 8 bit offset + 16 bit imm. constants, 10 bytes each
+#           26: Instructions with base + index + 32 bit offset + 16 bit imm. constants, 10 bytes each
+#           27: AVX instructions, 5 bytes each
+
+#
+# numinstr:  Total number of instructions in loop
+# 
+# nopsize:   Size of NOP instructions for tcase 1 (1 - 15)
+# 
+# noptype:   Type of NOPs for tcase 1
+#            2: long NOPs (0F 1F ...)
+#            3: 66 NOPs (simple NOP with up to 14 operand size prefixes)
+#            4: long NOPs up to 11, then other instructions with max 3 prefixes up to 14 (for processors that have penalties for > 3 prefixes)
+# 
+# repeatn:   Number of loop repetitions
+
+# (You may change the parameters to focus near the limit of the buffer size)
+
+. vars.sh
+
+# Performance counters
+if  [ "$CPUbrand" = "Intel" -a $imodel -ne 28 ] ; then
+# This one is for Intel processors with uop cache:
+cts=$LoopPMCs
+else
+cts=$BranchPMCs
+fi
+
+echo -e "Test loop buffer size and microop cache size"  > results2/loop_size.txt
+echo -e "and test which instructions fit into the microop cache"  >> results2/loop_size.txt
+
+echo -e "\nCase 1a. Loop with short NOPs"  >> results2/loop_size.txt
+
+nthreads=1
+repeatn=1000
+tcase=1
+noptype=2
+nopsize=1
+
+for numinstr in 2 4 6 10 20 25 32 40 50 55 63 100 1000 2000 4000 8000 10000 20000
+do
+
+totalsize=$(expr 4 + $numinstr \* $nopsize )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+
+echo -e "\n\nNumber of instructions = $numinstr, nopsize = $nopsize, total size = $totalsize"  >> results2/loop_size.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+
+done
+
+echo -e "\n\n\nCase 1b. Loop with long NOPs, 2 bytes"  >> results2/loop_size.txt
+
+nopsize=2
+
+for numinstr in 10 32 100 1000 2000 4000 8000 10000 16000
+do
+
+totalsize=$(expr 4 + $numinstr \* $nopsize )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+
+echo -e "\n\nNumber of instructions = $numinstr, nopsize = $nopsize, total size = $totalsize"  >> results2/loop_size.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+
+done
+
+echo -e "\n\n\nCase 1c. Loop with long NOPs, 4 bytes"  >> results2/loop_size.txt
+
+nopsize=4
+
+for numinstr in 10 32 100 1000 2000 4000 8000 10000 16000
+do
+
+totalsize=$(expr 4 + $numinstr \* $nopsize )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+
+echo -e "\n\nNumber of instructions = $numinstr, nopsize = $nopsize, total size = $totalsize"  >> results2/loop_size.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+
+done
+
+echo -e "\n\n\nCase 1d. Loop with long NOPs, 6 bytes"  >> results2/loop_size.txt
+
+nopsize=6
+
+for numinstr in 10 32 100 1000 2000 4000 8000 10000 16000
+do
+
+totalsize=$(expr 4 + $numinstr \* $nopsize )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+
+echo -e "\n\nNumber of instructions = $numinstr, nopsize = $nopsize, total size = $totalsize"  >> results2/loop_size.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+
+done
+
+
+echo -e "\n\n\nCase 1e. Loop with long NOPs, 8 bytes"  >> results2/loop_size.txt
+
+nopsize=8
+
+for numinstr in 4 8 12 32 100 1000 2000 4000 8000 10000
+do
+
+totalsize=$(expr 4 + $numinstr \* $nopsize )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+
+echo -e "\n\nNumber of instructions = $numinstr, nopsize = $nopsize, total size = $totalsize"  >> results2/loop_size.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+
+done
+
+
+echo -e "\n\n\nCase 2. Loop with short instructions, 2 bytes each" >> results2/loop_size.txt
+
+tcase=2
+nopsize=1
+
+for numinstr in 3 4 6 10 32 100 1000 
+do
+
+totalsize=$(expr $numinstr \* 2 )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+
+echo -e "\n\nNumber of instructions = $numinstr, total size = $totalsize"  >> results2/loop_size.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+
+done
+
+
+echo -e "\n\n\nCase 3. loop with long instructions with big constants, 10 bytes each" >> results2/loop_size.txt
+
+tcase=3
+
+for numinstr in 6 10 32 100 1000 10000
+do
+
+totalsize=$(expr $numinstr \* 10 - 16 )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+
+echo -e "\n\nNumber of instructions = $numinstr, total size = $totalsize"  >> results2/loop_size.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+
+done
+
+echo -e "\n\n\nCase 4. Loop with short instructions and one branch inside" >> results2/loop_size.txt
+
+tcase=4
+
+for numinstr in 6 10 32 100 1000 
+do
+
+totalsize=$(expr $numinstr \* 2 )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+
+echo -e "\n\nNumber of instructions = $numinstr, total size = $totalsize"  >> results2/loop_size.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+
+done
+
+echo -e "\n\n\nCase 5. loop with long instructions (by prefixes) and a branch inside" >> results2/loop_size.txt
+
+tcase=5
+
+for numinstr in 6 10 32 100 1000 
+do
+
+totalsize=$(expr $numinstr \* 10 - 28 )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+
+echo -e "\n\nNumber of instructions = $numinstr, total size = $totalsize"  >> results2/loop_size.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+
+done
+
+echo -e "\n\n\nCase 6. Similar to 3 with smaller constants" >> results2/loop_size.txt
+
+tcase=6
+
+for numinstr in 6 10 32 100 1000 
+do
+
+totalsize=$(expr $numinstr \* 5 - 6 )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+
+echo -e "\n\nNumber of instructions = $numinstr, total size = $totalsize"  >> results2/loop_size.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+
+done
+
+echo -e "\n\n\nCase 7. Similar to 6, extended with dummy prefixes to 10 bytes" >> results2/loop_size.txt
+tcase=7
+for numinstr in 6 10 32 100 1000 
+do
+totalsize=$(expr $numinstr \* 10 - 16 )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+echo -e "\n\nNumber of instructions = $numinstr, total size = $totalsize"  >> results2/loop_size.txt
+$ass -f elf64 -o b64.o  -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+done
+
+echo -e "\n\n\nCase 8. Instructions with 64 bit constants, 10 bytes each" >> results2/loop_size.txt
+tcase=8
+for numinstr in 6 10 32 100 1000 
+do
+totalsize=$(expr $numinstr \* 10 - 16 )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+echo -e "\n\nNumber of instructions = $numinstr, total size = $totalsize"  >> results2/loop_size.txt
+$ass -f elf64 -o b64.o  -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+done
+
+echo -e "\n\n\nCase 9. Instructions with 32 bit addr offset + 32 bit imm. constants, 10 bytes each" >> results2/loop_size.txt
+tcase=9
+for numinstr in 6 10 32 100 1000 
+do
+totalsize=$(expr $numinstr \* 10 - 16 )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+echo -e "\n\nNumber of instructions = $numinstr, total size = $totalsize"  >> results2/loop_size.txt
+$ass -f elf64 -o b64.o  -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+done
+
+echo -e "\n\n\nCase 10. Instructions with  8 bit addr offset + 32 bit imm. constants, 10 bytes each" >> results2/loop_size.txt
+tcase=10
+for numinstr in 6 10 32 100 1000 
+do
+totalsize=$(expr $numinstr \* 10 - 16 )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+echo -e "\n\nNumber of instructions = $numinstr, total size = $totalsize"  >> results2/loop_size.txt
+$ass -f elf64 -o b64.o  -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+done
+
+echo -e "\n\n\nCase 11. Instructions with 32 bit addr offset +  8 bit imm. constants, 10 bytes each" >> results2/loop_size.txt
+tcase=11
+for numinstr in 6 10 32 100 1000 
+do
+totalsize=$(expr $numinstr \* 10 - 16 )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+echo -e "\n\nNumber of instructions = $numinstr, total size = $totalsize"  >> results2/loop_size.txt
+$ass -f elf64 -o b64.o  -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+done
+
+echo -e "\n\n\nCase 12. Instructions with 8 bit addr offset + 8 bit imm. constants, 10 bytes each" >> results2/loop_size.txt
+tcase=12
+for numinstr in 6 10 32 100 1000 
+do
+totalsize=$(expr $numinstr \* 10 - 16 )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+echo -e "\n\nNumber of instructions = $numinstr, total size = $totalsize"  >> results2/loop_size.txt
+$ass -f elf64 -o b64.o  -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+done
+
+echo -e "\n\n\nCase 13. Instructions with 32 bit addr offset + 16 bit imm. constants, 10 bytes each" >> results2/loop_size.txt
+tcase=13
+for numinstr in 6 10 32 100 1000 
+do
+totalsize=$(expr $numinstr \* 10 - 16 )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+echo -e "\n\nNumber of instructions = $numinstr, total size = $totalsize"  >> results2/loop_size.txt
+$ass -f elf64 -o b64.o  -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+done
+
+echo -e "\n\n\nCase 14. Instructions with  8 bit addr offset + 16 bit imm. constants, 10 bytes each" >> results2/loop_size.txt
+tcase=14
+for numinstr in 6 10 32 100 1000 
+do
+totalsize=$(expr $numinstr \* 10 - 16 )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+echo -e "\n\nNumber of instructions = $numinstr, total size = $totalsize"  >> results2/loop_size.txt
+$ass -f elf64 -o b64.o  -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+done
+
+echo -e "\n\n\nCase 15. Instructions with rip relative addr  + 16 bit imm. constants, 10 bytes each" >> results2/loop_size.txt
+tcase=15
+for numinstr in 6 10 32 100 1000 
+do
+totalsize=$(expr $numinstr \* 10 - 16 )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+echo -e "\n\nNumber of instructions = $numinstr, total size = $totalsize"  >> results2/loop_size.txt
+$ass -f elf64 -o b64.o  -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+done
+
+echo -e "\n\n\nCase 16. Instructions with rip relative addr  + 32 bit imm. constants, 10 bytes each" >> results2/loop_size.txt
+tcase=16
+for numinstr in 6 10 32 100 1000 
+do
+totalsize=$(expr $numinstr \* 10 - 16 )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+echo -e "\n\nNumber of instructions = $numinstr, total size = $totalsize"  >> results2/loop_size.txt
+$ass -f elf64 -o b64.o  -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+done
+
+echo -e "\n\n\nCase 17. Instructions with rip relative addr (big) + 32 bit imm. constants, 10 bytes each" >> results2/loop_size.txt
+tcase=17
+for numinstr in 6 10 32 100 1000 
+do
+totalsize=$(expr $numinstr \* 10 - 16 )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+echo -e "\n\nNumber of instructions = $numinstr, total size = $totalsize"  >> results2/loop_size.txt
+$ass -f elf64 -o b64.o  -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+done
+
+echo -e "\n\n\nCase 18. Instructions with 64 bit abs address, 10 bytes each" >> results2/loop_size.txt
+tcase=18
+for numinstr in 6 10 32 100 1000 
+do
+totalsize=$(expr $numinstr \* 10 - 16 )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+echo -e "\n\nNumber of instructions = $numinstr, total size = $totalsize"  >> results2/loop_size.txt
+$ass -f elf64 -o b64.o  -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+done
+
+echo -e "\n\n\nCase 19. One inst. w. 64 bit constant and three with 32 bits, 10 bytes each" >> results2/loop_size.txt
+tcase=19
+for numinstr in 6 10 32 100 1000 
+do
+totalsize=$(expr $numinstr \* 10 - 16 )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+echo -e "\n\nNumber of instructions = $numinstr, total size = $totalsize"  >> results2/loop_size.txt
+$ass -f elf64 -o b64.o  -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+done
+
+if [ $support32bit -ne 0 ] ; then
+echo -e "\n\n\nCase 20. Instructions with 32 bit absolute addr + 32 bit imm. constants, 10 bytes each" >> results2/loop_size.txt
+tcase=20
+for numinstr in 6 10 32 100 1000 
+do
+totalsize=$(expr $numinstr \* 10 - 16 )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+echo -e "\n\nNumber of instructions = $numinstr, total size = $totalsize"  >> results2/loop_size.txt
+$ass -f elf32 -o b32.o  -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB32.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+done
+fi
+
+if [ $support32bit -ne 0 ] ; then
+echo -e "\n\n\nCase 21. Instructions with 32 bit absolute addr + 16 bit imm. constants, 10 bytes each" >> results2/loop_size.txt
+tcase=21
+for numinstr in 6 10 32 100 1000 
+do
+totalsize=$(expr $numinstr \* 10 - 16 )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+echo -e "\n\nNumber of instructions = $numinstr, total size = $totalsize"  >> results2/loop_size.txt
+$ass -f elf32 -o b32.o  -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB32.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+done
+fi
+
+if [ $support32bit -ne 0 ] ; then
+echo -e "\n\n\nCase 22. Instructions with 32 bit absolute addr + 8 bit imm. constants, 10 bytes each" >> results2/loop_size.txt
+tcase=22
+for numinstr in 6 10 32 100 1000 
+do
+totalsize=$(expr $numinstr \* 10 - 16 )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+echo -e "\n\nNumber of instructions = $numinstr, total size = $totalsize"  >> results2/loop_size.txt
+$ass -f elf32 -o b32.o  -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB32.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+done
+fi
+
+if [ $support32bit -ne 0 ] ; then
+echo -e "\n\n\nCase 23. Instructions with 32 bit absolute addr + 0 bit imm. constants, 10 bytes each" >> results2/loop_size.txt
+tcase=23
+for numinstr in 6 10 32 100 1000 
+do
+totalsize=$(expr $numinstr \* 10 - 16 )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+echo -e "\n\nNumber of instructions = $numinstr, total size = $totalsize"  >> results2/loop_size.txt
+$ass -f elf32 -o b32.o  -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB32.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+done
+fi
+
+echo -e "\n\n\nCase 24. Instructions with base + index + 0 bit offset + 32 bit imm. constants, 10 bytes each" >> results2/loop_size.txt
+tcase=24
+for numinstr in 6 10 32 100 1000 
+do
+totalsize=$(expr $numinstr \* 10 - 16 )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+echo -e "\n\nNumber of instructions = $numinstr, total size = $totalsize"  >> results2/loop_size.txt
+$ass -f elf64 -o b64.o  -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+done
+
+echo -e "\n\n\nCase 25. Instructions with base + index + 8 bit offset + 16 bit imm. constants, 10 bytes each" >> results2/loop_size.txt
+tcase=25
+for numinstr in 6 10 32 100 1000 
+do
+totalsize=$(expr $numinstr \* 10 - 16 )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+echo -e "\n\nNumber of instructions = $numinstr, total size = $totalsize"  >> results2/loop_size.txt
+$ass -f elf64 -o b64.o  -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+done
+
+echo -e "\n\n\nCase 26. Instructions with base + index + 32 bit offset + 16 bit imm. constants, 10 bytes each" >> results2/loop_size.txt
+tcase=26
+for numinstr in 6 10 32 100 1000 
+do
+totalsize=$(expr $numinstr \* 10 - 16 )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+echo -e "\n\nNumber of instructions = $numinstr, total size = $totalsize"  >> results2/loop_size.txt
+$ass -f elf64 -o b64.o  -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+done
+
+
+if  [ `grep -c -i "avx"  cpuinfo.txt ` -ne 0 ] ; then
+
+echo -e "\n\n\nCase 27. AVX instructions, 5 bytes each" >> results2/loop_size.txt
+tcase=27
+for numinstr in 6 10 32 100 1000 
+do
+totalsize=$(expr $numinstr \* 5 - 6 )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+echo -e "\n\nNumber of instructions = $numinstr, total size = $totalsize"  >> results2/loop_size.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+done
+
+fi  # AVX
+
+echo -e "\n\nThree threads. Loop with long NOPs"  >> results2/loop_size.txt
+
+nthreads=3
+tcase=1
+nopsize=8
+
+for numinstr in 4 8 16 32 48 56 64 100 1000 2000 4000 8000 10000
+do
+
+totalsize=$(expr 4 + $numinstr \* $nopsize )
+if [ $totalsize -gt 127 ] ; then
+totalsize=$(expr $totalsize + 4 )
+fi
+
+echo -e "\n\nNumber of instructions = $numinstr, nopsize = $nopsize, total size = $totalsize"  >> results2/loop_size.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dnuminstr=$numinstr -Dnoptype=$noptype -Dnopsize=$nopsize -Dnthreads=$nthreads -Drepeatn=$repeatn -Dcounters=$cts -Ploop_size.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/loop_size.txt
+
+done
+
+
+echo -e "\n"  >> results2/loop_size.txt

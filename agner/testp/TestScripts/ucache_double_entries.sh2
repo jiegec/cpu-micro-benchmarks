@@ -1,0 +1,610 @@
+#!/bin/bash
+# ucache_double_entries.sh2                                              2021-01-25 Agner Fog
+
+# Script for testing if instructions use double entries in microop cache
+# (Only for processors that have microop cache)
+
+# (c) Copyright 2015-2021 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+# Detect CPU specific variables
+. vars.sh
+
+# set makelisting to 1 if assembly listing desired, 0 if not
+makelisting=0
+
+if [ $makelisting -ne 0 ] ; then
+dolist="-lu"
+else
+dolist="-Ddummy="
+fi
+
+repeatlist="100 200 "
+
+compile_and_run () {
+   $ass -f elf64 -o b64.o $dolist$tcase.lst -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dtcase=$tcase -Dcounters=$LoopPMCs -Pucache_double_entries.inc TemplateB64.nasm
+   if [ $? -ne 0 ] ; then exit ; fi
+   g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox.exe -lpthread
+   if [ $? -ne 0 ] ; then exit ; fi
+   ./x.exe >> results2/ucache_double_entries.txt
+}
+
+compile_and_run32 () {
+   $ass -f elf32 -o b32.o $dolist$tcase.lst -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dtcase=$tcase -Dcounters=$LoopPMCs -Pucache_double_entries.inc TemplateB32.nasm
+   if [ $? -ne 0 ] ; then exit ; fi
+   g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox.exe -lpthread
+   if [ $? -ne 0 ] ; then exit ; fi
+   ./x.exe >> results2/ucache_double_entries.txt
+}
+
+echo -e "Testing if instructions use double entries in microop cache"  > results2/ucache_double_entries.txt
+echo -e "(Only for processors that have microop cache)."  >> results2/ucache_double_entries.txt
+echo -e "\nIncludes cases of possible microop fusion."  >> results2/ucache_double_entries.txt
+echo -e "\nRepeating aligned blocks of 4 instructions using 32 bytes combined."  >> results2/ucache_double_entries.txt
+echo -e "\no32small means 32-bit offset that can be compressed into 16-bit signed number"  >> results2/ucache_double_entries.txt
+echo -e "i32small means 32-bit immediate data that can be compressed into 16-bit signed number"  >> results2/ucache_double_entries.txt
+echo -e "i64small means 64-bit immediate data that can be compressed into 32-bit signed number"  >> results2/ucache_double_entries.txt
+
+tcase=1
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 1: mov reg64,i32, S-L-L-L, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=2
+for repeat2 in 5 $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 2: mov reg64,i64, S-L-L-L, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=3
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 3: mov reg64,i64, L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+repeat2=200
+repeat1=$(expr 10000 / $repeat2 )
+
+tcase=4
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 4: mov reg64,i64,  L-S-S-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+
+tcase=5
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 5: mov reg64,i64small, L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+if [ $support32bit -ne 0 ] ; then
+tcase=6
+echo -e "\n\nCase 6: cmp [abs32],r,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run32
+
+tcase=7
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 7: cmp [abs32],i8,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run32
+done
+
+repeat2=200
+repeat1=$(expr 10000 / $repeat2 )
+
+tcase=8
+echo -e "\n\nCase 8: cmp [abs32],i16,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run32
+
+tcase=9
+echo -e "\n\nCase 9: cmp [abs32],i32,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run32
+
+tcase=10
+echo -e "\n\nCase 10: cmp [abs32+p],i8,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run32
+
+tcase=11
+echo -e "\n\nCase 11: cmp [abs32+p],i32,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run32
+
+fi  # 32 bit
+
+tcase=12
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 12: mov [abs64],  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=13
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 13: cmp [basep], i8,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=14
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 14: cmp [basep], i16,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=15
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 15: cmp [basep], i32,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=16
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 16: cmp [basep+o8], i8,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=17
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 17: cmp [basep+o8], i16,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=18
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 18: cmp [basep+o8], i32,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=19
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 19: cmp [basep+o32small], i8,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=20
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 20: cmp [basep+o32small], i16,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=21
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 21: cmp [basep+o32small], i32small,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=22
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 22: cmp [basep+o32small], i32,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=23
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 23: cmp [basep+o32], i8,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=24
+repeat2=200
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 24: cmp [basep+o32], i16,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+
+tcase=25
+echo -e "\n\nCase 25: cmp [basep+o32], i32,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+
+tcase=26
+echo -e "\n\nCase 26: cmp [basep+s*index], reg,  L-L-L-S,  $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+
+tcase=27
+echo -e "\n\nCase 27: cmp [basep+s*index], i8,  L-L-L-S,  $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+
+tcase=28
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 28: cmp [basep+s*index], i16,  L-L-L-S,   $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=29
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 29: cmp [basep+s*index], i32,  L-L-L-S,  $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=30
+for repeat2 in $repeatlist
+do
+echo -e "\n\nCase 30: cmp [basep+s*index+o8], reg,  L-L-L-S,  $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=31
+for repeat2 in $repeatlist
+do
+echo -e "\n\nCase 31: cmp [basep+s*index+o8], i8,  L-L-L-S,  $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=32
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 32: cmp [basep+s*index+o8], i16,  L-L-L-S,  $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=33
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 33: cmp [basep+s*index+o8], i32,  L-L-L-S,  $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=34
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 34: cmp [basep+s*index+o32small], reg,  L-L-L-S,  $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=35
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 35: cmp [basep+s*index+o32small], i8,  L-L-L-S,  $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=36
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 36: cmp [basep+s*index+o32small], i16,  L-L-L-S,  $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=37
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 37: cmp [basep+s*index+o32small], i32,  L-S-S-S,  $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=38
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 38: cmp [rip], reg,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=39
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 39: cmp [rip small], i8,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=40
+repeat2=200
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 40: cmp [rip small], i16,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+
+tcase=41
+echo -e "\n\nCase 41: cmp [rip small], i32small,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+
+tcase=42
+echo -e "\n\nCase 42: cmp [rip small], i32,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+
+tcase=43
+echo -e "\n\nCase 43: cmp [rip], i8,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+
+tcase=44
+echo -e "\n\nCase 44: cmp [rip], i16,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+
+tcase=45
+echo -e "\n\nCase 45: cmp [rip], i32small,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+
+tcase=46
+echo -e "\n\nCase 46: cmp [rip], i32,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+
+tcase=47
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 47: mov [basep], i32small,  L-S-S-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=48
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 48: mov [basep], i32,  L-S-S-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=49
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 49: mov [basep+s*index], i32small,  L-S-S-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=50
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 50: mov [basep+s*index], i32,  L-S-S-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=51
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 51: cmp [rip], 0,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=52
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 52: cmp [rip], i8,  L-S-S-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=53
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 53: cmp [rip], i16,  L-S-S-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=54
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 54: cmp [rip], i32,  L-S-S-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=55
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 55: cmp FS:[o32small], i8,  L-S-S-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=56
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 56: cmp FS:[o32small], i8,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=57
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 57: cmp FS:[o32small], i16,  L-L-S-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=58
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 58: cmp FS:[o32small], i32small,  L-L-S-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=59
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 59: cmp FS:[o32small], i32,  L-L-S-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=60
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 60: roundps xmm,[rip], i8,  L-S-S-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=61
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 61: roundps xmm,[rip], i8,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+if  [ `grep -c -i "avx"   cpuinfo.txt ` -gt 0 ] ; then
+
+tcase=62
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 62: vinsertf128 y,y,[rip],1,  L-S-S-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=63
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 63: vinsertf128 y,y,[rip],1,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+fi  # AVX
+
+tcase=64
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 64: mov r,[abs64],  L-S-S-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=65
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 65: cmp [basep+s*index+o32], reg,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=66
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 66: cmp [basep+s*index+o32], i8,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+# added 2015:
+
+tcase=67
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 67: mov [basep+o32], r,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=68
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 68: mov [basep+s*index+o32], r,  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=69
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 69: cmp r,r / jc o32small;  L-L-S-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=70
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\nCase 70: cmp [basep+o32], r / jc o32small;  L-L-S-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=71
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\ncase 71: cmp [r+s*r], r / jc o32small;  L-L-S-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=72
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\ncase 72: cmp [r+s*r+o32small], r / jc o32small;  L-L-S-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+if  [ `grep -c -i "fma[ 3,\t]" cpuinfo.txt ` -gt 0 ] ; then
+tcase=73
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\ncase 73: fma r,r,[r];  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=74
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\ncase 74: fma r,r,[r+s*r];  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=75
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\ncase 75: fma r,r,[r+s*r+o32small];  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+tcase=76
+for repeat2 in $repeatlist
+do
+repeat1=$(expr 10000 / $repeat2 )
+echo -e "\n\ncase 76: fma r,r,[r+s*r+o32];  L-L-L-S, $repeat2 blocks"  >> results2/ucache_double_entries.txt
+compile_and_run
+done
+
+fi # FMA
+
+
+
+echo -e "\n"  >> results2/ucache_double_entries.txt

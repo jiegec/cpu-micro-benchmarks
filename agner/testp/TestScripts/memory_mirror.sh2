@@ -1,0 +1,385 @@
+#!/bin/bash
+# memory_mirror.sh2                                        2021-03-23 Agner Fog
+
+# Compile and run PMCTest for testing the mirroring of memory operands.
+# The AMD Zen 2 CPU can mirror memory operands in temporary registers under certain
+# conditions, tested here
+
+# (c) Copyright 2020-2021 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+# Detect CPU specific variables
+. vars.sh
+
+cts=$LoopPMCs
+
+# output directory
+outputdir=results2
+
+echo -e "Test if memory operands are mirrored in temporary CPU registers under different conditions (AMD Zen 2)\n"  > $outputdir/memory_mirror.txt
+
+repeat0=10
+repeat1=100
+nthreads=1
+
+if  [ `grep -c -i "avx512"  cpuinfo.txt ` -gt 0 ] ; then 
+    regsizelist="8 16 32 64 65 128 256 512"
+elif  [ `grep -c -i "avx"  cpuinfo.txt ` -gt 0 ] ; then 
+    regsizelist="8 16 32 64 65 128 256"
+else
+    regsizelist="8 16 32 64 65 128 "
+fi
+
+
+tcase=WRL
+echo -e "\n\ncase WRL: write to read latency\n"  >> $outputdir/memory_mirror.txt
+for regsize in $regsizelist ; do
+echo -e "\nregister size $regsize"  >> $outputdir/memory_mirror.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dregsize=$regsize -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+
+tcase=WRT
+echo -e "\n\ncase WRT: write to read throughput\n"  >> $outputdir/memory_mirror.txt
+for regsize in $regsizelist ; do
+echo -e "\nregister size $regsize"  >> $outputdir/memory_mirror.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dregsize=$regsize -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+
+tcase=WRML
+echo -e "\n\ncase WRML: write / read-modify latency\n"  >> $outputdir/memory_mirror.txt
+for regsize in 16 32 64 ; do
+echo -e "\nregister size $regsize"  >> $outputdir/memory_mirror.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dregsize=$regsize -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+
+tcase=RMWL
+echo -e "\n\ncase RMWL:read-modify-write instruction latency\n"  >> $outputdir/memory_mirror.txt
+for regsize in 16 32 64 ; do
+echo -e "\nregister size $regsize"  >> $outputdir/memory_mirror.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dregsize=$regsize -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+
+tcase=WRArip
+echo -e "\n\ncase WRArip: write / read latency with rip-relative address\n"  >> $outputdir/memory_mirror.txt
+for regsize in 32 64 ; do
+echo -e "\nregister size $regsize"  >> $outputdir/memory_mirror.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dregsize=$regsize -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+
+tcase=WRAabs
+echo -e "\n\ncase WRAabs: write / read latency with absolute address, 32 bit mode\n"  >> $outputdir/memory_mirror.txt
+for regsize in 32 ; do
+echo -e "\nregister size $regsize"  >> $outputdir/memory_mirror.txt
+$ass -f elf32 -o b32.o -Dtcase=$tcase -Dregsize=$regsize -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB32.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+
+tcase=WRAabsDUMMYP
+echo -e "\n\ncase WRAabs: write / read latency with absolute address and dummy pointer, 32 bit mode\n"  >> $outputdir/memory_mirror.txt
+for regsize in 32 ; do
+echo -e "\nregister size $regsize"  >> $outputdir/memory_mirror.txt
+$ass -f elf32 -o b32.o -Dtcase=$tcase -Dregsize=$regsize -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB32.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+
+tcase=WRPO8
+echo -e "\n\ncase WRPO8: write / read latency with 8 bit offset\n"  >> $outputdir/memory_mirror.txt
+for regsize in 32 64 ; do
+echo -e "\nregister size $regsize"  >> $outputdir/memory_mirror.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dregsize=$regsize -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+
+tcase=WRPO8I
+echo -e "\n\ncase WRPO8I: write / read latency with 8 bit offset and index\n"  >> $outputdir/memory_mirror.txt
+for regsize in 32 64 ; do
+echo -e "\nregister size $regsize"  >> $outputdir/memory_mirror.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dregsize=$regsize -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+
+tcase=WRPO10P
+echo -e "\n\ncase WRPO10P: write / read latency with offset fitting 10 bits\n"  >> $outputdir/memory_mirror.txt
+for regsize in 32 64 ; do
+echo -e "\nregister size $regsize"  >> $outputdir/memory_mirror.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dregsize=$regsize -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+
+tcase=WRPO16P
+echo -e "\n\ncase WRPO16P: write / read latency with pointer and offset fitting 16 bits\n"  >> $outputdir/memory_mirror.txt
+for regsize in 32 64 ; do
+echo -e "\nregister size $regsize"  >> $outputdir/memory_mirror.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dregsize=$regsize -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+
+tcase=WRPO16PI
+echo -e "\n\ncase WRPO16PI: write / read latency with pointer and offset fitting 16 bits and scaled index\n"  >> $outputdir/memory_mirror.txt
+for regsize in 32 64 ; do
+echo -e "\nregister size $regsize"  >> $outputdir/memory_mirror.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dregsize=$regsize -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+
+tcase=WRPO24P
+echo -e "\n\ncase WRPO24P: write / read latency with pointer and offset fitting 24 bits\n"  >> $outputdir/memory_mirror.txt
+for regsize in 32 64 ; do
+echo -e "\nregister size $regsize"  >> $outputdir/memory_mirror.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dregsize=$regsize -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+
+tcase=WRPO32P
+echo -e "\n\ncase WRPO32P: write / read latency with pointer and offset fitting 32 bits\n"  >> $outputdir/memory_mirror.txt
+for regsize in 32 64 ; do
+echo -e "\nregister size $regsize"  >> $outputdir/memory_mirror.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dregsize=$regsize -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+
+tcase=WRPO32PI
+echo -e "\n\ncase WRPO32PI: write / read latency with pointer and scaled index and 32 bit offset\n"  >> $outputdir/memory_mirror.txt
+for regsize in 32 64 ; do
+echo -e "\nregister size $regsize"  >> $outputdir/memory_mirror.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dregsize=$regsize -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+
+tcase=WRPOMISALIGN
+echo -e "\n\ncase WRPOMISALIGN: write / read latency with pointer and offset not divisible by operand size. 64 bit mode\n"  >> $outputdir/memory_mirror.txt
+for regsize in 32 64 ; do
+for aoffset in 2 4 8 ; do
+echo -e "\nregister size $regsize, offset $aoffset"  >> $outputdir/memory_mirror.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dregsize=$regsize -DAOFFSET=$aoffset -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+done
+echo -e "\n\ncase WRPOMISALIGN: write / read latency with pointer and offset not divisible by operand size. 32 bit mode\n"  >> $outputdir/memory_mirror.txt
+for regsize in 32 ; do
+for aoffset in 2 4 8 ; do
+echo -e "\nregister size $regsize, offset $aoffset"  >> $outputdir/memory_mirror.txt
+$ass -f elf32 -o b32.o -Dtcase=$tcase -Dregsize=$regsize -DAOFFSET=$aoffset -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB32.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+done
+
+tcase=WRPISCALE
+echo -e "\n\ncase WRPISCALE: write / read latency with scaled index\n"  >> $outputdir/memory_mirror.txt
+for regsize in 32 64 ; do
+echo -e "\nregister size $regsize"  >> $outputdir/memory_mirror.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dregsize=$regsize -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+
+tcase=WRPISCALEDIF0
+echo -e "\n\ncase WRPISCALEDIF0: write / read latency with different scales. index = 0\n"  >> $outputdir/memory_mirror.txt
+for regsize in 32 64 ; do
+echo -e "\nregister size $regsize"  >> $outputdir/memory_mirror.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dregsize=$regsize -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+
+tcase=WRPISCALEDIF1
+echo -e "\n\ncase WRPISCALEDIF1: write / read false dependence with different scales. index != 0\n"  >> $outputdir/memory_mirror.txt
+for regsize in 32 64 ; do
+echo -e "\nregister size $regsize"  >> $outputdir/memory_mirror.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dregsize=$regsize -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+
+tcase=WRPA
+echo -e "\n\ncase WRPA: write / read latency with aliased pointer\n"  >> $outputdir/memory_mirror.txt
+for regsize in 32 64 ; do
+echo -e "\nregister size $regsize"  >> $outputdir/memory_mirror.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dregsize=$regsize -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+
+tcase=WRPIS
+echo -e "\n\ncase WRPIS: write / read latency with pointer and index registers swapped\n"  >> $outputdir/memory_mirror.txt
+for regsize in 32 64 ; do
+echo -e "\nregister size $regsize"  >> $outputdir/memory_mirror.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dregsize=$regsize -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+
+tcase=WRPUSH
+echo -e "\n\ncase WRPUSH: write / read latency with push/pop\n"  >> $outputdir/memory_mirror.txt
+for regsize in 64 ; do
+echo -e "\nregister size $regsize"  >> $outputdir/memory_mirror.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dregsize=$regsize -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+
+tcase=WRFUNC
+echo -e "\n\ncase WRFUNC: write / read latency with function parameter on stack\n"  >> $outputdir/memory_mirror.txt
+for regsize in  64 ; do
+echo -e "\nregister size $regsize"  >> $outputdir/memory_mirror.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dregsize=$regsize -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+for regsize in  32 ; do
+echo -e "\nregister size $regsize"  >> $outputdir/memory_mirror.txt
+$ass -f elf32 -o b32.o -Dtcase=$tcase -Dregsize=$regsize -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB32.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+
+tcase=WRFUNCBP
+echo -e "\n\ncase WRFUNCBP: write / read latency with parameter on stack and rbp address\n"  >> $outputdir/memory_mirror.txt
+for regsize in 64 ; do
+echo -e "\nregister size $regsize"  >> $outputdir/memory_mirror.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dregsize=$regsize -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+
+tcase=WRFUNCSPSUB
+echo -e "\n\ncase WRFUNCSPSUB: write / read latency with parameter on stack and frame subtracted from rsp\n"  >> $outputdir/memory_mirror.txt
+for regsize in  64 ; do
+echo -e "\nregister size $regsize"  >> $outputdir/memory_mirror.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dregsize=$regsize -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+
+tcase=PUSHO8
+echo -e "\n\ncase PUSHO8: write / read latency with stack push causing 8 bit offset\n"  >> $outputdir/memory_mirror.txt
+for regsize in  64 ; do
+echo -e "\nregister size $regsize"  >> $outputdir/memory_mirror.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dregsize=$regsize -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+
+tcase=PUSHO32
+echo -e "\n\ncase PUSHO32: write / read latency with stack push causing switch to 32 bit offset\n"  >> $outputdir/memory_mirror.txt
+for regsize in  64 ; do
+echo -e "\nregister size $regsize"  >> $outputdir/memory_mirror.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dregsize=$regsize -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+
+tcase=PALIASWWR
+echo -e "\n\ncase PALIASWWR: write / write / read with pointer aliasing. possible penalty\n"  >> $outputdir/memory_mirror.txt
+for regsize in 32 64 ; do
+echo -e "\nregister size $regsize"  >> $outputdir/memory_mirror.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dregsize=$regsize -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+
+tcase=PALIASWWR2
+echo -e "\n\ncase PALIASWWR2: write / write / read with pointer and rip relative address. possible penalty\n"  >> $outputdir/memory_mirror.txt
+for regsize in 32 64 ; do
+echo -e "\nregister size $regsize"  >> $outputdir/memory_mirror.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dregsize=$regsize -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+
+tcase=PALIASWMR
+echo -e "\n\ncase PALIASWMR: write / read-modify-write / read with pointer aliasing. possible penalty\n"  >> $outputdir/memory_mirror.txt
+for regsize in 32 64 ; do
+echo -e "\nregister size $regsize"  >> $outputdir/memory_mirror.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dregsize=$regsize -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Drepeat2=$repeat2 -Dnthreads=$nthreads -Pmemory_mirror.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> $outputdir/memory_mirror.txt
+done
+
+
+echo -e "\n"  >> $outputdir/memory_mirror.txt

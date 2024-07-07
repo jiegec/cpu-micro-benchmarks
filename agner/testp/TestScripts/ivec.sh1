@@ -1,0 +1,333 @@
+#!/bin/bash
+#                                                                        2012-02-10 AgF
+# Compile and run PMCTest for integer vector instructions
+# looping through list of instructions
+# (c) Copyright 2012 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+# Detect CPU specific variables
+. vars.sh
+
+
+echo -e "Integer vector instructions with two operands\n"  > results1/ivec.txt
+
+# instructions that can have both 64 and 128 bit
+for instruct in  movq packsswb packssdw packuswb punpckhbw punpckhwd punpckldq punpckhdq pshufb paddusb \
+                 paddw paddd paddq phaddw phaddsw phsubd pcmpeqb pcmpeqw pcmpeqd pcmpgtw pcmpgtd              \
+                 pmullw pmulhuw pmulhrsw pmuludq pmaddwd pmaddubsw pavgb pavgw pminub pmaxsw  \
+                 pabsb pabsd psignw psadbw pand pandn                                         \
+                 psllw pslld psllq psraw psrlq
+do
+
+for r in 64 128
+do
+
+# 64 means 64 bit g.p. register, 65 means mmx register:
+regsize=$r
+if [ $regsize -eq 64 ] ; then regsize=65 ; fi
+
+echo -e "\n\nLatency: $instruct r$r,r$r"  >> results1/ivec.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dregsize=$regsize -Dcounters=$PMCs -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/ivec.txt
+
+echo -e "\n\nThroughput: $instruct r$r,r$r"  >> results1/ivec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dregsize=$regsize -Dcounters=$cts -Dtmode=T -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/ivec.txt
+done
+
+echo -e "\n\nThroughput with memory source operand: $instruct r$r,[m$r]"  >> results1/ivec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dregsize=$regsize -Dcounters=$cts -Dtmode=M -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/ivec.txt
+done
+done
+done
+
+echo -e "\n\ninstructions that can have only 128 bit\n"  >> results1/ivec.txt
+
+if  [ `grep -c -i "sse4.1" cpuinfo.txt ` -ne 0 ] ; then 
+ilist41=packusdw
+else
+ilist41=
+fi
+
+# instructions that can have only 128 bit
+for instruct in  movdqa movdqu punpckhqdq punpcklqdq pmovsxbw pmovzxbd pmovsxbq pmovzxwd pmovsxdq \
+                 pcmpeqq pcmpgtq pmulld pmuldq pminsb pmaxuw pmaxud phminposuw ptest psllw psllq  \
+                 $ilist41
+do
+
+for r in 128
+do
+
+echo -e "\n\nLatency: $instruct r$r,r$r"  >> results1/ivec.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dregsize=$r -Dcounters=$PMCs -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/ivec.txt
+
+echo -e "\n\nThroughput: $instruct r$r,r$r"  >> results1/ivec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dregsize=$r -Dcounters=$cts -Dtmode=T -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/ivec.txt
+done
+
+echo -e "\n\nThroughput with memory source operand: $instruct r$r,[m$r]"  >> results1/ivec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dregsize=$r -Dcounters=$cts -Dtmode=M -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/ivec.txt
+done
+done
+done
+
+echo -e "\n\nInstructions with two registers and one immediate operand\n"  >> results1/ivec.txt
+
+# instructions with 64 bit vectors
+for instruct in  pshufw palignr 
+do
+
+for r in 64
+do
+
+echo -e "\n\nLatency: $instruct r$r,r$r,i"  >> results1/ivec.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dregsize=65 -Dtmode=L -Dnumimm=1 -Dimmvalue=0 -Dcounters=$PMCs -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/ivec.txt
+
+echo -e "\n\nThroughput: $instruct r$r,r$r,i"  >> results1/ivec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dregsize=65 -Dtmode=T -Dnumimm=1 -Dimmvalue=5 -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/ivec.txt
+done
+
+echo -e "\n\nThroughput with memory source operand: $instruct r$r,[m$r],i"  >> results1/ivec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dregsize=65 -Dtmode=M -Dnumimm=1 -Dimmvalue=2 -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/ivec.txt
+done
+done
+done
+
+
+echo -e "\n\nInstructions with one 64/128 bit register and one immediate operand\n"  >> results1/ivec.txt
+
+for instruct in  psllw psraw psrad psrlq pslldq psrldq
+do
+
+for r in 64 128
+do
+
+# 64 means 64 bit g.p. register, 65 means mmx register:
+regsize=$r
+if [ $r -eq 64 ] ; then
+regsize=65
+if [ "$instruct" == "pslldq" -o "$instruct" == "psrldq" ] ; then continue ; fi
+fi
+
+echo -e "\n\nLatency: $instruct r$r,i"  >> results1/ivec.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=1 -Dregsize=$regsize -Dtmode=L -Dnumimm=1 -Dimmvalue=1 -Dcounters=$PMCs -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/ivec.txt
+
+echo -e "\n\nThroughput: $instruct r$r,i"  >> results1/ivec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=1 -Dregsize=$regsize -Dtmode=T -Dnumimm=1 -Dimmvalue=5 -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/ivec.txt
+done
+done
+done
+
+
+echo -e "\n\nInstructions with two 128 bit registers and one immediate operand\n"  >> results1/ivec.txt
+
+# instructions with 128 bit vectors
+for instruct in  pshufd pshuflw pshufhw palignr pblendw mpsadbw pclmulqdq pcmpestri pcmpestrm pcmpistri pcmpistrm
+do
+
+for r in 128
+do
+
+echo -e "\n\nLatency: $instruct r$r,r$r"  >> results1/ivec.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dregsize=$r -Dtmode=L -Dnumimm=1 -Dimmvalue=0 -Dcounters=$PMCs -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/ivec.txt
+
+echo -e "\n\nThroughput: $instruct r$r,r$r"  >> results1/ivec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dregsize=$r -Dtmode=T -Dnumimm=1 -Dimmvalue=3 -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/ivec.txt
+done
+
+echo -e "\n\nThroughput with memory source operand: $instruct  r$r,[m$r]"  >> results1/ivec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dregsize=$r -Dtmode=M -Dnumimm=1 -Dimmvalue=4 -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/ivec.txt
+done
+done
+done
+
+
+# if  [ `grep -c -i "avx" cpuinfo.txt ` -ne 0 ] ; then 
+if [ `./cpugetinfo -avx` -ne 0 ] ; then
+
+echo -e "\n\nInstructions with two 128/256 bit registers\n"  >> results1/ivec.txt
+
+# instructions that can have only 128 bit
+for instruct in  vmovdqa vmovdqu
+do
+for r in 128 256
+do
+
+echo -e "\n\nLatency: $instruct r$r,r$r"  >> results1/ivec.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dregsize=$r -Dcounters=$PMCs -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/ivec.txt
+
+echo -e "\n\nThroughput: $instruct r$r,r$r"  >> results1/ivec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dregsize=$r -Dcounters=$cts -Dtmode=T -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/ivec.txt
+done
+
+echo -e "\n\nThroughput with memory source operand: $instruct r$r,[m$r]"  >> results1/ivec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dregsize=$r -Dcounters=$cts -Dtmode=M -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/ivec.txt
+done
+done
+done
+
+# instructions that require special cases
+
+for instruct in vtestps vtestpd
+do
+for regsize in 128 256
+do
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize"  >> results1/ivec.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=ptest -Dinstruct1=$instruct -Dregsize=$regsize -Dtmode=T -Dcounters=$cts -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/ivec.txt
+done
+done
+
+regsize=128
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize + sbb + movd"  >> results1/ivec.txt
+$ass -f elf64 -o b64.o -Dinstruct=ptest -Dinstruct1=$instruct -Dregsize=$regsize -Dtmode=L -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/ivec.txt
+done
+
+
+
+fi  # avx
+
+if  [ `grep -c -i "avx2" cpuinfo.txt ` -ne 0 ] ; then 
+
+echo -e "\n\nInstructions with two 128/256 bit registers\n"  >> results1/ivec.txt
+
+for instruct in vptest
+do
+for regsize in 128 256
+do
+for cts in $PMClist
+do
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize"  >> results1/ivec.txt
+$ass -f elf64 -o b64.o -Dinstruct=ptest -Dinstruct1=$instruct -Dregsize=$regsize -Dtmode=T -Dcounters=$cts -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/ivec.txt
+done
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize + sbb + movd"  >> results1/ivec.txt
+$ass -f elf64 -o b64.o -Dinstruct=ptest -Dinstruct1=$instruct -Dregsize=$regsize -Dtmode=L -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/ivec.txt
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize + sbb + vmovd"  >> results1/ivec.txt
+$ass -f elf64 -o b64.o -Dinstruct=vptest -Dinstruct1=$instruct -Dregsize=$regsize -Dtmode=L -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/ivec.txt
+
+for cts in $PMClist
+do
+echo -e "\n\nThroughput with memory operand: $instruct r$regsize,r$regsize"  >> results1/ivec.txt
+$ass -f elf64 -o b64.o -Dinstruct=ptest -Dinstruct1=$instruct -Dregsize=$regsize -Dtmode=M -Dcounters=$cts -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/ivec.txt
+done
+done
+
+done
+
+fi  # avx2
+
+echo -e "\n"  >> results1/ivec.txt

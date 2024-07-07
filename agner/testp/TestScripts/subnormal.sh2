@@ -1,0 +1,100 @@
+#!/bin/bash
+#                                                                        2012-02-19 AgF
+
+# Compile and run PMCTest for floating point instructions with various combinations of subnormal operands
+# (c) 2012 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+echo -e "Floating point subnormal operands etc.\n"  > results2/subnormal.txt
+
+. vars.sh
+
+cases=( "normal + normal = normal"  \
+        "normal + normal = subnormal"  \
+        "normal + subnormal = normal"   \
+        "normal + subnormal = subnormal"  \
+        "subnormal + subnormal = normal"  \
+        "subnormal + subnormal = subnormal"  \
+        "normal + normal = overflow"  \
+        "normal + NAN = NAN"  \
+        "normal + INF = INF"  \
+        "INF + INF = INF"  \
+        "INF - INF = NAN"  \
+        "normal * normal = normal"  \
+        "normal * normal = subnormal"  \
+        "normal * subnormal = normal"  \
+        "normal * subnormal = subnormal"  \
+        "subnormal * subnormal = underflow"  \
+        "normal * normal = underflow"  \
+        "normal * normal = overflow"  \
+        "normal * NAN = NAN"  \
+        "normal * INF = INF"  \
+        "0 * INF = NAN"  \
+        "normal / normal = normal"  \
+        "normal / normal = subnormal"  \
+        "normal / subnormal = normal"  \
+        "subnormal / normal = subnormal"  \
+        "normal / normal = underflow"  \
+        "normal / normal = overflow"  \
+        "normal / NAN = NAN"  \
+        "normal / INF = 0"  \
+        "normal / 0 = INF"  \
+        "0 / 0 = NAN"  \
+        )
+
+
+for (( tcase = 0 ; tcase < ${#cases[@]} ; tcase++ ))
+do
+
+echo -e "\n\nCase $tcase: ${cases[$tcase]}"  >> results2/subnormal.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Psubnormal.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox.exe -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x.exe >> results2/subnormal.txt
+
+done
+
+echo -e "\n\n\nSame, with flush-to-zero mode on"  >> results2/subnormal.txt
+
+for (( tcase = 0 ; tcase < ${#cases[@]} ; tcase++ ))
+do
+
+echo -e "\n\nCase $tcase: ${cases[$tcase]}"  >> results2/subnormal.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dflushtoz=1 -Psubnormal.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox.exe -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x.exe >> results2/subnormal.txt
+
+done
+
+echo -e "\n\n\nSame, with denormals-are-zero mode on"  >> results2/subnormal.txt
+
+for (( tcase = 0 ; tcase < ${#cases[@]} ; tcase++ ))
+do
+
+echo -e "\n\nCase $tcase: ${cases[$tcase]}"  >> results2/subnormal.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Ddenormalsz=1 -Psubnormal.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox.exe -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x.exe >> results2/subnormal.txt
+
+done
+
+echo -e "\n\n\nSame, with flush-to-zero mode and denormals-are-zero mode on"  >> results2/subnormal.txt
+
+for (( tcase = 0 ; tcase < ${#cases[@]} ; tcase++ ))
+do
+
+echo -e "\n\nCase $tcase: ${cases[$tcase]}"  >> results2/subnormal.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dflushtoz=1 -Ddenormalsz=1 -Psubnormal.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox.exe -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x.exe >> results2/subnormal.txt
+
+done
+
+echo -e "\n"  >> results2/subnormal.txt
+

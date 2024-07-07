@@ -1,0 +1,34 @@
+#!/bin/bash
+#                                                                    2013-07-19 Agner Fog
+# Compile and run PMCTest for testing branch prediction penalty with and without
+# microop cache
+
+# (c) Copyright 2013 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+# Detect CPU specific variables
+. vars.sh
+
+
+echo -e "Stack synchronization micro-ops"  > results2/stack_sync_uops.txt
+
+repeat0=10
+count1=10
+
+let tcase=0
+
+for xcase in  Push_and_pop_only  added_mov_r,[rsp]  further_added_mov_r,rsp  \
+              call_and_ret  call_and_ret_imm  call_and_ret_and_add_rsp,const
+do
+let tcase+=1
+
+echo -e "\n\nCase $tcase: $xcase"  >> results2/stack_sync_uops.txt
+
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dcount1=$count1 -Drepeat0=$repeat0 -Pstack_sync_uops.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/stack_sync_uops.txt
+done
+
+
+echo -e "\n"  >> results2/stack_sync_uops.txt

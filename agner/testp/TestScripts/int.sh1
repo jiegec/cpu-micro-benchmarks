@@ -1,0 +1,510 @@
+#!/bin/bash
+#                                                            2021-01-25 Agner Fog
+# Compile and run PMCTest for integer instructions 
+# looping through list of instructions
+# (c) Copyright 2017 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+# Detect CPU specific variables
+. vars.sh
+
+echo -e "Integer instructions latency and throughput\n"  > results1/int.txt
+echo -e "Instructions with no explicit operands\n"  >> results1/int.txt
+
+for instruct in  clc stc cmc cld std nop pause lfence mfence sfence 
+do
+
+echo -e "\n\nLatency/throughput: $instruct "  >> results1/int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=0 -Dtmode=L -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+done
+
+#Test throughput with port blocked
+for b in $blockports
+do
+echo -e "\n\nThroughput with port $b blocked: $instruct "  >> results1/int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=0 -Dtmode=T -Dblockp=$b -Dcpubrand=$CPUbrand -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+done
+done
+
+echo -e "\n"  >> results1/int.txt
+
+# instructions that need register clear
+for instruct in  cbw cwde cdqe cwd cdq cqo
+do
+
+echo -e "\n\nLatency: $instruct"  >> results1/int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=0 -Dtmode=L -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+done
+
+echo -e "\n\nThroughput: xor eax,eax / $instruct "  >> results1/int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=0 -Dtmode=A -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+
+#Test throughput with port blocked
+for b in $blockports
+do
+echo -e "\n\nThroughput with port $b blocked: $instruct "  >> results1/int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=0 -Dtmode=T -Dblockp=$b -Dcpubrand=$CPUbrand -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+done
+done
+
+
+echo -e "\n\nInstructions with one operand\n"  >> results1/int.txt
+
+for instruct in  inc dec neg not 
+do
+for regsize in 8 9 16 32 64
+do
+if [ $regsize -ne 9 ] ; then
+echo -e "\n\nLatency: $instruct r$regsize"  >> results1/int.txt
+else
+echo -e "\n\nLatency: $instruct r8high"  >> results1/int.txt
+fi
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=1 -Dregsize=$regsize -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+done
+
+for regsize in 8 9 16 32 64
+do
+if [ $regsize -ne 9 ] ; then
+echo -e "\n\nThroughput: $instruct r$regsize"  >> results1/int.txt
+else
+echo -e "\n\nThroughput: $instruct r8high"  >> results1/int.txt
+fi
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=1 -Dregsize=$regsize -Dtmode=T -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+done
+done
+
+#Test throughput with port blocked
+regsize=32
+for b in $blockports
+do 
+echo -e "\n\nThroughput with port $b blocked: $instruct r$regsize"  >> results1/int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=1 -Dregsize=$regsize -Dtmode=T -Dblockp=$b -Dcpubrand=$CPUbrand -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+done
+
+echo -e "\n\nThroughput with memory operand: $instruct [m$regsize]"  >> results1/int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=1 -Dregsize=$regsize -Dtmode=M -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+done
+
+echo -e "\n\nLatency with memory operand: $instruct [m$regsize]"  >> results1/int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=1 -Dregsize=$regsize -Dtmode=LMR -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+
+done
+
+echo -e "\n"  >> results1/int.txt
+
+# instructions that cannot have memory operand
+for instruct in  bswap 
+do
+for regsize in 32 64
+do
+echo -e "\n\nLatency: $instruct r$regsize"  >> results1/int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=1 -Dtmode=L -Dregsize=$regsize -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+done
+
+for regsize in 32 64
+do
+echo -e "\n\nThroughput: $instruct r$regsize"  >> results1/int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=1 -Dtmode=T -Dregsize=$regsize -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+done
+done
+
+#Test throughput with port blocked
+regsize=32
+for b in $blockports
+do
+echo -e "\n\nThroughput with port $b blocked: $instruct r$regsize"  >> results1/int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=1 -Dregsize=$regsize -Dtmode=T -Dblockp=$b -Dcpubrand=$CPUbrand -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+done
+done
+
+echo -e "\n\nInstructions with one operand and an immediate operand\n"  >> results1/int.txt
+
+immvalue=10
+for instruct in mov add adc sub sbb and or xor cmp test
+do
+for regsize in 8 16 32 64
+do
+echo -e "\n\nLatency: $instruct r$regsize, i"  >> results1/int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=1 -Dnumimm=1 -Dimmvalue=$immvalue -Dregsize=$regsize -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+done
+
+for regsize in 8 9 16 32 64
+do
+if [ $regsize -ne 9 ] ; then
+echo -e "\n\nThroughput: $instruct r$regsize, i"  >> results1/int.txt
+else
+echo -e "\n\nThroughput: $instruct r8high, i"  >> results1/int.txt
+fi
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=1 -Dnumimm=1 -Dimmvalue=$immvalue -Dregsize=$regsize -Dtmode=T -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+done
+done
+
+#Test throughput with port blocked
+regsize=32
+for b in $blockports
+do
+echo -e "\n\nThroughput with port $b blocked: $instruct r$regsize, i"  >> results1/int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=1 -Dnumimm=1 -Dimmvalue=$immvalue -Dregsize=$regsize -Dtmode=T -Dblockp=$b -Dcpubrand=$CPUbrand -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+done
+
+echo -e "\n\nThroughput with memory operand: $instruct [m$regsize], i"  >> results1/int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=1 -Dnumimm=1 -Dimmvalue=$immvalue -Dregsize=$regsize -Dtmode=M -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+done
+
+echo -e "\n\nLatency with memory operand: $instruct [m$regsize], i"  >> results1/int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=1 -Dnumimm=1 -Dimmvalue=$immvalue -Dregsize=$regsize -Dtmode=LMR -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+
+done
+
+instruct=mov
+for b in $blockports
+do
+echo -e "\n\nThroughput with memory operand with port $b blocked: $instruct [m$regsize], i"  >> results1/int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=1 -Dnumimm=1 -Dimmvalue=$immvalue -Dregsize=$regsize -Dtmode=M -Dblockp=$b -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+done
+
+#if [ `uname -o` = Cygwin ] ; then
+addrmodelist="INDIR RIP ABS64"
+#echo -e "\nCannot test ABS32 addressing mode in Cygwin64\n" >> results1/int.txt
+#else
+#addrmodelist="INDIR RIP ABS32 ABS64"
+#fi
+# ABS32 addressing no longer allowed??!!
+
+for addrmode in $addrmodelist
+do
+echo -e "\n\nThroughput with $addrmode address mode: $instruct [m$regsize], r$regsize"  >> results1/int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=mov_m_r -Dregsize=$regsize -Dtmode=T -Daddrmode=$addrmode -Drepeat1=1000 -Dcounters=$cts -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then 
+  echo -e "\nFailed compile/link of this addressing mode\n" >> results1/int.txt
+else
+  ./x >> results1/int.txt
+fi
+done
+done
+
+for addrmode in $addrmodelist
+do
+echo -e "\n\nThroughput with $addrmode address mode: $instruct r$regsize, [m$regsize]"  >> results1/int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=mov_r_m  -Dregsize=$regsize -Dtmode=T -Daddrmode=$addrmode -Drepeat1=1000 -Dcounters=$cts -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+done
+done
+
+echo -e "\n\nThroughput: sete r8"  >> results1/int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=set -Dregsize=8 -Dtmode=T -Drepeat1=1000 -Dcounters=$cts -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+done
+
+echo -e "\n\nThroughput: sete r8h"  >> results1/int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=set -Dregsize=9 -Dtmode=T -Drepeat1=1000 -Dcounters=$cts -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+done 
+
+echo -e "\n\nLatency: sete r8 / neg r8"  >> results1/int.txt
+$ass -f elf64 -o b64.o -Dinstruct=set -Dregsize=8 -Dtmode=L -Drepeat1=1000 -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+
+echo -e "\n\nThroughput: sete, [m8]"  >> results1/int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=set -Dregsize=8 -Dtmode=M -Drepeat1=1000 -Dcounters=$cts -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+done
+
+for b in $blockports
+do
+echo -e "\n\nThroughput with port $b blocked: setb r8"  >> results1/int.txt
+$ass -f elf64 -o b64.o -Dinstruct=setb -Dnumop=1 -Dregsize=8 -Dtmode=T -Dblockp=$b -Dcpubrand=$CPUbrand -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+done
+
+
+echo -e "\n\nInstructions with two operands\n" >> results1/int.txt
+
+for instruct in  mov xchg add sub adc sbb cmp and or xor test 
+do
+
+for regsize in 8 16 32 64
+do
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize"  >> results1/int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dregsize=$regsize -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+done
+
+for regsize in 8 16 32 64
+do
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize"  >> results1/int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dregsize=$regsize -Dtmode=T -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+done
+done
+
+#Test throughput with port blocked
+regsize=32
+for b in $blockports
+do
+
+echo -e "\n\nThroughput with port $b blocked: $instruct r$regsize,r$regsize"  >> results1/int.txt
+
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dregsize=$regsize -Dtmode=T -Dblockp=$b -Dcpubrand=$CPUbrand -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+
+done
+
+for regsize in 8 16 32 64
+do
+echo -e "\n\nThroughput with memory source operand: $instruct r$regsize,[m$regsize]"  >> results1/int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dregsize=$regsize -Dtmode=M -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+done
+done
+
+for regsize in 8 16 32 64
+do
+echo -e "\n\nThroughput with memory destination operand: $instruct [m$regsize],r$regsize"  >> results1/int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dregsize=$regsize -Dtmode=MR -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+done
+done
+
+for regsize in 8 16 32 64
+do
+echo -e "\n\nLatency with memory destination operand: $instruct [m$regsize],r$regsize"  >> results1/int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dregsize=$regsize -Dtmode=LMR -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+done
+done
+
+echo -e "\n"  >> results1/int.txt
+
+# instructions that cannot have memory destination operand
+for instruct in   cmove imul bsf bsr popcnt
+do
+
+for regsize in 16 32 64
+do
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize"  >> results1/int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dregsize=$regsize -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+done
+
+for regsize in 16 32 64
+do
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize"  >> results1/int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dregsize=$regsize -Dtmode=T -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+done
+done
+
+#Test throughput with port blocked
+regsize=32
+for b in $blockports
+do
+echo -e "\n\nThroughput with port $b blocked: $instruct "  >> results1/int.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dregsize=$regsize -Dtmode=T -Dblockp=$b -Dcpubrand=$CPUbrand -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+done
+
+echo -e "\n\nThroughput with memory source operand: $instruct "  >> results1/int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=2 -Dregsize=$regsize -Dtmode=M -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+done
+done
+
+
+#Prefetch instructions
+
+for instruct in prefetchnta prefetcht0 prefetcht1 prefetcht2
+do
+regsize=0
+echo -e "\n\nThroughput: $instruct [m]"  >> results1/int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=1 -Dregsize=$regsize -Dtmode=M -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then echo "assembling $instruct failed" >> results1/int.txt
+else
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+fi
+done
+done
+
+if  [ `grep -c -i "prefetchw" cpuinfo.txt ` -ne 0 -o `grep -c -i "3DNow" cpuinfo.txt ` -ne 0 ] ; then
+
+instruct=prefetchw
+regsize=0
+
+echo -e "\n\nThroughput: $instruct [m]"  >> results1/int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumop=1 -Dregsize=$regsize -Dtmode=M -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then echo "assembling $instruct failed" >> results1/int.txt
+else
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/int.txt
+fi
+done
+
+fi
+
+echo -e "\n"  >> results1/int.txt

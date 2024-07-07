@@ -1,0 +1,550 @@
+#!/bin/bash
+# 
+# Compile and run PMCTest for AMD-specific instructions
+# (c) Copyright 2012 - 2020 by Agner Fog. GNU General Public License www.gnu.org/licenses
+# Last modified: 2020-08-16
+
+# Detect CPU specific variables
+. vars.sh
+
+echo -e "AMD-specific instructions"  > results1/amd.txt
+
+
+# 3DNow prefetch instructions (other 3dNow instructions are not supported any more)
+
+if  [ `grep -c -i "3dnowprefetch" cpuinfo.txt ` -gt 0 ] ; then 
+
+echo -e "\n\n3DNow instructions"  >> results1/amd.txt
+
+for instruct in  prefetch prefetchw
+do
+
+echo -e "\n\nThroughput: $instruct "  >> results1/amd.txt
+
+$ass -f elf64 -o b64.o -Dinstruct=$instruct[rsi] TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+
+done
+
+fi  # 3dnowprefetch
+
+if  [ `grep -c -i "sse4a" cpuinfo.txt ` -gt 0 ] ; then
+
+echo -e "\n\n\nSSE4A instructions"  >> results1/amd.txt
+
+for instruct in lzcnt popcnt
+do
+for regsize in 16 32 64
+do
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dtmode=T -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+
+echo -e "\n\nThroughput: $instruct r$regsize,m$regsize"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dtmode=M -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+
+done
+done
+
+echo -e "\n\nThroughput: extrq xmm,4,4"  >> results1/amd.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=extrq -Dregsize=128 -Dnumop=1 -Dnumimm=2 -Dimmvalue=4 -Dtmode=T -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+done
+
+echo -e "\n\nLatency: extrq xmm,4,4"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=extrq -Dregsize=128 -Dnumop=1 -Dnumimm=2 -Dimmvalue=4 -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+
+echo -e "\n\nThroughput: extrq xmm,xmm"  >> results1/amd.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=extrq -Dregsize=128 -Dnumop=2 -Dnumimm=0 -Dtmode=T -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+done
+
+echo -e "\n\nLatency: extrq xmm,xmm"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=extrq -Dregsize=128 -Dnumop=2 -Dnumimm=0 -Dtmode=T -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+
+echo -e "\n\nThroughput: insertq xmm,xmm,4,4"  >> results1/amd.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=insertq -Dregsize=128 -Dnumop=2 -Dnumimm=2 -Dimmvalue=4 -Dtmode=T -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+done
+
+echo -e "\n\nLatency: insertq xmm,xmm,4,4"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=insertq -Dregsize=128 -Dnumop=2 -Dnumimm=2 -Dimmvalue=4 -Dtmode=T -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+
+echo -e "\n\nThroughput: insertq xmm,xmm"  >> results1/amd.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=insertq -Dregsize=128 -Dnumop=2 -Dnumimm=0 -Dtmode=T -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+done
+
+echo -e "\n\nLatency: insertq xmm,xmm"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=insertq -Dregsize=128 -Dnumop=2 -Dnumimm=0 -Dtmode=T -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+
+echo -e "\n\nThroughput: movntsd [m64],xmm"  >> results1/amd.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct1=movntsd -Dinstruct2=movntsd -Dregtype1=xmm -Dregtype2=m64 -Dtmode=T1 -Dcounters=$cts -Pconvers.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+done
+
+echo -e "\n\nThroughput: movntss [m32],xmm"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct1=movntss -Dinstruct2=movntss -Dregtype1=xmm -Dregtype2=m32 -Dtmode=T1 -Pconvers.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+
+fi  # sse4a
+
+
+if  [ `grep -c -i "xop" cpuinfo.txt ` -ne 0 ] ; then 
+
+echo -e "\n\n\nXOP instructions"  >> results1/amd.txt
+
+for instruct in vfrczpd vfrczps vfrczsd vfrczss
+do
+
+echo -e "\n\nLatency: $instruct xmm,xmm"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Dnumop=2 -Dnumimm=0 -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+
+echo -e "\n\nthroughput: $instruct xmm,xmm"  >> results1/amd.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Dnumop=2 -Dnumimm=0 -Dtmode=T -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+done
+
+echo -e "\n\nthroughput: $instruct xmm,[mem]"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Dnumop=2 -Dnumimm=0 -Dtmode=M -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+
+done
+
+for instruct in vpcmov
+do
+
+for regsize in 128 256
+do
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,r$regsize,r$regsize"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=4 -Dnumimm=0 -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize,r$regsize,r$regsize"  >> results1/amd.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=4 -Dnumimm=0 -Dtmode=T -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+done
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize,r$regsize,[m$regsize]"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=4 -Dnumimm=0 -Dtmode=M -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+
+done
+done
+
+for instruct in vpperm
+do
+
+regsize=128
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,r$regsize,r$regsize"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=4 -Dnumimm=0 -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize,r$regsize,r$regsize"  >> results1/amd.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=4 -Dnumimm=0 -Dtmode=T -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+done
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize,r$regsize,[m$regsize]"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=4 -Dnumimm=0 -Dtmode=M -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+
+done
+
+
+for immvalue in 0 1 2 3 4 5 6 7
+do
+instruct=vpcomb
+regsize=128
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,r$regsize,$immvalue"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=3 -Dnumimm=1 -Dimmvalue=$immvalue -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+done
+
+for instruct in vpcomb vpcomw vpcomd vpcomq vpcomub vpcomuw vpcomud vpcomuq 
+do
+for immvalue in 0 7
+do
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,r$regsize,$immvalue"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=3 -Dnumimm=1 -Dimmvalue=$immvalue -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+done
+
+immvalue=4
+echo -e "\n\nthroughput: $instruct r$regsize,r$regsize,r$regsize,$immvalue"  >> results1/amd.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=3 -Dnumimm=1 -Dimmvalue=$immvalue -Dtmode=T -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+done
+
+echo -e "\n\nthroughput: $instruct r$regsize,r$regsize,[m$regsize],$immvalue"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=3 -Dnumimm=1 -Dimmvalue=$immvalue -Dtmode=M -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+
+done
+
+for instruct in vphaddbw  vphaddbd  vphaddbq  vphaddwd  vphaddwq  vphadddq  \
+                vphaddubw vphaddubd vphaddubq vphadduwd vphadduwq vphaddudq \
+                vphsubbw  vphsubwd  vphsubdq
+do
+
+regsize=128
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dnumimm=0 -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+
+echo -e "\n\nthroughput: $instruct r$regsize,r$regsize"  >> results1/amd.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dnumimm=0 -Dtmode=T -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+done
+
+echo -e "\n\nthroughput: $instruct r$regsize,[m$regsize]"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dnumimm=0 -Dtmode=M -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+
+done
+
+for instruct in vpmacsww  vpmacswd  vpmacsdd  vpmacsdqh  vpmacsdql   \
+                vpmacssww vpmacsswd vpmacssdd vpmacssdqh vpmacssdql  \
+                vpmadcswd vpmadcsswd
+do
+regsize=128
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,r$regsize,r$regsize"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=4 -Dnumimm=0 -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+
+echo -e "\n\nthroughput: $instruct r$regsize,r$regsize,r$regsize,r$regsize"  >> results1/amd.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=4 -Dnumimm=0 -Dtmode=T -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+done
+
+echo -e "\n\nthroughput: $instruct r$regsize,r$regsize,[m$regsize],r$regsize"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=4 -Dnumimm=0 -Dtmode=M3 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+
+done
+
+for instruct in vprotb vprotw vprotd vprotq
+do
+regsize=128
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,r$regsize"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=3 -Dnumimm=0 -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+
+echo -e "\n\nthroughput: $instruct r$regsize,r$regsize,r$regsize"  >> results1/amd.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=3 -Dnumimm=0 -Dtmode=T -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+done
+
+echo -e "\n\nthroughput: $instruct r$regsize,r$regsize,[m$regsize]"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=3 -Dnumimm=0 -Dtmode=M -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+
+immvalue=1
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,$immvalue"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dnumimm=1 -Dimmvalue=$immvalue -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+
+echo -e "\n\nthroughput: $instruct r$regsize,r$regsize,$immvalue"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dnumimm=1 -Dimmvalue=$immvalue -Dtmode=T -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+
+echo -e "\n\nthroughput: $instruct r$regsize,[m$regsize],$immvalue"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dnumimm=1 -Dimmvalue=$immvalue -Dtmode=M -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+
+done
+
+for instruct in vpshab vpshaw vpshad vpshaq vpshlb vpshlw vpshld vpshlq
+do
+regsize=128
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,r$regsize"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=3 -Dnumimm=0 -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+
+echo -e "\n\nthroughput: $instruct r$regsize,r$regsize,r$regsize"  >> results1/amd.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=3 -Dnumimm=0 -Dtmode=T -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+done
+
+echo -e "\n\nthroughput: $instruct r$regsize,r$regsize,[m$regsize]"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=3 -Dnumimm=0 -Dtmode=M -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+
+done
+
+fi   # xop
+
+
+if  [ `grep -c -i "tbm\b" cpuinfo.txt ` -gt 0 ] ; then 
+
+echo -e "AMD-specific TBM instructions"  >> results1/amd.txt
+
+for instruct in blcfill blci blcic blcmsk blcs blsfill blsic t1mskc tzmsk
+do
+for regsize in 32 64
+do
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then 
+echo "assembling $instruct failed"  >> results1/amd.txt
+else
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+fi
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dtmode=T -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then 
+echo "assembling $instruct failed"  >> results1/amd.txt
+else
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+fi
+
+echo -e "\n\nThroughput: $instruct r$regsize,m$regsize"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dtmode=M -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then 
+echo "assembling $instruct failed"  >> results1/amd.txt
+else
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+fi
+
+done
+done
+
+for instruct in bextr
+do
+for regsize in 32 64
+do
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,imm"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dnumimm=1 -Dimmvalue=0x502 -Dtmode=L -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then 
+echo "assembling $instruct failed"  >> results1/amd.txt
+else
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+fi
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize,imm"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dnumimm=1 -Dimmvalue=0x502 -Dtmode=T -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then 
+echo "assembling $instruct failed"  >> results1/amd.txt
+else
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+fi
+
+echo -e "\n\nThroughput: $instruct r$regsize,m$regsize,imm"  >> results1/amd.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dnumimm=1 -Dimmvalue=0x502 -Dtmode=M -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then 
+echo "assembling $instruct failed"  >> results1/amd.txt
+else
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/amd.txt
+fi
+
+done
+done
+
+fi  # TBM instructions
+
+
+#####################
+
+
+if  [ `grep -c -i "clzero" cpuinfo.txt ` -gt 0 ] ; then
+
+echo -e "\n\n\nAMD clzero instruction not tested"  >> results1/amd.txt
+
+fi #
+
+
+if  [ `grep -c -i "rdpru" cpuinfo.txt ` -gt 0 ] ; then
+
+echo -e "\n\n\nAMD rdpru instruction not tested"  >> results1/amd.txt
+
+fi #
+
+
+
+if  [ `grep -c -i "wbnoinvd" cpuinfo.txt ` -gt 0 ] ; then
+
+echo -e "\n\n\nAMD wbnoinvd instruction not tested"  >> results1/amd.txt
+
+fi #
+
+
+#  FMA4

@@ -1,0 +1,96 @@
+#!/bin/bash
+#                                                        2013-09-01 Agner Fog
+
+# Measure cache latency with stride equal to cache line size, and different block sizes
+
+# (c) 2013 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+echo -e "\nMeasure cache latencies\n"  > results2/cache_latency.txt
+echo -e "The test method is walking through a linked list of chained pointers."  >> results2/cache_latency.txt
+echo -e "The list can be linear to allow hardware prefetching, or random to prevent prefetching."  >> results2/cache_latency.txt
+
+echo -e "\nCache sizes:"  >> results2/cache_latency.txt
+echo -e "Level 1 data cache: `./cpugetinfo cache1size`"  >> results2/cache_latency.txt
+echo -e "Level 2 data cache: `./cpugetinfo cache2size`"  >> results2/cache_latency.txt
+echo -e "Level 3 data cache: `./cpugetinfo cache3size`"  >> results2/cache_latency.txt
+echo -e "L1 cache line size: `./cpugetinfo cachelinesize` \n"  >> results2/cache_latency.txt
+
+# get CPU specific counters
+. vars.sh
+
+# C++ code for making shuffled linked list
+g++ -fno-pie -no-pie -m64 -O2 -c -o c64.o shufflelist.cpp
+
+stride=`./cpugetinfo cachelinesize`
+if [ $stride -eq 0 ] ; then
+stride=32
+fi
+
+cachesize=`./cpugetinfo cachesize`
+if [ $cachesize -le 1000000 ] ; then
+cachesize=1000000
+fi
+let maxsize=$cachesize*8
+
+memsize=1024
+tmode=1
+
+while [ $memsize -le $maxsize ] ; do
+
+let accesses=$memsize/$stride
+
+echo -e "\n\nLinear access. Size = $memsize bytes, stride = $stride, total accesses = $accesses"  >> results2/cache_latency.txt
+tmode=0
+$ass -f elf64 -o b64.o -Dmemsize=$memsize -Dstride=$stride -Dtmode=$tmode -Dcounters=$CachePMCs -Pcache_latency.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o c64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/cache_latency.txt
+
+echo -e "\n\nRandom access. Size = $memsize bytes, stride = $stride, total accesses = $accesses"  >> results2/cache_latency.txt
+tmode=1
+$ass -f elf64 -o b64.o -Dmemsize=$memsize -Dstride=$stride -Dtmode=$tmode -Dcounters=$CachePMCs -Pcache_latency.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o c64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/cache_latency.txt
+
+# double memsize for each repetition
+let memsize=$memsize+$memsize
+done
+
+
+echo -e "\n\n\nPointer chasing. Addressing with base pointer"  >> results2/cache_latency.txt
+tcase=1
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dcounters=$CachePMCs -Ppointer_chasing.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o c64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/cache_latency.txt
+
+echo -e "\n\nPointer chasing. Addressing with base pointer + scaled index"  >> results2/cache_latency.txt
+tcase=2
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dcounters=$CachePMCs -Ppointer_chasing.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o c64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/cache_latency.txt
+
+echo -e "\n\nPointer chasing. Addressing with base pointer + scaled index. latency through index"  >> results2/cache_latency.txt
+tcase=3
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dcounters=$CachePMCs -Ppointer_chasing.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o c64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/cache_latency.txt
+
+echo -e "\n\nPointer chasing. Addressing with base pointer + scaled index + offset"  >> results2/cache_latency.txt
+tcase=4
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dcounters=$CachePMCs -Ppointer_chasing.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o c64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/cache_latency.txt
+
+
+echo -e "\n"  >> results2/cache_latency.txt

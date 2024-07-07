@@ -1,0 +1,49 @@
+#!/bin/bash
+#                                                                        2021-01-25 Agner Fog
+#Test instructions that are only defined in 32 bit mode
+# (c) Copyright 2012 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+# Skip if 32 bit not supported
+if   [ `grep -c -i "no32bit" cpuinfo.txt ` -ne 0 ] ; then
+exit
+fi
+
+# Detect CPU specific variables
+. vars.sh
+
+echo -e "\n"  > results1/32bitinstr.txt
+
+if [ $support32bit -eq 0 ] ; then
+echo -e "\nError: 32-bit instructions cannot be compiled on this platform\n"  >> results1/32bitinstr.txt
+exit
+fi
+
+for instruct in aaa aas daa das aad aam_latency aam_throughput bound into lahf sahf lahf_sahf leave pushad popad salc salc_inc_al
+do
+
+echo -e "\n\ninstruction: $instruct "  >> results1/32bitinstr.txt
+for cts in $PMClist
+do
+$ass -f elf32 -o b32.o -Dinstruct=$instruct -Drepeat1=100 -Dcounters=$cts -P32bitinstr.inc TemplateB32.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/32bitinstr.txt
+done
+done
+
+for immvalue in {0..4}
+do 
+echo -e "\n\ninstruction: enter 4, $immvalue "  >> results1/32bitinstr.txt
+for cts in $PMClist
+do 
+$ass -f elf32 -o b32.o -Dinstruct=enter -Dimmvalue=$immvalue -Dcounters=$cts -P32bitinstr.inc TemplateB32.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/32bitinstr.txt
+done
+done
+
+echo -e "\n"  >> results1/32bitinstr.txt
+

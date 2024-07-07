@@ -1,0 +1,150 @@
+#!/bin/bash
+#                                                                        2012-01-30 AgF
+# Compile and run PMCTest for string instructions
+# (c) Copyright 2012 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+# Detect CPU specific variables
+. vars.sh
+
+# looping through list of instructions
+
+echo -e "string instructions throughput\n"  > results1/strings.txt
+
+# instructions without repeat prefix
+for instruct in  lodsb lodsw lodsd lodsq stosb stosw stosd stosq movsb movsw movsd movsq scasb scasw scasd scasq cmpsb cmpsw cmpsd cmpsq
+do
+
+echo -e "\n\nInstruction: $instruct "  >> results1/strings.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dcounters=$cts -Pstrings.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/strings.txt
+done
+done
+
+
+# instructions with rep prefix
+for instruct0 in  lods stos movs
+do
+for regsize in 8 16 32 64
+do
+if [ $regsize -eq  8 ] ; then namesuffix="b" ; fi
+if [ $regsize -eq 16 ] ; then namesuffix="w" ; fi
+if [ $regsize -eq 32 ] ; then namesuffix="d" ; fi
+if [ $regsize -eq 64 ] ; then namesuffix="q" ; fi
+instruct=$instruct0$namesuffix
+
+for c in 100 1000 10000 ; do
+ma=0
+echo -e "\n\n\nInstruction: rep $instruct, count = $c"  >> results1/strings.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Drepp=rep -Dcount=$c -Dmisalign=$ma -Pstrings.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/strings.txt
+done
+done
+done
+
+
+for instruct0 in  stos movs
+do
+for regsize in 32 64
+do
+if [ $regsize -eq  8 ] ; then namesuffix="b" ; fi
+if [ $regsize -eq 16 ] ; then namesuffix="w" ; fi
+if [ $regsize -eq 32 ] ; then namesuffix="d" ; fi
+if [ $regsize -eq 64 ] ; then namesuffix="q" ; fi
+instruct=$instruct0$namesuffix
+
+for c in 100 1000 10000 ; do
+for ma in 0 4 16 ; do
+
+echo -e "\n\nInstruction: rep $instruct, count = $c, misalign = $ma "  >> results1/strings.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Drepp=rep -Dcount=$c -Dmisalign=$ma -Pstrings.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/strings.txt
+
+done
+done
+done
+done
+
+
+# instructions with repe prefix
+for instruct0 in  scas cmps
+do
+for regsize in 8 16 32 64
+do
+if [ $regsize -eq  8 ] ; then namesuffix="b" ; fi
+if [ $regsize -eq 16 ] ; then namesuffix="w" ; fi
+if [ $regsize -eq 32 ] ; then namesuffix="d" ; fi
+if [ $regsize -eq 64 ] ; then namesuffix="q" ; fi
+instruct=$instruct0$namesuffix
+
+for c in 100 1000 10000 ; do
+for ma in 0 4  ; do
+
+echo -e "\n\nInstruction: repe $instruct, count = $c, misalign = $ma "  >> results1/strings.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Drepp=rep -Dcount=$c -Dmisalign=$ma -Pstrings.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/strings.txt
+done
+done
+done
+done
+
+echo -e "\n\n"  >> results1/strings.txt
+
+
+# SSE4.2 string instructions
+
+for instruct in  pcmpestri pcmpestrm pcmpistri pcmpistrm
+do
+for immvalue in 0 3 4 8 0xC
+do
+
+if [ "$instruct" == "pcmpestri" -o "$instruct" == "pcmpistri" ] ; then
+echo -e "\n\nLatency: $instruct xmm1,xmm1,$immvalue / movd xmm1,ecx"  >> results1/strings.txt
+else
+echo -e "\n\nLatency: $instruct xmm0,xmm0,$immvalue"  >> results1/strings.txt
+fi
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dimmvalue=$immvalue -Dtmode=L -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/strings.txt
+
+done
+
+immvalue=0
+echo -e "\n\nThroughput: $instruct xmm,xmm,$immvalue"  >> results1/strings.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dimmvalue=$immvalue -Dtmode=T -Dcounters=$cts -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/strings.txt
+done
+
+echo -e "\n\nThroughput: $instruct xmm,[mem],$immvalue"  >> results1/strings.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dimmvalue=$immvalue -Dtmode=M -Dcounters=$cts -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/strings.txt
+done
+done
+
+echo -e "\n"  >> results1/strings.txt
+

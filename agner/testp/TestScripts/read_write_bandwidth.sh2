@@ -1,0 +1,72 @@
+#!/bin/bash
+#                                        2021-03-23 Agner Fog
+
+# Test the maximum number of memory reads and writes per clock cycle
+
+# (c) 2013-2021 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+. vars.sh
+
+pmclist1="$PMClist"
+
+echo -e "\nTest the maximum number of memory reads and writes per clock cycle"  > results2/read_write_bandwidth.txt
+echo -e "Test modes:"  >> results2/read_write_bandwidth.txt
+echo -e "R:    read only"  >> results2/read_write_bandwidth.txt
+echo -e "W:    write only"  >> results2/read_write_bandwidth.txt
+echo -e "RW:   one read and one write"  >> results2/read_write_bandwidth.txt
+echo -e "RRW:  two reads and one write"  >> results2/read_write_bandwidth.txt
+echo -e "RRRW: three reads and one write"  >> results2/read_write_bandwidth.txt
+echo -e "RWW:  one read and two writes"  >> results2/read_write_bandwidth.txt
+echo -e "RWW2: one read and two writes to different cache lines"  >> results2/read_write_bandwidth.txt
+
+for tmode in R W RW RRW RRRW RWW RWW2
+do
+
+# The modes are:
+# R:    read only
+# W:    write only
+# RW:   one read and one write
+# RRW:  two reads and one write
+# RRRW: three reads and one write
+# RWW:  one read and two writes
+
+echo -e "\n\n===========================================\n"  >> results2/read_write_bandwidth.txt
+echo -e "test mode = $tmode\n"  >> results2/read_write_bandwidth.txt
+echo -e "===========================================\n\n"  >> results2/read_write_bandwidth.txt
+
+# Check if AVX supported
+if  [ `grep -c -i "avx"  cpuinfo.txt ` -ne 0 ] ; then
+reg256=256
+else
+reg256=
+fi
+
+# Check if AVX512 supported
+if  [ `grep -c -i "avx512"  cpuinfo.txt ` -ne 0 ] ; then
+reg512=512
+else
+reg512=
+fi
+
+
+for regsize in 8 16 32 64 128 $reg256 $reg512
+do
+
+echo -e "\n\nRegister size = $regsize bits"  >> results2/read_write_bandwidth.txt
+
+IFS=" "
+for pmc in $pmclist1 ; do
+
+$ass -f elf64 -o b64.o -Dtmode=$tmode -Dregsize=$regsize -Dcounters=$pmc -Pread_write_bandwidth.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/read_write_bandwidth.txt
+
+done
+IFS=","
+
+done
+done
+
+echo -e "\n"  >> results2/read_write_bandwidth.txt

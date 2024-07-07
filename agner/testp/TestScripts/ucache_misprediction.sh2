@@ -1,0 +1,65 @@
+#!/bin/bash
+#                                                                    2013-07-19 Agner Fog
+# Compile and run PMCTest for testing branch prediction penalty with and without
+# microop cache
+
+# (c) Copyright 2013 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+# Detect CPU specific variables
+. vars.sh
+
+# Performance counters
+if  [ "$CPUbrand" = "Intel" -a $imodel -ne 28 ] ; then
+# This one is for Intel processors with uop cache:
+cts="1,9,100,25,26,207"
+else
+cts=$BranchPMCs
+fi
+
+
+echo -e "Branch prediction"  > results2/ucache_misprediction.txt
+
+repeat0=20
+
+echo -e "\n\nCase 1: Tiny loop. Expect loop counter to be used"  >> results2/ucache_misprediction.txt
+tcase=1
+
+for count1 in  10 100 1000
+do
+echo -e "\n\nLoop count $count1"  >> results2/ucache_misprediction.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dcount1=$count1 -Dcounters=$cts -Drepeat0=$repeat0 -Pucache_misprediction.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/ucache_misprediction.txt
+done
+
+echo -e "\n\nCase 2: Normal loop. Expect uop cache to be used"  >> results2/ucache_misprediction.txt
+tcase=2
+
+for count1 in  4 10 100
+do
+echo -e "\n\nNumber of branches $count1"  >> results2/ucache_misprediction.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dcount1=$count1 -Dcounters=$cts -Drepeat0=$repeat0 -Pucache_misprediction.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/ucache_misprediction.txt
+done
+
+echo -e "\n\nCase 3: Extremely big loop. Expect only fetch and decode to be used"  >> results2/ucache_misprediction.txt
+tcase=3
+
+for count1 in  4 10 100
+do
+echo -e "\n\nNumber of branches $count1"  >> results2/ucache_misprediction.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dcount1=$count1 -Dcounters=$cts -Drepeat0=$repeat0 -Pucache_misprediction.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/ucache_misprediction.txt
+done
+
+
+
+echo -e "\n"  >> results2/ucache_misprediction.txt

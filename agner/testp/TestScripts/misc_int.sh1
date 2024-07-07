@@ -1,0 +1,679 @@
+#!/bin/bash
+#                                                       2021-01-25 Agner Fog
+#Test miscellaneous integer and general purpose instructions
+# (c) Copyright 2013 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+# Detect CPU specific variables
+. vars.sh
+
+echo -e "Test miscellaneous instructions"  > results1/misc_int.txt
+
+echo -e "\nLatency: xlat"  >> results1/misc_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=xlatb -Dnumop=0 -Drepeat1=1000 -Dtmode=L -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+
+echo -e "\nThroughput: xlat / xor eax,eax"  >> results1/misc_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=xlatb -Dnumop=0 -Drepeat1=1000 -Dtmode=T -Dcounters=$cts -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+
+echo -e "\n\nrdtsc Throughput"  >> results1/misc_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dcounters=$cts -Dinstruct=rdtsc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+
+if  [ `grep -c -i "rdtscp" cpuinfo.txt ` -gt 0 ] ; then 
+
+echo -e "\n\nrdtscp Throughput"  >> results1/misc_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dcounters=$cts -Dinstruct=rdtscp TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+fi
+
+echo -e "\n\nrdpmc Throughput"  >> results1/misc_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o  -Dcounters=$cts -Dinstruct=rdpmc -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+
+echo -e "\n\ninc + sbb Latency of flag"  >> results1/misc_int.txt
+$ass -f elf64 -o b64.o  -Dcounters=$PMCs -Dinstruct=inc -Dtmode=L -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+
+echo -e "\n\ninc + sub Latency of register"  >> results1/misc_int.txt
+$ass -f elf64 -o b64.o  -Dcounters=$PMCs -Dinstruct=inc -Dtmode=T+ -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+
+# CPUID
+
+echo -e "\n\nmov eax, n\ncpuid\n(= 2 instructions)"  >> results1/misc_int.txt
+
+for n in  0 1 2 5 80000000h
+do
+
+echo -e "\n\ncpuid, eax = $n "  >> results1/misc_int.txt
+
+$ass -f elf64 -o b64.o -Dinstruct=mov -Dnumop=1 -Dnumimm=1 -Dimmvalue=$n -Dinstruct2=cpuid TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+
+done
+
+
+# movsx and movzx
+
+for instruct1 in movsx movzx
+do
+for regtype2 in 16 32 64
+do
+for regtype1 in 8 16
+do
+if [ $regtype2 -gt $regtype1 ] ; then
+
+echo -e "\n\nThroughput: $instruct1 r$regtype2,r$regtype1"  >> results1/misc_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct1=$instruct1 -Dregtype1=r$regtype1 -Dregtype2=r$regtype2 -Dnumimm=0 -Drepeat1=1000 -Dtmode=T1 -Dcounters=$cts -Pconvers.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_int.txt
+done
+
+echo -e "\n\nLatency: $instruct1 r$regtype2,r$regtype1"  >> results1/misc_int.txt
+$ass -f elf64 -o b64.o -Dinstruct1=$instruct1 -Dregtype1=r$regtype1 -Dregtype2=r$regtype2 -Dnumimm=0 -Drepeat1=1000 -Dtmode=L1 -Pconvers.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_int.txt
+
+echo -e "\n\nThroughput: $instruct1 r$regtype2,[m$regtype1]"  >> results1/misc_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct1=$instruct1 -Dregtype1=m$regtype1 -Dregtype2=r$regtype2 -Dnumimm=0 -Drepeat1=1000 -Dtmode=T1 -Dcounters=$cts -Pconvers.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_int.txt
+done
+
+echo -e "\n\nLatency: $instruct1 r$regtype2,[m$regtype1] / mov [m$regtype1],r$regtype1"  >> results1/misc_int.txt
+$ass -f elf64 -o b64.o -Dinstruct1=$instruct1 -Dregtype1=m$regtype1 -Dregtype2=r$regtype2 -Dnumimm=0 -Drepeat1=1000 -Dtmode=LSX -Pconvers.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_int.txt
+
+fi
+done
+done
+done
+
+instruct1=movsxd
+regtype2=64
+regtype1=32
+echo -e "\n\nThroughput: $instruct1 r$regtype2,r$regtype1"  >> results1/misc_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct1=$instruct1 -Dregtype1=r$regtype1 -Dregtype2=r$regtype2 -Dnumimm=0 -Drepeat1=1000 -Dtmode=T1 -Dcounters=$cts -Pconvers.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_int.txt
+done
+
+echo -e "\n\nLatency: $instruct1 r$regtype2,r$regtype1"  >> results1/misc_int.txt
+$ass -f elf64 -o b64.o -Dinstruct1=$instruct1 -Dregtype1=r$regtype1 -Dregtype2=r$regtype2 -Dnumimm=0 -Drepeat1=1000 -Dtmode=L1 -Pconvers.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_int.txt
+
+echo -e "\n\nThroughput: $instruct1 r$regtype2,[m$regtype1]"  >> results1/misc_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct1=$instruct1 -Dregtype1=m$regtype1 -Dregtype2=r$regtype2 -Dnumimm=0 -Drepeat1=1000 -Dtmode=T1 -Dcounters=$cts -Pconvers.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_int.txt
+done
+
+echo -e "\n\nLatency: $instruct1 r$regtype2,[m$regtype1] / mov [m$regtype1],r$regtype1"  >> results1/misc_int.txt
+$ass -f elf64 -o b64.o -Dinstruct1=$instruct1 -Dregtype1=m$regtype1 -Dregtype2=r$regtype2 -Dnumimm=0 -Drepeat1=1000 -Dtmode=LSX -Pconvers.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_int.txt
+
+
+# LEA
+
+for regsize in 16 32 64
+do
+for scalef in 0 1 4
+do
+for ioffset in 0 1 4
+do
+echo -e "\n\nlea r$regsize,[r64+$scalef*rsi+($ioffset bytes)] Latency"  >> results1/misc_int.txt
+$ass -f elf64 -o b64.o  -Dinstruct=lea -Dtmode=L -Dregsize=$regsize -Dscalef=$scalef -Dioffset=$ioffset -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+done
+done
+
+for regsize in 32 64
+do
+for scalef in 4
+do
+for ioffset in 1
+do
+echo -e "\n\nlea r$regsize,[r64+$scalef*rsi+($ioffset bytes)] Latency"  >> results1/misc_int.txt
+$ass -f elf64 -o b64.o  -Dinstruct=lea -Dtmode=L -Dregsize=$regsize -Daddrsize=64 -Dscalef=$scalef -Dioffset=$ioffset -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+done
+done
+
+for scalef in 4
+do
+for ioffset in 0 1 4
+do
+echo -e "\n\nlea r32,[$scalef*esi+($ioffset bytes)] Latency, 64 bit mode"  >> results1/misc_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=lea -Dtmode=L -Dbasereg=0 -Dregsize=32 -Daddrsize=32 -Dscalef=$scalef -Dioffset=$ioffset -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+done
+
+if [ $support32bit -ne 0 ] ; then
+for regsize in 16 32
+do
+for scalef in 0 1
+do
+for ioffset in 0 1 2
+do
+echo -e "\n\nlea r$regsize,[r16+$scalef*si+($ioffset bytes)] Latency, 32 bit mode"  >> results1/misc_int.txt
+$ass -f elf32 -o b32.o  -Dinstruct=lea -Dtmode=L -Dregsize=$regsize -Dscalef=$scalef -Dioffset=$ioffset -Daddrsize=16 -Pmisc_int.inc TemplateB32.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+done
+done
+fi
+
+for regsize in 32 64
+do
+for scalef in 0 4
+do
+for ioffset in 0 4
+do
+echo -e "\n\nlea r$regsize,[r64+$scalef*rsi+($ioffset bytes)] Throughput"  >> results1/misc_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o  -Dinstruct=lea -Dtmode=T -Dregsize=$regsize -Dscalef=$scalef -Dioffset=$ioffset -Dcounters=$cts -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+done
+done
+done
+
+if [ $support32bit -ne 0 ] ; then
+for regsize in 16
+do
+for scalef in 0 1
+do
+for ioffset in 0 2
+do
+echo -e "\n\nlea r$regsize,[r16+$scalef*si+($ioffset bytes)] Throughput"  >> results1/misc_int.txt
+for cts in $PMClist
+do
+$ass -f elf32 -o b32.o  -Dinstruct=lea -Dtmode=T -Dregsize=$regsize -Dscalef=$scalef -Dioffset=$ioffset -Daddrsize=16 -Dcounters=$cts -Pmisc_int.inc TemplateB32.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+done
+done
+done
+fi
+
+
+for regsize in 32 64
+do
+echo -e "\n\nlea r$regsize,[rip-relative] Throughput"  >> results1/misc_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o  -Dinstruct=lea -Dtmode=R -Dregsize=$regsize -Dcounters=$cts -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+done
+
+for regsize in 16 32 64
+do
+for scalef in 0 4
+do
+for ioffset in 0 1
+do
+echo -e "\n\nlea r$regsize,[r64+$scalef*rsi+($ioffset bytes)] + mov, Latency"  >> results1/misc_int.txt
+$ass -f elf64 -o b64.o  -Dinstruct=lea -Dtmode=LM -Dregsize=$regsize -Dscalef=$scalef -Dioffset=$ioffset -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+done
+done
+
+for regsize in 32 64
+do
+for scalef in 0 4
+do
+for ioffset in 0 4
+do
+echo -e "\n\nlea r$regsize,[r64+$scalef*rsi+($ioffset bytes)] + add, Latency"  >> results1/misc_int.txt
+$ass -f elf64 -o b64.o  -Dinstruct=lea -Dtmode=LA -Dregsize=$regsize -Dscalef=$scalef -Dioffset=$ioffset -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+done
+done
+
+if [ $support32bit -ne 0 ] ; then
+for regsize in 16 32
+do
+for scalef in 0 1
+do
+for ioffset in 0 2
+do
+echo -e "\n\nlea r$regsize,[r16+$scalef*si+($ioffset bytes)], Latency"  >> results1/misc_int.txt
+$ass -f elf32 -o b32.o  -Dinstruct=lea -Dtmode=L -Daddrsize=16 -Dregsize=$regsize -Dscalef=$scalef -Dioffset=$ioffset -Pmisc_int.inc TemplateB32.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+done
+done
+fi
+
+
+# call and jumps
+
+for r in 1 4 16 100
+do
+echo -e "\n\ncall_without_return, 64 bit, repeat = $r "  >> results1/misc_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=call_without_return -Drepeat2=$r -Dregsize=64 -Dcounters=$cts -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+done
+
+if [ $support32bit -ne 0 ] ; then
+for r in 1 4 16 100
+do
+echo -e "\n\ncall_without_return, 32 bit, repeat = $r "  >> results1/misc_int.txt
+$ass -f elf32 -o b32.o -lxx.lst -Dinstruct=call_without_return -Drepeat2=$r -Dregsize=32 -Pmisc_int.inc TemplateB32.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+
+echo -e "\n\ncall + return, 32 bit"  >> results1/misc_int.txt
+for cts in $PMClist
+do
+$ass -f elf32 -o b32.o -Dinstruct=call_and_return -Drepeat1=1000 -Dregsize=32 -Dcounters=$cts -Pmisc_int.inc TemplateB32.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+fi
+
+for nnops in 0 2 8
+do
+echo -e "\n\ncall + return + $nnops NOPs, 64 bit"  >> results1/misc_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=call_and_return -Drepeat1=1000 -Dregsize=64 -Dnnops=$nnops -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+
+for noplen in 2 3 5 8
+do
+echo -e "\n\ncall + return + longNOP($noplen), 64 bit"  >> results1/misc_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=call_return_longnop -Drepeat1=1000 -Dregsize=64 -Dnoplen=$noplen -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+
+if [ $support32bit -ne 0 ] ; then
+echo -e "\n\npush + call + return imm, 32 bit"  >> results1/misc_int.txt
+for cts in $PMClist
+do
+$ass -f elf32 -o b32.o -Dinstruct=push_call_return_imm -Drepeat1=1000 -Dregsize=32 -Dnoplen=0 -Dcounters=$cts -Pmisc_int.inc TemplateB32.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+fi
+
+for noplen in 0 2 5
+do
+echo -e "\n\npush + call + return imm + longNOP($noplen), 64 bit"  >> results1/misc_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=push_call_return_imm -Drepeat1=1000 -Dregsize=64 -Dnoplen=$noplen -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+
+if [ $support32bit -ne 0 ] ; then
+echo -e "\n\ncall register + return, 32 bit"  >> results1/misc_int.txt
+for cts in $PMClist
+do
+$ass -f elf32 -o b32.o -Dinstruct=call_register_and_return -Drepeat1=1000 -Dregsize=32 -Dnoplen=0 -Dcounters=$cts -Pmisc_int.inc TemplateB32.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+fi
+
+for noplen in 0 2 5
+do
+echo -e "\n\ncall register + return + longNOP($noplen), 64 bit"  >> results1/misc_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=call_register_and_return -Drepeat1=1000 -Dregsize=64 -Dnoplen=$noplen -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+
+if [ $support32bit -ne 0 ] ; then
+echo -e "\n\ncall memory + return, 32 bit"  >> results1/misc_int.txt
+for cts in $PMClist
+do
+$ass -f elf32 -o b32.o -Dinstruct=call_memory_and_return -Drepeat1=1000 -Dregsize=32 -Dnoplen=0 -Dcounters=$cts -Pmisc_int.inc TemplateB32.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+fi
+
+for noplen in 0 2 5
+do
+echo -e "\n\ncall memory + return + longNOP($noplen), 64 bit"  >> results1/misc_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=call_memory_and_return -Drepeat1=1000 -Dregsize=64 -Dnoplen=$noplen -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+
+for jmp_per_16b in 1 2 3 4 5 6 8
+do 
+echo -e "\n\njmp ($jmp_per_16b per 16 bytes), 64 bit"  >> results1/misc_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=jmp -Drepeat1=1000 -Dregsize=64 -Djmp_per_16b=$jmp_per_16b -Dcounters=$cts -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+done
+
+echo -e "\n\njmp register + lea, 64 bit"  >> results1/misc_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -l1.lst -Dinstruct=jmp_register -Drepeat1=1000 -Dregsize=64 -Djmp_per_16b=1 -Dcounters=$cts -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+
+echo -e "\n\njmp memory + lea + mov, 64 bit"  >> results1/misc_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -l2.lst -Dinstruct=jmp_memory -Drepeat1=1000 -Dregsize=64 -Djmp_per_16b=1 -Dcounters=$cts -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+
+for jmptaken in yes no
+do
+echo -e "\n\nconditional jump, taken=$jmptaken, 2 per 16 bytes, 64 bit"  >> results1/misc_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=conditional_jmp -Drepeat1=1000 -Dregsize=64 -Djmp_per_16b=2 -Djmptaken=$jmptaken -Dcounters=$cts -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+done
+
+for jmp_per_16b in 1 2 3 4 5 6 8
+do
+echo -e "\n\nconditional jump, taken=alternate, $jmp_per_16b per 16 bytes, 64 bit"  >> results1/misc_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=conditional_jmp -Drepeat1=1000 -Dregsize=64 -Djmp_per_16b=$jmp_per_16b -Djmptaken=alternate -Drepeat0=10 -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+
+if [ $support32bit -ne 0 ] ; then
+echo -e "\n\njecxz, taken=alternate, 2 per 16 bytes, 32 bit mode"  >> results1/misc_int.txt
+for cts in $PMClist
+do
+$ass -f elf32 -o b32.o -Dinstruct=jecxz -Drepeat1=1000 -Drepeat0=10 -Dcounters=$cts -Pmisc_int.inc TemplateB32.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+fi
+
+echo -e "\n\njecxz, taken=alternate, 2 per 16 bytes, 64 bit mode"  >> results1/misc_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=jecxz -Drepeat1=1000 -Drepeat0=10 -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+
+echo -e "\n\njrcxz, taken=alternate, 2 per 16 bytes, 64 bit mode"  >> results1/misc_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=jrcxz -Drepeat1=1000 -Drepeat0=10 -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+
+echo -e "\n\nloop, taken=alternate, 2 per 16 bytes, 64 bit mode"  >> results1/misc_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=loop -Drepeat1=1000 -Dtaken=alternate -Drepeat0=10 -Dcounters=$cts -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+
+echo -e "\n\nloop, taken=10, 2 per 16 bytes, 64 bit mode"  >> results1/misc_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=loop -Drepeat1=1000 -Dtaken=yes -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+
+echo -e "\n\nloope, alternate, 2 per 16 bytes, 64 bit mode"  >> results1/misc_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=loope -Drepeat1=1000 -Drepeat0=10 -Dcounters=$cts -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+
+echo -e "\n\nloopne, alternate, 2 per 16 bytes, 64 bit mode"  >> results1/misc_int.txt
+$ass -f elf64 -o b64.o -Dinstruct=loopne -Drepeat1=1000 -Drepeat0=10 -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+
+for instruct1 in cmp test add and
+do
+echo -e "\n\n$instruct1 + conditional jump, alternate, 2 per 16 bytes"  >> results1/misc_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=fused_alu_jmp -Dinstruct1=$instruct1 -Drepeat1=1000 -Drepeat0=10 -Dcounters=$cts -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+done
+
+
+for instruct in xadd cmpxchg
+do
+for lockprefix in 0 1
+do
+for regsize in 8 16 32 64
+do
+if [ $lockprefix -eq 1 ] ; then prefix="lock " ; else prefix="" ; fi
+echo -e "\n\nLatency: $prefix$instruct [m$regsize], r$regsize"  >> results1/misc_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dlockprefix=$lockprefix -Dtmode=L -Dcounters=$cts -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_int.txt
+done
+done
+done
+done
+
+for instruct in add cmpxchg8b cmpxchg16b
+do
+for lockprefix in 0 1
+do
+if [ $lockprefix -eq 1 ] ; then prefix="lock " ; else prefix="" ; fi
+regsize=32
+echo -e "\n\nLatency: $prefix$instruct [m]"  >> results1/misc_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dlockprefix=$lockprefix -Dtmode=L -Dcounters=$cts -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_int.txt
+done
+done
+done
+
+for instruct in prefetcht0 prefetcht1 prefetcht2 prefetchnta
+do
+echo -e "\n\nThroughput $instruct [m]"  >> results1/misc_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o  -Dinstruct=$instruct -Dnumop=1 -Dtmode=M -Dregsize=0 -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then 
+  echo "Assembling $instruct failed"
+  echo "Assembling $instruct failed"  >> results1/misc_int.txt
+else
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+fi
+done
+done
+
+# vprefetche0 vprefetche1 vprefetche2 vprefetchenta ?
+
+if  [ `grep -c -i "prfchw" cpuinfo.txt ` -gt 0 -o `grep -c -i "3dnowprefetch" cpuinfo.txt ` -gt 0 ] ; then 
+
+echo -e "\n\nAMD prefetch instructions work on some Intel processors, behave as NOPs on others:"  >> results1/misc_int.txt
+for instruct in prefetch prefetchw
+do
+echo -e "\n\nThroughput $instruct [m]"  >> results1/misc_int.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o  -Dinstruct=$instruct -Dnumop=1 -Dtmode=M -Dregsize=0 -Dcounters=$cts -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_int.txt
+done
+done
+
+fi # prfchw
+
+echo -e "\n"  >> results1/misc_int.txt
+

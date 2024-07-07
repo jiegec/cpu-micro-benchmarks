@@ -1,0 +1,28 @@
+#!/bin/bash
+#                instruct_boundaries.sh2             2013-07-11 Agner Fog
+#
+# PMC Test program for testing if instruction boundaries are marked in
+# instruction cache by making jump past previous instruction boundary
+#
+# (c) 2013 GNU General Public License www.gnu.org/licenses
+#
+# repeatu:  number of instructions in sequency
+
+. vars.sh
+
+nthreads=1
+
+echo -e "Test if instruction boundaries are marked in instruction cache"  > results2/instruct_boundaries.txt
+
+for repeatu in 10 100 1000
+do
+echo -e "\n$repeatu instructions" >> results2/instruct_boundaries.txt
+
+$ass -f elf64 -o b64.o -Drepeatu=$repeatu -Dcounters=$BranchPMCs -Dnthreads=$nthreads -Pinstruct_boundaries.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/instruct_boundaries.txt
+done
+
+echo -e "\n"  >> results2/instruct_boundaries.txt

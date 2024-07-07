@@ -1,0 +1,552 @@
+#!/bin/bash
+#                                                        2013-07-05 Agner Fog
+# Compile and run PMCTest for various type conversion instructions that have
+# different register types for input and output. AVX and AVX2 instruction set
+# (c) Copyright 2013 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+# Exit if AVX not supported
+if  [ `grep -c -i "avx" cpuinfo.txt ` -eq 0 ] ; then exit ; fi
+
+# Detect CPU specific variables
+. vars.sh
+
+echo -e "AVX instructions with different register size or type for input and output\n"  > results1/convers2.txt
+
+# Is AVX2 supported?
+if  [ `grep -c -i "avx2" cpuinfo.txt ` -ne 0 ] ; then
+list2="vextracti128"
+else
+list2=""
+fi
+
+for instruct in  vextractf128 $list2
+do
+immvalue=1
+echo -e "\n\nThroughput: $instruct xmm,ymm,$immvalue"  >> results1/convers2.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Dtcase=xy -Dtmode=T -Dnumimm=1 -Dimmvalue=$immvalue -Dcounters=$cts -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+done
+
+for immvalue in 0 1
+do
+echo -e "\n\nLatency: $instruct xmm,ymm,$immvalue"  >> results1/convers2.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Dtcase=xy -Dtmode=L -Dnumimm=1 -Dimmvalue=$immvalue -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+done
+
+if  [ `grep -c -i "avx2" cpuinfo.txt ` -ne 0 ] ; then
+for immvalue in 0 1
+do
+echo -e "\n\nLatency: $instruct xmm,ymm,$immvalue + vinserti128 y,y,x,1"  >> results1/convers2.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Dtcase=xy -Dtmode=LI -Dnumimm=1 -Dimmvalue=$immvalue -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+done
+fi # AVX2
+
+for immvalue in 0 1
+do
+echo -e "\n\nLatency: $instruct xmm,ymm,$immvalue + vinsertf128 y,y,x,1"  >> results1/convers2.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Dtcase=xy -Dtmode=LF -Dnumimm=1 -Dimmvalue=$immvalue -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+done
+
+immvalue=1
+echo -e "\n\nThroughput with memory destination: $instruct [m128],ymm,$immvalue"  >> results1/convers2.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Dtcase=xy -Dtmode=TMD -Dnumimm=1 -Dimmvalue=$immvalue -Dcounters=$cts -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+done
+
+for immvalue in 0 1
+do
+echo -e "\n\nLatency with memory destination: $instruct [m128],ymm,$immvalue + vmovdqa x,[m]"  >> results1/convers2.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Dtcase=xy -Dtmode=LMD -Dnumimm=1 -Dimmvalue=$immvalue -Dcounters=$cts -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+done
+done
+
+done  # vextracti128 vextractf128
+
+
+if  [ `grep -c -i "avx2" cpuinfo.txt ` -ne 0 ] ; then
+list2="vinserti128"
+else
+list2=""
+fi
+
+for instruct in  vinsertf128  $list2
+do
+immvalue=1
+echo -e "\n\nThroughput: $instruct ymm,ymm,xmm,$immvalue"  >> results1/convers2.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Dtcase=yyx -Dtmode=T -Dnumimm=1 -Dimmvalue=$immvalue -Dcounters=$cts -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+done
+
+for immvalue in 0 1
+do
+echo -e "\n\nLatency: $instruct ymm,ymm,xmm,$immvalue"  >> results1/convers2.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Dtcase=yyx -Dtmode=L -Dnumimm=1 -Dimmvalue=$immvalue -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+done
+
+if  [ `grep -c -i "avx2" cpuinfo.txt ` -ne 0 ] ; then
+for immvalue in 0 1
+do
+echo -e "\n\nLatency: $instruct ymm,ymm,xmm,$immvalue + vextracti128 xmm,ymm,1"  >> results1/convers2.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Dtcase=yyx -Dtmode=LI -Dnumimm=1 -Dimmvalue=$immvalue -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+done
+fi  # AVX2
+
+for immvalue in 0 1
+do
+echo -e "\n\nLatency: $instruct ymm,ymm,xmm,$immvalue + vextractf128 xmm,ymm,1"  >> results1/convers2.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Dtcase=yyx -Dtmode=LF -Dnumimm=1 -Dimmvalue=$immvalue -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+done
+
+for immvalue in 0 1
+do
+echo -e "\n\nThroughput with memory operand: $instruct ymm,ymm,[m128],$immvalue"  >> results1/convers2.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Dtcase=yyx -Dtmode=TM -Dnumimm=1 -Dimmvalue=$immvalue -Dcounters=$cts -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+done
+done
+
+for immvalue in 0 1
+do
+echo -e "\n\nLatency with memory operand: $instruct ymm,ymm,[m128],$immvalue + vmovdqa [m128],xmm"  >> results1/convers2.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Dtcase=yyx -Dtmode=LM -Dnumimm=1 -Dimmvalue=$immvalue -Dcounters=$cts -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+done
+done
+
+done  #  vinserti128 vinsertf128
+
+
+#AVX2 only
+if  [ `grep -c -i "avx2" cpuinfo.txt ` -ne 0 ] ; then
+
+# Instruction xmm, ymm
+
+for instruct in  vpmovsxbw vpmovsxbd vpmovsxbq vpmovsxwd vpmovsxwq vpmovsxdq \
+                 vpmovzxbw vpmovzxbd vpmovzxbq vpmovzxwd vpmovzxwq vpmovzxdq
+do
+
+echo -e "\n\nThroughput: $instruct xmm,xmm"  >> results1/convers2.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Dtcase=xx -Dtmode=T -Dcounters=$cts -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+done
+
+echo -e "\n\nLatency: $instruct xmm,xmm"  >> results1/convers2.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Dtcase=xx -Dtmode=L -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+
+echo -e "\n\nThroughput with memory operand: $instruct xmm,[m]"  >> results1/convers2.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Dtcase=xx -Dtmode=TM0 -Dcounters=$cts -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+done
+
+echo -e "\n\nThroughput: $instruct ymm,xmm"  >> results1/convers2.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=256 -Dtcase=yx -Dtmode=T -Dcounters=$cts -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+done
+
+echo -e "\n\nLatency: $instruct ymm,xmm"  >> results1/convers2.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=256 -Dtcase=yx -Dtmode=L -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+
+echo -e "\n\nLatency: $instruct ymm,xmm / vinserti128 ymm,xmm,xmm,1"  >> results1/convers2.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=256 -Dtcase=yx -Dtmode=LI -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+
+echo -e "\n\nThroughput with memory operand: $instruct ymm,[m]"  >> results1/convers2.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=256 -Dtcase=yx -Dtmode=TM0 -Dcounters=$cts -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+done 
+
+done  # for instruct in vpmovsxbw ...
+fi    # AVX2
+  
+
+instruct=vbroadcastss 
+
+if  [ `grep -c -i "avx2" cpuinfo.txt ` -ne 0 ] ; then
+                 
+echo -e "\n\nThroughput: $instruct xmm,xmm"  >> results1/convers2.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Dtcase=xx -Dtmode=T -Dcounters=$cts -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+done
+
+echo -e "\n\nLatency: $instruct xmm,xmm"  >> results1/convers2.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Dtcase=xx -Dtmode=L -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+
+echo -e "\n\nThroughput: $instruct ymm,xmm"  >> results1/convers2.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=256 -Dtcase=yx -Dtmode=T -Dcounters=$cts -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+done
+
+echo -e "\n\nLatency: $instruct ymm,xmm"  >> results1/convers2.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=256 -Dtcase=yx -Dtmode=L -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+
+echo -e "\n\nLatency: $instruct ymm,xmm / vextractf128 xmm,ymm,1"  >> results1/convers2.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=256 -Dtcase=yx -Dtmode=LF -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+
+fi  # AVX2
+
+echo -e "\n\nThroughput: $instruct xmm,m32"  >> results1/convers2.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=32 -Dtcase=xy -Dtmode=TM -Dcounters=$cts -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+done
+
+echo -e "\n\nThroughput: $instruct ymm,m32"  >> results1/convers2.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=32 -Dtcase=yx -Dtmode=TM -Dcounters=$cts -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+done 
+
+
+# vbroadcastsd
+instruct=vbroadcastsd 
+
+if  [ `grep -c -i "avx2" cpuinfo.txt ` -ne 0 ] ; then
+                 
+echo -e "\n\nThroughput: $instruct ymm,xmm"  >> results1/convers2.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=256 -Dtcase=yx -Dtmode=T -Dcounters=$cts -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+done
+
+echo -e "\n\nLatency: $instruct ymm,xmm"  >> results1/convers2.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=256 -Dtcase=yx -Dtmode=L -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+
+echo -e "\n\nLatency: $instruct ymm,xmm / vextractf128 xmm,ymm,1"  >> results1/convers2.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=256 -Dtcase=yx -Dtmode=LF -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+
+fi # AVX2
+
+echo -e "\n\nThroughput: $instruct ymm,m64"  >> results1/convers2.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=64 -Dtcase=yx -Dtmode=TM -Dcounters=$cts -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+done
+
+
+# Is AVX2 supported?
+if  [ `grep -c -i "avx2" cpuinfo.txt ` -ne 0 ] ; then
+list2="vbroadcasti128"
+else
+list2=""
+fi
+
+for instruct in  vbroadcastf128 $list2
+do
+                 
+echo -e "\n\nThroughput: $instruct ymm,m128"  >> results1/convers2.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Dtcase=yx -Dtmode=TM -Dcounters=$cts -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+done
+
+echo -e "\n\nLatency: $instruct ymm,m128 + vmovdqa m128,xmm"  >> results1/convers2.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Dtcase=yx -Dtmode=LM -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+
+done  # vbroadcastf128 vbroadcasti128
+
+
+#AVX2 only
+if  [ `grep -c -i "avx2" cpuinfo.txt ` -ne 0 ] ; then
+
+for instrpair in  vpbroadcastb,8  vpbroadcastw,16  vpbroadcastd,32  vpbroadcastq,64
+do
+
+# split each set into its two elements by the commas:
+elements=( $(echo $instrpair | tr ',' ' ') )
+instruct=${elements[0]}
+regsize=${elements[1]}
+
+echo -e "\n\nThroughput: $instruct xmm,xmm"  >> results1/convers2.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Dtcase=xx -Dtmode=T -Dcounters=$cts -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+done
+
+echo -e "\n\nThroughput: $instruct xmm,m$regsize"  >> results1/convers2.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dtcase=xy -Dtmode=TM -Dcounters=$cts -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+done
+
+echo -e "\n\nLatency: $instruct xmm,xmm"  >> results1/convers2.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Dtcase=xx -Dtmode=L -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+
+echo -e "\n\nLatency: $instruct xmm,m$regsize + mov.. m$regsize,xmm"  >> results1/convers2.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dtcase=xy -Dtmode=LM -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+
+echo -e "\n\nThroughput: $instruct ymm,xmm"  >> results1/convers2.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Dtcase=yx -Dtmode=T -Dcounters=$cts -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+done
+
+echo -e "\n\nThroughput: $instruct ymm,m$regsize"  >> results1/convers2.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dtcase=yx -Dtmode=TM -Dcounters=$cts -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+done
+
+echo -e "\n\nLatency: $instruct ymm,xmm"  >> results1/convers2.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Dtcase=yx -Dtmode=L -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+
+echo -e "\n\nLatency: $instruct ymm,m$regsize + mov.. m$regsize,xmm"  >> results1/convers2.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dtcase=yx -Dtmode=LM -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/convers2.txt
+
+done  # vpbroadcastb, ...
+
+
+# Skip vmovntdqa because of error in nasm 4.10.7. Use the test in convers.sh1 instead
+if [ 0 -eq 1 ] ; then
+
+instruct=vmovntdqa
+for regsize in  128 256
+do
+
+echo -e "\n\nThroughput: $instruct r$regsize,m$regsize"  >> results1/convers2.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dtcase=xx -Dtmode=TM -Dcounters=$cts -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then 
+  echo "assembling $instruct r$regsize,m$regsize failed"
+  echo "assembling $instruct r$regsize,m$regsize" >> results1/convers2.txt
+else
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -eq 0 ] ; then 
+./x >> results1/convers2.txt
+fi
+fi
+done
+
+echo -e "\n\nLatency: $instruct r$regsize,m$regsize + vmovdqa m$regsize,r$regsize"  >> results1/convers2.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dtcase=xy -Dtmode=LM -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then
+  echo "assembling $instruct r$regsize,m$regsize + vmovdqa m$regsize,r$regsize failed"
+  echo "assembling $instruct r$regsize,m$regsize + vmovdqa m$regsize,r$regsize failed" >> results1/convers2.txt
+else
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -eq 0 ] ; then 
+./x >> results1/convers2.txt
+fi
+fi
+
+done 
+fi #  vmovntdqa skipped
+
+fi    #AVVX2
+
+
+# Is AVX2 supported?
+if  [ `grep -c -i "avx2" cpuinfo.txt ` -ne 0 ] ; then
+list2="vpmovmskb"
+else
+list2=""
+fi 
+
+for instruct in  vmovmskps vmovmskpd  $list2
+do
+for regsize in  128 256
+do
+
+echo -e "\n\nThroughput: $instruct r32,r$regsize"  >> results1/convers2.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dtcase=rx -Dtmode=T -Dcounters=$cts -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then
+  echo "assembling $instruct r32,r$regsize failed"
+  echo "assembling $instruct r32,r$regsize failed" >> results1/convers2.txt
+else
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -eq 0 ] ; then 
+./x >> results1/convers2.txt
+fi
+fi
+done
+
+echo -e "\n\nLatency: $instruct r32,r$regsize + movd r128,r21"  >> results1/convers2.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dtcase=rx -Dtmode=LI -Pconvers2.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then
+  echo "assembling $instruct failed"
+  echo "assembling $instruct failed" >> results1/convers2.txt
+else
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -eq 0 ] ; then 
+./x >> results1/convers2.txt
+fi
+fi
+
+done
+done
+
+echo -e "\n"  >> results1/convers2.txt

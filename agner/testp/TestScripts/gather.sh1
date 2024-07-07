@@ -1,0 +1,230 @@
+#!/bin/bash
+#                                                        2016-09-25 Agner Fog
+# Compile and run PMCTest for gather and scatter instructions
+# looping through list of instructions
+# (c) Copyright 2013-2016 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+# Exit if AVX2 not supported
+if  [ `grep -c -i "avx2" cpuinfo.txt ` -eq 0 ] ; then exit ; fi
+
+# Detect CPU specific variables
+. vars.sh
+
+repeat0=10
+
+echo -e "Gather instructions\n\n"  > results1/gather.txt
+
+# Gather instructions
+echo -e "\n\n\nGather instructions:"  >> results1/gather.txt
+echo -e "\n\nTest modes:"  >> results1/gather.txt
+echo -e "\nNONE:         Throughput. Do nothing. Mask = 0"  >> results1/gather.txt
+echo -e "\nONE:          Throughput. Load only one data item"  >> results1/gather.txt
+echo -e "\nCONTIGUOUS:   Throughput. Load contiguous data items"  >> results1/gather.txt
+echo -e "\nSTRIDE:       Throughput. Load data items with a stride of 4 items"  >> results1/gather.txt
+echo -e "\nRANDOM:       Throughput. Load items in no particular order"  >> results1/gather.txt
+echo -e "\nSAME:         Throughput. Some items are the same. Use as shuffle"  >> results1/gather.txt
+echo -e "\nPART_OVERLAP: Throughput. Data items are partially overlapping"  >> results1/gather.txt
+echo -e "\nLATENCY:      Latency. Load + store"  >> results1/gather.txt
+echo -e "\nLATENCY_I:    Latency. Load + VPOR + store"  >> results1/gather.txt
+echo -e "\nLATENCY_F:    Latency. Load + VMAXPS + store"  >> results1/gather.txt
+echo -e "\n(All tests include a move instruction to set the mask register.\n"  >> results1/gather.txt
+
+instruct=vgatherdps
+for tmode in   NONE ONE CONTIGUOUS STRIDE RANDOM SAME PART_OVERLAP LATENCY LATENCY_I LATENCY_F
+do
+echo -e "\n\nTest mode: $tmode. $instruct xmm,[r+i*xmm],xmm"  >> results1/gather.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Diregsize=128 -Dcounters=$PMCs -Dtmode=$tmode -Drepeat0=$repeat0 -Pgather.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/gather.txt
+done
+
+for tmode in   NONE ONE CONTIGUOUS STRIDE RANDOM SAME PART_OVERLAP LATENCY LATENCY_I LATENCY_F
+do
+echo -e "\n\nTest mode: $tmode. $instruct ymm,[r+i*ymm],ymm"  >> results1/gather.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=256 -Diregsize=256 -Dcounters=$PMCs -Dtmode=$tmode -Drepeat0=$repeat0 -Pgather.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/gather.txt
+done
+
+instruct=vgatherqps
+for tmode in   STRIDE
+do
+echo -e "\n\nTest mode: $tmode. $instruct xmm,[r+i*xmm],xmm"  >> results1/gather.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Diregsize=128 -Dcounters=$cts -Dtmode=$tmode -Drepeat0=$repeat0 -Pgather.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/gather.txt
+done
+done
+
+for tmode in   STRIDE
+do
+echo -e "\n\nTest mode: $tmode. $instruct xmm,[r+i*ymm],xmm"  >> results1/gather.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Diregsize=256 -Dcounters=$PMCs -Dtmode=$tmode -Drepeat0=$repeat0 -Pgather.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then 
+  echo "Assembly of $instruct xmm,[r+i*ymm],xmm failed"
+  echo "Assembly of $instruct xmm,[r+i*ymm],xmm failed"  >> results1/gather.txt
+else
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/gather.txt
+fi
+done
+
+instruct=vgatherdpd
+for tmode in   STRIDE
+do
+echo -e "\n\nTest mode: $tmode. $instruct xmm,[r+i*xmm],xmm"  >> results1/gather.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Diregsize=128 -Dcounters=$cts -Dtmode=$tmode -Drepeat0=$repeat0 -Pgather.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/gather.txt
+done
+done
+
+for tmode in   STRIDE
+do
+echo -e "\n\nTest mode: $tmode. $instruct ymm,[r+i*xmm],ymm"  >> results1/gather.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=256 -Diregsize=128 -Dcounters=$PMCs -Dtmode=$tmode -Drepeat0=$repeat0 -Pgather.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/gather.txt
+done
+
+instruct=vgatherqpd
+for tmode in   STRIDE
+do
+echo -e "\n\nTest mode: $tmode. $instruct xmm,[r+i*xmm],xmm"  >> results1/gather.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Diregsize=128 -Dcounters=$cts -Dtmode=$tmode -Drepeat0=$repeat0 -Pgather.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/gather.txt
+done
+done
+
+for tmode in   STRIDE
+do
+echo -e "\n\nTest mode: $tmode. $instruct ymm,[r+i*ymm],ymm"  >> results1/gather.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=256 -Diregsize=256 -Dcounters=$PMCs -Dtmode=$tmode -Drepeat0=$repeat0 -Pgather.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/gather.txt
+done
+
+instruct=vpgatherdd
+for tmode in   STRIDE
+do
+echo -e "\n\nTest mode: $tmode. $instruct xmm,[r+i*xmm],xmm"  >> results1/gather.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Diregsize=128 -Dcounters=$cts -Dtmode=$tmode -Drepeat0=$repeat0 -Pgather.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/gather.txt
+done
+done
+
+for tmode in   STRIDE
+do
+echo -e "\n\nTest mode: $tmode. $instruct ymm,[r+i*ymm],ymm"  >> results1/gather.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=256 -Diregsize=256 -Dcounters=$PMCs -Dtmode=$tmode -Drepeat0=$repeat0 -Pgather.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/gather.txt
+done
+
+instruct=vpgatherqd
+for tmode in   STRIDE
+do
+echo -e "\n\nTest mode: $tmode. $instruct xmm,[r+i*xmm],xmm"  >> results1/gather.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Diregsize=128 -Dcounters=$cts -Dtmode=$tmode -Drepeat0=$repeat0 -Pgather.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/gather.txt
+done
+done
+
+for tmode in   STRIDE
+do
+echo -e "\n\nTest mode: $tmode. $instruct xmm,[r+i*ymm],xmm"  >> results1/gather.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Diregsize=256 -Dcounters=$PMCs -Dtmode=$tmode -Drepeat0=$repeat0 -Pgather.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then 
+  echo "Assembly of $instruct xmm,[r+i*ymm],xmm failed"
+  echo "Assembly of $instruct xmm,[r+i*ymm],xmm failed"  >> results1/gather.txt
+else
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/gather.txt
+fi
+done
+
+instruct=vpgatherdq
+for tmode in   STRIDE
+do
+echo -e "\n\nTest mode: $tmode. $instruct xmm,[r+i*xmm],xmm"  >> results1/gather.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Diregsize=128 -Dcounters=$cts -Dtmode=$tmode -Drepeat0=$repeat0 -Pgather.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/gather.txt
+done
+done
+
+for tmode in   STRIDE
+do
+echo -e "\n\nTest mode: $tmode. $instruct ymm,[r+i*xmm],ymm"  >> results1/gather.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=256 -Diregsize=128 -Dcounters=$PMCs -Dtmode=$tmode -Drepeat0=$repeat0 -Pgather.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/gather.txt
+done
+
+instruct=vpgatherqq
+for tmode in   STRIDE
+do
+echo -e "\n\nTest mode: $tmode. $instruct xmm,[r+i*xmm],xmm"  >> results1/gather.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=128 -Diregsize=128 -Dcounters=$cts -Dtmode=$tmode -Drepeat0=$repeat0 -Pgather.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/gather.txt
+done
+done
+
+for tmode in   NONE ONE CONTIGUOUS STRIDE RANDOM SAME PART_OVERLAP LATENCY LATENCY_I LATENCY_F
+do
+echo -e "\n\nTest mode: $tmode. $instruct ymm,[r+i*ymm],ymm"  >> results1/gather.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=256 -Diregsize=256 -Dcounters=$PMCs -Dtmode=$tmode -Drepeat0=$repeat0 -Pgather.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/gather.txt
+done
+
+
+echo -e "\n"  >> results1/gather.txt

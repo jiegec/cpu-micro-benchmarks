@@ -1,0 +1,53 @@
+#!/bin/bash
+#                                                       2013-07-19 Agner Fog
+
+#Test jump instructions performance
+
+# (c) Copyright 2013 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+# Detect CPU specific variables
+. vars.sh
+
+# Performance counters
+if  [ "$CPUbrand" = "Intel" -a $imodel -ne 28 ] ; then
+# This one is for Intel processors with uop cache:
+cts="1,9,100,25,26,207"
+else
+cts=$BranchPMCs
+fi
+
+
+echo -e "Test jump instructions"  > results2/jmp.txt
+
+for jmp_per_16b in 1 2 3 4 5 6 8
+do 
+echo -e "\n\njmp ($jmp_per_16b per 16 bytes), 64 bit"  >> results2/jmp.txt
+$ass -f elf64 -o b64.o -Dinstruct=jmp -Drepeat1=1000 -Dregsize=64 -Djmp_per_16b=$jmp_per_16b -Dcounters=$cts -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results2/jmp.txt
+done
+
+for jmptaken in yes no
+do
+echo -e "\n\nconditional jump, taken=$jmptaken, 2 per 16 bytes, 64 bit"  >> results2/jmp.txt
+$ass -f elf64 -o b64.o -Dinstruct=conditional_jmp -Drepeat1=1000 -Dregsize=64 -Djmp_per_16b=2 -Djmptaken=$jmptaken -Dcounters=$cts -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results2/jmp.txt
+done
+
+for jmp_per_16b in 1 2 3 4 5 6 8
+do
+echo -e "\n\nconditional jump, taken=alternate, $jmp_per_16b per 16 bytes, 64 bit"  >> results2/jmp.txt
+$ass -f elf64 -o b64.o -Dinstruct=conditional_jmp -Drepeat1=1000 -Dregsize=64 -Djmp_per_16b=$jmp_per_16b -Djmptaken=alternate -Drepeat0=10 -Dcounters=$cts  -Pmisc_int.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results2/jmp.txt
+done
+
+echo -e "\n"  >> results2/jmp.txt
+

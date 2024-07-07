@@ -1,0 +1,103 @@
+#!/bin/bash
+#                                                                        2012-02-28 AgF
+
+# Compile and run PMCTest for different implementations of Taylor expansion algorithm
+# (c) 2012 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+echo -e "Different implementations of Taylor expansion\n"  > results2/taylor.txt
+
+. vars.sh
+
+ndatlist="16 160 320"
+repeat1=1000
+tcase=1
+nthreads=1
+
+for ndat in $ndatlist
+do
+echo -e "\n\nCase 1: SSE2, 4 terms per iteration, $ndat terms"  >> results2/taylor.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dndat=$ndat -Drepeat1=$repeat1 -Dnthreads=$nthreads -Ptaylor.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/taylor.txt
+done
+
+# Check if AVX supported
+if  [ `grep -c -i "avx"  cpuinfo.txt ` -ne 0 ] ; then
+
+tcase=2
+
+for ndat in $ndatlist
+do
+echo -e "\n\nCase 2: AVX, 256 bit, 8 terms per iteration, $ndat terms"  >> results2/taylor.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dndat=$ndat -Drepeat1=$repeat1 -Dnthreads=$nthreads -Ptaylor.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/taylor.txt
+done
+
+fi  # AVX
+
+# Check if FMA3 supported
+if  [ `grep -c -i "fma[ 3,\t]" cpuinfo.txt ` -gt 0 ] ; then
+
+tcase=3
+
+for ndat in $ndatlist
+do
+echo -e "\n\nCase 3: FMA3, 128 bit, 4 terms per iteration, $ndat terms"  >> results2/taylor.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dndat=$ndat -Drepeat1=$repeat1 -Dnthreads=$nthreads -Ptaylor.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/taylor.txt
+done
+
+tcase=4
+
+for ndat in $ndatlist
+do
+echo -e "\n\nCase 4: FMA3, 256 bit, 8 terms per iteration, $ndat terms"  >> results2/taylor.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dndat=$ndat -Drepeat1=$repeat1 -Dnthreads=$nthreads -Ptaylor.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/taylor.txt
+done
+
+fi  # FMA3
+
+# Check if FMA4 supported
+if  [ `grep -c -i "fma4" cpuinfo.txt ` -gt 0 ] ; then
+
+tcase=5
+
+for ndat in $ndatlist
+do
+echo -e "\n\nCase 5: FMA4, 128 bit, 4 terms per iteration, $ndat terms"  >> results2/taylor.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dndat=$ndat -Drepeat1=$repeat1 -Dnthreads=$nthreads -Ptaylor.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/taylor.txt
+done
+
+tcase=6
+
+for ndat in $ndatlist
+do
+echo -e "\n\nCase 6: FMA4, 256 bit, 8 terms per iteration, $ndat terms"  >> results2/taylor.txt
+$ass -f elf64 -o b64.o -Dtcase=$tcase -Dndat=$ndat -Drepeat1=$repeat1 -Dnthreads=$nthreads -Ptaylor.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/taylor.txt
+done
+
+fi  # FMA4
+
+
+echo -e "\n"  >> results2/taylor.txt
+

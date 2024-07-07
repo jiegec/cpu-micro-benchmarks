@@ -1,0 +1,98 @@
+#!/bin/bash
+#                                                                        2021-01-25 Agner Fog
+# Compile and run PMCTest for push and pop instructions
+# looping through list of instructions
+# (c) Copyright 2012 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+. vars.sh
+
+echo -e "push and pop instructions latency and throughput\n64 bit mode"  > results1/pushpop.txt
+echo -e "Operands:"               >> results1/pushpop.txt
+echo -e "r  = register"            >> results1/pushpop.txt
+echo -e "I  = immediate constant"  >> results1/pushpop.txt
+echo -e "M  = memory"              >> results1/pushpop.txt
+echo -e "F  = flags"               >> results1/pushpop.txt
+echo -e "SP = stack pointer\n\n"   >> results1/pushpop.txt
+
+
+# warmup
+$ass -f elf64 -o b64.o -Dinstruct=push -Dregsize=64 -Doper=R -DWARMUPCOUNT=10000000 -Ppushpop.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> /dev/null
+
+
+for i in  push pop
+do
+for o in R SP M F
+do
+
+echo -e "\n\nThroughput: $i , operand: $o "  >> results1/pushpop.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dregsize=64 -Doper=$o -Dcounters=$cts -Ppushpop.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/pushpop.txt
+done
+done
+done
+
+for i in  push
+do
+for o in I
+do 
+
+echo -e "\n\nThroughput: $i , operand: $o "  >> results1/pushpop.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$i -Dregsize=64 -Doper=$o -Dcounters=$cts -Ppushpop.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/pushpop.txt
+done
+done
+done
+
+if [ $support32bit -ne 0 ] ; then
+
+echo -e "\n\n\npush and pop instructions latency and throughput\n32 bit mode"  >> results1/pushpop.txt
+
+for i in  push pop
+do
+for o in R SP M F
+do
+
+echo -e "\n\nThroughput: $i , operand: $o "  >> results1/pushpop.txt
+
+$ass -f elf32 -o b32.o -Dinstruct=$i -Dregsize=32 -Doper=$o -Ppushpop.inc TemplateB32.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/pushpop.txt
+
+done
+done
+
+for i in  push
+do
+for o in I
+do 
+
+echo -e "\n\nThroughput: $i , operand: $o "  >> results1/pushpop.txt
+
+$ass -f elf32 -o b32.o -Dinstruct=$i -Dregsize=32 -Doper=$o -Ppushpop.inc TemplateB32.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/pushpop.txt
+
+done
+done
+fi
+
+echo -e "\n"  >> results1/pushpop.txt
+

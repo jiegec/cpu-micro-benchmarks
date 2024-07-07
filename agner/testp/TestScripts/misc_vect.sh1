@@ -1,0 +1,649 @@
+#!/bin/bash
+#                                                       2021-01-25 Agner Fog
+#Test miscellaneous vector instructions
+# (c) Copyright 2012 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+# Detect CPU specific variables
+. vars.sh
+
+repeat0=10
+
+echo -e "Test miscellaneous vector instructions"  > results1/misc_vect.txt
+
+#unaligned read and write, 128 bit
+
+regsize=128
+moffset=$(($regsize / 2))
+cts=$PMCs
+
+for instruct1 in movdqu movups movupd
+do
+
+echo -e "\n\nThroughput unaligned read $instruct1 xmm,[m]"  >> results1/misc_vect.txt
+$ass -f elf64 -o b64.o -Dinstruct=movdqu -Dinstruct1=$instruct1 -Dregsize=$regsize -Dmoffset=$moffset  -Dtmode=MR -Dcounters=$cts -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_vect.txt
+
+echo -e "\n\nThroughput unaligned write $instruct1 [m],xmm"  >> results1/misc_vect.txt
+$ass -f elf64 -o b64.o -Dinstruct=movdqu -Dinstruct1=$instruct1 -Dregsize=$regsize -Dmoffset=$moffset  -Dtmode=MW -Dcounters=$cts -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_vect.txt
+
+echo -e "\n\nLatency unaligned write+read $instruct1 [m],xmm / $instruct1 xmm,[m]"  >> results1/misc_vect.txt
+$ass -f elf64 -o b64.o -Dinstruct=movdqu -Dinstruct1=$instruct1 -Dregsize=$regsize -Dmoffset=$moffset  -Dtmode=L -Dcounters=$cts -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_vect.txt
+
+done
+
+if  [ `grep -c -i "avx" cpuinfo.txt ` -ne 0 ] ; then 
+
+#unaligned read and write, 256 bit
+
+regsize=256
+moffset=$(($regsize / 2))
+cts=$PMCs
+
+for instruct1 in vmovdqu vmovups vmovupd
+do
+
+echo -e "\n\nThroughput unaligned read $instruct1 xmm,[m]"  >> results1/misc_vect.txt
+$ass -f elf64 -o b64.o -Dinstruct=movdqu -Dinstruct1=$instruct1 -Dregsize=$regsize -Dmoffset=$moffset  -Dtmode=MR -Dcounters=$cts -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_vect.txt
+
+echo -e "\n\nThroughput unaligned write $instruct1 [m],xmm"  >> results1/misc_vect.txt
+$ass -f elf64 -o b64.o -Dinstruct=movdqu -Dinstruct1=$instruct1 -Dregsize=$regsize -Dmoffset=$moffset  -Dtmode=MW -Dcounters=$cts -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_vect.txt
+
+echo -e "\n\nLatency unaligned write+read $instruct1 [m],xmm / $instruct1 xmm,[m]"  >> results1/misc_vect.txt
+$ass -f elf64 -o b64.o -Dinstruct=movdqu -Dinstruct1=$instruct1 -Dregsize=$regsize -Dmoffset=$moffset  -Dtmode=MR -Dcounters=$cts -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_vect.txt
+
+done
+
+fi  # avx
+
+
+# ptest
+instruct=ptest
+instruct1=ptest
+regsize=128
+echo -e "\n\nThroughput $instruct xmm,xmm"  >> results1/misc_vect.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dinstruct1=$instruct1 -Dregsize=$regsize -Dtmode=T -Dcounters=$cts -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_vect.txt
+done
+
+echo -e "\n\nLatency $instruct xmm,xmm / sbb / movd "  >> results1/misc_vect.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dinstruct1=$instruct1 -Dregsize=$regsize -Dtmode=L -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_vect.txt
+
+
+# various AVX instructions, etc
+if  [ `grep -c -i "avx" cpuinfo.txt ` -ne 0 ] ; then 
+instrlist="emms vzeroupper vzeroall"
+else
+instrlist="emms"
+fi
+
+repeat1=1000
+
+for instruct in $instrlist
+do
+
+if [ $support32bit -ne 0 ] ; then
+echo -e "\n\nThroughput $instruct (32 bit mode)"  >> results1/misc_vect.txt
+for cts in $PMClist
+do
+$ass -f elf32 -o b32.o -Dinstruct=$instruct -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 TemplateB32.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m32 -fno-pie -no-pie a32.o b32.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_vect.txt
+done
+fi
+
+echo -e "\n\nThroughput $instruct (64 bit mode)"  >> results1/misc_vect.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dcounters=$cts -Drepeat0=$repeat0 -Drepeat1=$repeat1 TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_vect.txt
+done
+done
+
+
+# insert and extract instructions
+
+if  [ `grep -c -i "avx" cpuinfo.txt ` -ne 0 ] ; then 
+list2=vinsertps 
+else
+list2=
+fi
+
+for instruct in extractps insertps $list2 
+do
+regsize=128
+
+if [ "$instruct" != "extractps" ] ; then
+echo -e "\n\nLatency $instruct xmm,xmm,i"  >> results1/misc_vect.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumimm=1 -Dimmvalue=1 -Dregsize=$regsize -Dtmode=L -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_vect.txt
+fi
+
+echo -e "\n\nThroughput $instruct xmm,"  >> results1/misc_vect.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumimm=1 -Dimmvalue=1 -Dregsize=$regsize -Dtmode=T -Dcounters=$cts -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_vect.txt
+done
+
+echo -e "\n\nWith memory operand: $instruct m128"  >> results1/misc_vect.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumimm=1 -Dimmvalue=1 -Dregsize=$regsize -Dtmode=M -Dcounters=$cts -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_vect.txt
+done
+
+echo -e "\n\nLatency with memory operand $instruct  / movss"  >> results1/misc_vect.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumimm=1 -Dimmvalue=1 -Dregsize=$regsize -Dtmode=LM -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_vect.txt
+
+done
+
+if  [ `grep -c -i "avx" cpuinfo.txt ` -ne 0 ] ; then 
+
+for instruct in vinsertf128 vextractf128
+do
+regsize=256
+
+echo -e "\n\nLatency $instruct ymm,"  >> results1/misc_vect.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumimm=1 -Dimmvalue=1 -Dregsize=$regsize -Dtmode=L -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_vect.txt
+
+echo -e "\n\nThroughput $instruct ymm,"  >> results1/misc_vect.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumimm=1 -Dimmvalue=1 -Dregsize=$regsize -Dtmode=T -Dcounters=$cts -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_vect.txt
+done
+
+echo -e "\n\nThroughput with memory operand: $instruct m256"  >> results1/misc_vect.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumimm=1 -Dimmvalue=1 -Dregsize=$regsize -Dtmode=M -Dcounters=$cts -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_vect.txt
+done
+
+for immvalue in 0 1
+do
+
+echo -e "\n\nlatency with memory operand: $instruct ..,$immvalue / vmovaps"  >> results1/misc_vect.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dnumimm=1 -Dimmvalue=$immvalue -Dregsize=$regsize -Dtmode=LM -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_vect.txt
+
+done
+done
+fi
+
+if  [ `grep -c -i "avx" cpuinfo.txt ` -ne 0 ] ; then 
+
+for instruct in vbroadcastss vbroadcastsd vbroadcastf128
+do
+for regsize in 128 256
+do
+if [ $regsize -eq 128 ] ; then
+if [ "$instruct" == "vbroadcastsd" -o "$instruct" == "vbroadcastf128" ] ; then continue ; fi
+fi
+
+echo -e "\n\nThroughput: $instruct r$regsize,[m]"  >> results1/misc_vect.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dtmode=T -Dcounters=$cts -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_vect.txt
+done
+
+echo -e "\n\nLatency: $instruct r$regsize,[m] + mov"  >> results1/misc_vect.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dtmode=L -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x  >> results1/misc_vect.txt
+
+done
+done
+fi
+
+
+# blend instructions
+
+for instruct in blendps blendpd
+do
+regsize=128
+immvalue=1
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,i"  >> results1/misc_vect.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dnumimm=1 -Dimmvalue=1 -Dtmode=L -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize,i"  >> results1/misc_vect.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dnumimm=1 -Dimmvalue=1 -Dtmode=T -Dcounters=$cts -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+done
+
+echo -e "\n\nThroughput: $instruct r$regsize,[m$regsize],i"  >> results1/misc_vect.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=2 -Dnumimm=1 -Dimmvalue=1 -Dtmode=M -Dcounters=$cts -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+done
+done
+
+if  [ `grep -c -i "avx" cpuinfo.txt ` -ne 0 ] ; then 
+
+for instruct in vblendps vblendpd
+do
+for regsize in 128 256
+do
+immvalue=1
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,i"  >> results1/misc_vect.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=3 -Dnumimm=1 -Dimmvalue=1 -Dtmode=L -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize,i"  >> results1/misc_vect.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=3 -Dnumimm=1 -Dimmvalue=1 -Dtmode=T -Dcounters=$cts -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+done
+
+echo -e "\n\nThroughput: $instruct r$regsize,[m$regsize],i"  >> results1/misc_vect.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=3 -Dnumimm=1 -Dimmvalue=1 -Dtmode=M -Dcounters=$cts -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+done
+done
+done
+fi
+
+for instruct in  blendvps pblendvb
+do
+regsize=128
+immvalue=1
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,xmm0"  >> results1/misc_vect.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dtmode=L -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize,xmm0"  >> results1/misc_vect.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dtmode=T -Dcounters=$cts -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+done
+
+echo -e "\n\nThroughput: $instruct r$regsize,[m$regsize],xmm0"  >> results1/misc_vect.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dtmode=M -Dcounters=$cts -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+done
+done
+
+if  [ `grep -c -i "avx" cpuinfo.txt ` -ne 0 ] ; then 
+
+for instruct in vblendvps vblendvpd
+do
+for regsize in 128 256
+do
+immvalue=1
+
+echo -e "\n\nLatency: $instruct r$regsize,r$regsize,r$regsize,r$regsize,i"  >> results1/misc_vect.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=4 -Dnumimm=0 -Dtmode=L -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize,r$regsize,r$regsize,i"  >> results1/misc_vect.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=4 -Dnumimm=0 -Dtmode=T -Dcounters=$cts -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+done
+
+echo -e "\n\nThroughput: $instruct r$regsize,r$regsize,[m$regsize],r$regsize,i"  >> results1/misc_vect.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dregsize=$regsize -Dnumop=4 -Dnumimm=0 -Dtmode=M3 -Dcounters=$cts -Drepeat0=$repeat0 -Plt.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+done
+done
+done
+fi
+
+# maskmov instructions
+for instruct in maskmovq maskmovdqu
+do
+for immvalue in 0x00 0x02 0x55 0x33 0xff
+do
+echo -e "\n\nThroughput: $instruct r,r (pattern $immvalue)"  >> results1/misc_vect.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dtmode=T -Dimmvalue=$immvalue -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+done
+
+echo -e "\n\nThroughput: $instruct r,r (pattern 0x55)"  >> results1/misc_vect.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dimmvalue=0x55 -Dtmode=T -Dcounters=$cts -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+done
+
+for immvalue in 0x00 0x02 0x55 0x33 0xff
+do
+echo -e "\n\nLatency: $instruct r,r (pattern $immvalue) + movq/dqa (x)mm,[mem]"  >> results1/misc_vect.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dtmode=L -Dimmvalue=$immvalue -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+done
+done
+
+if  [ `grep -c -i "avx" cpuinfo.txt ` -ne 0 ] ; then 
+
+if  [ `grep -c -i "avx2" cpuinfo.txt ` -ne 0 ] ; then
+list2="vpmaskmovd vpmaskmovq"
+else
+list2=
+fi
+
+for instruct1 in vmaskmovps vmaskmovpd $list2
+do
+for regsize in 128 256
+do
+for immvalue in 0x00 0x02 0x55 0x33 0xff
+do
+echo -e "\n\nThroughput: $instruct1 r$regsize,r$regsize,[m$regsize] (pattern $immvalue)"  >> results1/misc_vect.txt
+$ass -f elf64 -o b64.o -Dinstruct=vmaskmov -Dinstruct1=$instruct1 -Dregsize=$regsize -Dimmvalue=$immvalue -Dtmode=TRM -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+done
+
+echo -e "\n\nThroughput: $instruct1 r$regsize,r$regsize,[m$regsize] (pattern 0x55)"  >> results1/misc_vect.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=vmaskmov -Dinstruct1=$instruct1 -Dregsize=$regsize -Dimmvalue=0x55 -Dtmode=TRM -Dcounters=$cts -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+done
+done
+
+for regsize in 128 256
+do
+immvalue=0x55 
+echo -e "\n\nLatency: $instruct1 r$regsize,r$regsize,[m$regsize] + vmovaps (pattern $immvalue)"  >> results1/misc_vect.txt
+$ass -f elf64 -o b64.o -Dinstruct=vmaskmov -Dinstruct1=$instruct1 -Dregsize=$regsize -Dimmvalue=$immvalue -Dtmode=LRM -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+done
+
+for regsize in 128 256
+do
+for immvalue in 0x00 0x02 0x55 0x33 0xff
+do
+echo -e "\n\nThroughput: $instruct1 [m$regsize],r$regsize,r$regsize (pattern $immvalue)"  >> results1/misc_vect.txt
+$ass -f elf64 -o b64.o -Dinstruct=vmaskmov -Dinstruct1=$instruct1 -Dregsize=$regsize -Dimmvalue=$immvalue -Dtmode=TMR -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+done
+immvalue=0x55
+echo -e "\n\nThroughput: $instruct1 [m$regsize],r$regsize,r$regsize (pattern $immvalue)"  >> results1/misc_vect.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=vmaskmov -Dinstruct1=$instruct1 -Dregsize=$regsize -Dimmvalue=$immvalue -Dtmode=TMR -Dcounters=$cts -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+done
+
+immvalue=0x55 
+echo -e "\n\nLatency: $instruct1 [m$regsize],r$regsize,r$regsize (pattern $immvalue)"  >> results1/misc_vect.txt
+$ass -f elf64 -o b64.o -Dinstruct=vmaskmov -Dinstruct1=$instruct1 -Dregsize=$regsize -Dimmvalue=$immvalue -Dtmode=LMR -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+done
+done
+fi
+
+if  [ `grep -c -i "avx2" cpuinfo.txt ` -ne 0 ] ; then 
+
+for instruct1 in vpmaskmovd vpmaskmovq
+do
+for regsize in 128 256
+do
+for immvalue in 0x00 0x02 0x55 0x33 0xff
+do
+echo -e "\n\nThroughput: $instruct1 r$regsize,r$regsize,[m$regsize] (pattern $immvalue)"  >> results1/misc_vect.txt
+$ass -f elf64 -o b64.o -Dinstruct=vmaskmov -Dinstruct1=$instruct1 -Dregsize=$regsize -Dimmvalue=$immvalue -Dtmode=TRM -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+done
+
+echo -e "\n\nThroughput: $instruct1 r$regsize,r$regsize,[m$regsize] (pattern 0x55)"  >> results1/misc_vect.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=vmaskmov -Dinstruct1=$instruct1 -Dregsize=$regsize -Dimmvalue=0x55 -Dtmode=TRM -Dcounters=$cts -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+done
+done
+
+for regsize in 128 256
+do
+immvalue=0x55 
+echo -e "\n\nLatency: $instruct1 r$regsize,r$regsize,[m$regsize] + vmovaps (pattern $immvalue)"  >> results1/misc_vect.txt
+$ass -f elf64 -o b64.o -Dinstruct=vmaskmov -Dinstruct1=$instruct1 -Dregsize=$regsize -Dimmvalue=$immvalue -Dtmode=LRM -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+done
+
+for regsize in 128 256
+do
+for immvalue in 0x00 0x02 0x55 0x33 0xff
+do
+echo -e "\n\nThroughput: $instruct1 [m$regsize],r$regsize,r$regsize (pattern $immvalue)"  >> results1/misc_vect.txt
+$ass -f elf64 -o b64.o -Dinstruct=vmaskmov -Dinstruct1=$instruct1 -Dregsize=$regsize -Dimmvalue=$immvalue -Dtmode=TMR -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+done
+immvalue=0x55
+echo -e "\n\nThroughput: $instruct1 [m$regsize],r$regsize,r$regsize (pattern $immvalue)"  >> results1/misc_vect.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=vmaskmov -Dinstruct1=$instruct1 -Dregsize=$regsize -Dimmvalue=$immvalue -Dtmode=TMR -Dcounters=$cts -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+done
+
+immvalue=0x55 
+echo -e "\n\nLatency: $instruct1 [m$regsize],r$regsize,r$regsize (pattern $immvalue)"  >> results1/misc_vect.txt
+$ass -f elf64 -o b64.o -Dinstruct=vmaskmov -Dinstruct1=$instruct1 -Dregsize=$regsize -Dimmvalue=$immvalue -Dtmode=LMR -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+done
+done
+fi
+
+
+instruct=ldmxcsr
+echo -e "\n\nThroughput: $instruct m"  >> results1/misc_vect.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dtmode=T -Dcounters=$cts -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+done
+
+instruct=stmxcsr
+echo -e "\n\nThroughput: $instruct m"  >> results1/misc_vect.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dtmode=T -Dcounters=$cts -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+done
+
+echo -e "\n\nLatency: ldmxcsr + stmccsr"  >> results1/misc_vect.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dtmode=L -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+
+if  [ `grep -c -i "avx" cpuinfo.txt ` -ne 0 ] ; then 
+
+instruct=vstmxcsr
+echo -e "\n\nThroughput: $instruct m"  >> results1/misc_vect.txt
+for cts in $PMClist
+do
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dtmode=T -Dcounters=$cts -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+done
+
+
+instruct=xgetbv
+echo -e "\n\nThroughput: $instruct"  >> results1/misc_vect.txt
+$ass -f elf64 -o b64.o -Dinstruct=$instruct -Dtmode=T -Drepeat0=$repeat0 -Pmisc_vect.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 -fno-pie -no-pie a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results1/misc_vect.txt
+fi
+
+echo -e "\n"  >> results1/misc_vect.txt
+

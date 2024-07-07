@@ -1,0 +1,145 @@
+#!/bin/bash
+#                                                                2022-11-02 Agner Fog
+
+# Test instruction fusion of move instructions
+
+# (c) 2012 - 2015 by Agner Fog. GNU General Public License www.gnu.org/licenses
+
+
+# Parameters
+# regsize:   Size of register operand, default = 32
+# instruct1: Instruction between moves. must have two operands, 'none' for none, default is ADD
+# nummov:    Number of move instructions between instruct1
+# tcase:     Test case: 1 = same register, 2 = different register
+
+. vars.sh
+
+repeat0=10
+repeat1=1000
+
+if [ `grep -c -i "Intel" cpuinfo.txt ` -ne 0 ] ; then
+   # counters for move elimination (Intel)
+   PMCcounters="9,1,100,220,221"
+else
+   PMCcounters=$PMCs
+fi
+
+echo -e "Test if move instructions can be eliminated by renaming\n"  > results2/mov_rename.txt
+
+if [ `./cpugetinfo -avx` -ne 0 ] ; then
+regsizelist1="8 16 32 64 65 128 256 512"
+regsizelist2="32 128 256 512"
+else
+regsizelist1="8 16 32 64 65 128"
+regsizelist2="32 128"
+fi
+
+for tcase in 2 1
+do
+if [ $tcase -eq 1 ] ; then
+   echo -e "\n\nTest with same registers:\n"  >> results2/mov_rename.txt
+elif [ $tcase -eq 2 ] ; then
+   echo -e "\n\nTest with different registers:\n"  >> results2/mov_rename.txt
+else
+   echo unknown test case
+   exit
+fi 
+  
+
+for regsize in $regsizelist1
+do
+
+if   [ $regsize -eq 65  ] ; then regname="mmx"
+elif [ $regsize -eq 128 ] ; then regname="xmm"
+elif [ $regsize -eq 256 ] ; then regname="ymm"
+elif [ $regsize -eq 512 ] ; then regname="zmm"
+else
+regname=r$regsize
+fi
+
+for nummov in 0 1 2 3 4
+do
+echo -e "\nregister $regname, ADD interspearced by $nummov MOVes"  >> results2/mov_rename.txt
+$ass -f elf64 -o b64.o -Dregsize=$regsize -Dnummov=$nummov -Dtcase=$tcase -Dcounters=$PMCcounters -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Pmov_rename.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/mov_rename.txt
+done
+done
+done
+
+
+if [ `grep -c -i "Intel" cpuinfo.txt ` -ne 0 ] ; then
+   # counters for move elimination (Intel)
+   PMCcounterlist="9,1,100,220,221,150  9,1,151,152,153,154  9,1,155,156,157,160"
+else
+   PMCcounterlist="$PMClist"
+fi
+
+echo -e "\n\nCheck all execution ports"  >> results2/mov_rename.txt
+
+tcase=2
+nummov=1
+
+for regsize in $regsizelist2
+do
+
+if   [ $regsize -eq 65  ] ; then regname="mmx"
+elif [ $regsize -eq 128 ] ; then regname="xmm"
+elif [ $regsize -eq 256 ] ; then regname="ymm"
+elif [ $regsize -eq 512 ] ; then regname="zmm"
+else
+regname=r$regsize
+fi
+
+echo -e "\nregister $regname, ADD interspearced by $nummov MOVes"  >> results2/mov_rename.txt
+for c in  $PMCcounterlist
+do
+$ass -f elf64 -o b64.o -Dregsize=$regsize -Dnummov=$nummov -Dtcase=$tcase -Dcounters=$c -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Pmov_rename.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/mov_rename.txt
+done
+done
+
+
+echo -e "\n\nMove registers known to be zero"  >> results2/mov_rename.txt
+tcase=3
+nummov=1
+
+for regsize in $regsizelist1
+do
+
+if   [ $regsize -eq 65  ] ; then regname="mmx"
+elif [ $regsize -eq 128 ] ; then regname="xmm"
+elif [ $regsize -eq 256 ] ; then regname="ymm"
+elif [ $regsize -eq 512 ] ; then regname="zmm"
+else
+regname=r$regsize
+fi
+
+echo -e "\nregister $regname, known to be zero"  >> results2/mov_rename.txt
+$ass -f elf64 -o b64.o -Dregsize=$regsize -Dnummov=$nummov -Dtcase=$tcase -Dcounters=$PMCcounters -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Pmov_rename.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/mov_rename.txt
+
+done
+
+echo -e "\n\nMove with zero extension"  >> results2/mov_rename.txt
+tcase=4
+regsize=32
+nummov=1
+
+echo -e "\nimul + movzx"  >> results2/mov_rename.txt
+$ass -f elf64 -o b64.o -Dregsize=$regsize -Dnummov=$nummov -Dtcase=$tcase -Dcounters=$PMCcounters -Drepeat0=$repeat0 -Drepeat1=$repeat1 -Pmov_rename.inc TemplateB64.nasm
+if [ $? -ne 0 ] ; then exit ; fi
+g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
+if [ $? -ne 0 ] ; then exit ; fi
+./x >> results2/mov_rename.txt
+
+echo -e "\n"  >> results2/mov_rename.txt
+
