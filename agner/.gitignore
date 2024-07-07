@@ -12,4 +12,8 @@ a.out
 *.exe
 *.sys
 *.obj
+cpugetinfo
+countertypes.inc
+cpuinfo.txt
+info.txt
 
