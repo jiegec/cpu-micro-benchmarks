@@ -444,7 +444,7 @@ void gen_ghr2_gadget() {
       // NOTE: do not generate more loops: they contribute to branch misses due
       // to history limit. do not generate a chain of loops: btb will become a
       // bottleneck. eax = 195 means 194 taken branches
-      fprintf(fp, "\tmov eax, 195\n");
+      fprintf(fp, "\tmov eax, 200\n");
       // add alignment to the jmp by setting pc[5] = 0 to avoid pc[5] partitioning
       fprintf(fp, "\talign %d\n", 1 << 6);
       fprintf(fp, "\tjmp ghr2_size_%d_%d_dummy_target\n", branch_align,

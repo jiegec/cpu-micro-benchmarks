@@ -48,6 +48,8 @@ int main(int argc, char *argv[]) {
         uint64_t begin = perf_read_branch_misses();
         ghr2_gadgets[gadget_index](loop_count, buffer);
         uint64_t elapsed = perf_read_branch_misses() - begin;
+        elapsed -=
+            loop_count; // always one mis-prediction from last jnz dummy_target
 
         // skip warmup
         if (i >= 10) {
