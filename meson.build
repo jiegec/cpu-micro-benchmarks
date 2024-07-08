@@ -112,4 +112,15 @@ if cpu == 'x86_64'
 		ghr2_gadget_o,
 		link_with: utils,
 		install: true)
+elif cpu == 'aarch64'
+	ghr2_gadget_asm = custom_target('ghr2_gadget_asm',
+		output: 'ghr2_gadget.S',
+		input: generate_gadget,
+		command: [generate_gadget, 'ghr2', '@OUTPUT@'])
+
+	ghr2_size = executable('ghr2_size',
+		'src/ghr2_size.cpp',
+		ghr2_gadget_asm,
+		link_with: utils,
+		install: true)
 endif
