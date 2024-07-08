@@ -8,15 +8,14 @@
     %define targetalign 5
 %endif
 
-; number of branches tracked in phr
-%define phrbranches 200
-
 %macro testinit3 0
     mov rdi, 1000
 
-    ; loop phrbranches+1 times to clear phr
+    ; loop 300 times to clear phr
+    ; since we only consider branch misprediction of the last two branches
+    ; we do not have to be accurate here e.g. 93/194
 loop_begin:
-    mov eax, phrbranches+1
+    mov eax, 300
     align 64
     jmp dummy_target
 
