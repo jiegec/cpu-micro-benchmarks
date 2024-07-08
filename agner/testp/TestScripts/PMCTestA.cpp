@@ -1342,7 +1342,7 @@ SCounterDefinition CounterDefinitions[] = {
     // https://perfmon-events.intel.com/index.html?pltfrm=ahybrid.html&evnt=BR_MISP_RETIRED.COND_NTAKEN
     {209, S_ID5,  INTEL_GOLDCV, 0,  7,     0,   0xC5,     0x10, "BrMiCndNT"  }, // mispredicted conditional branches not taken
     // https://perfmon-events.intel.com/index.html?pltfrm=ahybrid.html&evnt=BR_MISP_RETIRED.COND_TAKEN
-    {210, S_ID5,  INTEL_GOLDCV, 0,  7,     0,   0xC5,     0x01, "BrMiCndT"   }, // mispredicted conditional branches taken
+    {210, S_ID5,  INTEL_GOLDCV, 0,  7,     0,   0xC5,     0x01, "BrMisCndT"   }, // mispredicted conditional branches taken
     // https://perfmon-events.intel.com/index.html?pltfrm=ahybrid.html&evnt=BR_MISP_RETIRED.NEAR_TAKEN
     {211, S_ID5,  INTEL_GOLDCV, 0,  7,     0,   0xC5,     0x20, "BrMiNearT"  }, // mispredicted conditional branches near and taken
     {310, S_ID5,  INTEL_GOLDCV, 0,  7,     0,   0x80,     0x04, "CodeMiss"   }, // code cache misses
