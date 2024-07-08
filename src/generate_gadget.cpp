@@ -415,21 +415,33 @@ void gen_ghr_gadget() {
 // generate gadget for ghr2 test
 // https://cseweb.ucsd.edu/~dstefan/pubs/yavarzadeh:2023:half.pdf
 void gen_ghr2_gadget() {
+#if defined(__x86_64__)
   int min_branch_align = 13;
   int max_branch_align = 19;
   int min_target_align = 3;
   int max_target_align = 8;
+#else
+  int min_branch_align = 10;
+  int max_branch_align = 17;
+  int min_target_align = 3;
+  int max_target_align = 10;
+#endif
 
   // args: loop count, random array
+#if defined(__x86_64__)
   fprintf(fp, "section .text\n");
+#elif defined(__aarch64__)
+  fprintf(fp, ".text\n");
+#endif
   for (int branch_align = min_branch_align; branch_align <= max_branch_align;
        branch_align++) {
     for (int target_align = min_target_align; target_align <= max_target_align;
          target_align++) {
+#if defined(__x86_64__)
       fprintf(fp, "global ghr2_size_%d_%d\n", branch_align, target_align);
       fprintf(fp, "align 32\n");
       fprintf(fp, "ghr2_size_%d_%d:\n", branch_align, target_align);
-#if defined(__x86_64__)
+
       // save registers
       fprintf(fp, "\tpush rbx\n");
       fprintf(fp, "\tpush rax\n");
@@ -441,11 +453,12 @@ void gen_ghr2_gadget() {
       fprintf(fp, "\tmov ebx, [rsi+rdi*4]\n");
 
       // loop
-      // NOTE: do not generate more loops: they contribute to branch misses due
-      // to history limit. do not generate a chain of loops: btb will become a
-      // bottleneck. eax = 195 means 194 taken branches
+      // NOTE: generate more loops although they contribute to branch misses due
+      // to history limit. we remove the extra branch misses in ghr2_size.cpp.
+      // do not generate a chain of loops: btb will become a bottleneck.
       fprintf(fp, "\tmov eax, 200\n");
-      // add alignment to the jmp by setting pc[5] = 0 to avoid pc[5] partitioning
+      // add alignment to the jmp by setting pc[5] = 0 to avoid pc[5]
+      // partitioning
       fprintf(fp, "\talign %d\n", 1 << 6);
       fprintf(fp, "\tjmp ghr2_size_%d_%d_dummy_target\n", branch_align,
               target_align);
@@ -469,7 +482,7 @@ void gen_ghr2_gadget() {
               target_align);
 
       // first random branch
-      // place alignment on branch & target
+      // place alignment on branch (end) & target
       // test ebx, ebx: 2 bytes
       fprintf(fp, "\ttest ebx, ebx\n");
       if (target_align >= 7) {
@@ -499,7 +512,8 @@ void gen_ghr2_gadget() {
       fprintf(fp, "\tghr2_size_%d_%d_second_target:\n", branch_align,
               target_align);
 
-      // add alignment to last branch by setting pc[5] = 0 to avoid pc[5] partitioning
+      // add alignment to last branch by setting pc[5] = 0 to avoid pc[5]
+      // partitioning
       fprintf(fp, "\talign %d\n", 1 << 6);
       fprintf(fp, "\tdec rdi\n");
       fprintf(fp, "\tjnz ghr2_size_%d_%d_loop_begin\n", branch_align,
@@ -509,22 +523,105 @@ void gen_ghr2_gadget() {
       fprintf(fp, "\tpop rax\n");
       fprintf(fp, "\tpop rbx\n");
       fprintf(fp, "\tret\n");
+#elif defined(__aarch64__)
+      fprintf(fp, ".global ghr2_size_%d_%d\n", branch_align, target_align);
+      fprintf(fp, ".balign 32\n");
+      fprintf(fp, "ghr2_size_%d_%d:\n", branch_align, target_align);
+
+      // save registers
+      fprintf(fp, "\tsub sp, sp, #0x40\n");
+      fprintf(fp, "\tstp x11, x12, [sp, #0x30]\n");
+
+      fprintf(fp, "\tghr2_size_%d_%d_loop_begin:\n", branch_align,
+              target_align);
+
+      // read random value
+      fprintf(fp, "\tldr w11, [x1, w0, uxtw #2]\n");
+
+      // loop
+      // NOTE: generate more loops although they contribute to branch misses due
+      // to history limit. we remove the extra branch misses in ghr2_size.cpp.
+      // do not generate a chain of loops: btb will become a bottleneck.
+      fprintf(fp, "\tmov x12, 200\n");
+      fprintf(fp, "\t.balign %d\n", 1 << 6);
+      fprintf(fp, "\tb ghr2_size_%d_%d_dummy_target\n", branch_align,
+              target_align);
+
+      // place alignment on target
+      fprintf(fp, "\t.balign %d\n", 1 << max_branch_align);
+      fprintf(fp, "\t.rept %d\n",
+              ((1 << max_branch_align) - (1 << max_target_align)) / 4);
+      fprintf(fp, "\tnop\n");
+      fprintf(fp, "\t.endr\n");
+      fprintf(fp, "\tghr2_size_%d_%d_dummy_target:\n", branch_align,
+              target_align);
+
+      // place alignment on branch
+      // 4 bytes: subs
+      fprintf(fp, "\t.rept %d\n", ((1 << max_target_align) - 4) / 4);
+      fprintf(fp, "\tnop\n");
+      fprintf(fp, "\t.endr\n");
+      fprintf(fp, "\tsubs x12, x12, 1\n");
+      fprintf(fp, "\tcbnz x12, ghr2_size_%d_%d_dummy_target\n", branch_align,
+              target_align);
+
+      // first random branch
+      // place alignment on branch (start) & target
+      // cbnz: 4 bytes
+      fprintf(fp, "\t.rept %d\n", ((1 << branch_align) - 4) / 4);
+      fprintf(fp, "\tnop\n");
+      fprintf(fp, "\t.endr\n");
+      fprintf(fp, "\tcbnz w11, ghr2_size_%d_%d_first_target\n", branch_align,
+              target_align);
+      fprintf(fp, "\t.rept %d\n", ((1 << target_align) - 4) / 4);
+      fprintf(fp, "\tnop\n");
+      fprintf(fp, "\t.endr\n");
+      fprintf(fp, "\tghr2_size_%d_%d_first_target:\n", branch_align,
+              target_align);
+
+      // second random branch
+      fprintf(fp, "\t.balign %d\n", 1 << 6);
+      fprintf(fp, "\tcbnz w11, ghr2_size_%d_%d_second_target\n", branch_align,
+              target_align);
+      fprintf(fp, "\tghr2_size_%d_%d_second_target:\n", branch_align,
+              target_align);
+
+      fprintf(fp, "\t.balign %d\n", 1 << 6);
+      fprintf(fp, "\tsub x0, x0, 1\n");
+      fprintf(fp, "\tcbnz x0, ghr2_size_%d_%d_loop_begin\n", branch_align,
+              target_align);
+
+      // restore regs
+      fprintf(fp, "\tldp x11, x12, [sp, #0x30]\n");
+      fprintf(fp, "\tadd sp, sp, #0x40\n");
+      fprintf(fp, "\tret\n");
 #endif
     }
   }
 
+#if defined(__x86_64__)
   fprintf(fp, "section .data\n");
   // for macOS
   fprintf(fp, "global _ghr2_gadgets\n");
   fprintf(fp, "_ghr2_gadgets:\n");
   fprintf(fp, "global ghr2_gadgets\n");
   fprintf(fp, "ghr2_gadgets:\n");
+#elif defined(__aarch64__)
+  fprintf(fp, ".data\n");
+  // for macOS
+  fprintf(fp, ".global _ghr2_gadgets\n");
+  fprintf(fp, "_ghr2_gadgets:\n");
+  fprintf(fp, ".global ghr2_gadgets\n");
+  fprintf(fp, "ghr2_gadgets:\n");
+#endif
   for (int branch_align = min_branch_align; branch_align <= max_branch_align;
        branch_align++) {
     for (int target_align = min_target_align; target_align <= max_target_align;
          target_align++) {
 #if defined(__x86_64__)
       fprintf(fp, "dq ghr2_size_%d_%d\n", branch_align, target_align);
+#elif defined(__aarch64__)
+      fprintf(fp, ".dword ghr2_size_%d_%d\n", branch_align, target_align);
 #endif
     }
   }
