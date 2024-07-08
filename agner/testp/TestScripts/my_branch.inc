@@ -34,9 +34,11 @@ dummy_target:
     ; jnz aligned to 1<<19
     jnz dummy_target
 
+    READ_PMC_START
     rdrand eax
     and eax, 1
 
+    ; READ_PMC_START: 166
     ; rdrand eax: 3 bytes
     ; and eax, 1: 3 bytes
     ; jnz first_target: 2 or 6 bytes depending on targetalign
@@ -46,7 +48,7 @@ dummy_target:
         %assign jnzlength 2
     %endif
 
-    %rep (1<<branchalign)-6-jnzlength
+    %rep (1<<branchalign)-166-6-jnzlength
         nop
     %endrep
 
@@ -63,6 +65,8 @@ first_target:
     align 32
     jnz second_target
 second_target:
+
+    READ_PMC_END
 
     align 64
     dec rdi

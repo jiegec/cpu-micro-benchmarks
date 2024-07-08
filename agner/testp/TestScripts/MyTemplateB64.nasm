@@ -398,6 +398,7 @@ global RatioOut
 global TempOut
 global RatioOutTitle
 global TempOutTitle
+global TempData
 
 section .note.GNU-stack noalloc noexec nowrite progbits
 
@@ -500,6 +501,8 @@ UserData:
         times 1000H  DB 0
 %endif
 
+TempData: times 4  DQ 0
+
 ;##############################################################################
 ;#
 ;#                 Macro definitions used in test loop
@@ -525,6 +528,67 @@ UserData:
          %assign i i+1
       %endrep
    %endif
+%endmacro
+
+%macro READ_PMC_START 0
+        ; save
+        mov [TempData], rax
+        mov [TempData+8], rbx
+        mov [TempData+16], rcx
+        mov [TempData+24], rdx
+
+        SERIALIZE
+
+        ; Add counters
+%assign i  0
+%rep    NUM_COUNTERS
+        mov     ecx, [Counters + i*4]
+        rdpmc
+        add     [r13 + i*4 + 4 + (CountTemp-ThreadData)], eax
+%assign i  i+1
+%endrep
+        SERIALIZE
+
+        ; add time stamp counter
+        rdtsc
+        add     [r13 + (CountTemp-ThreadData)], eax
+
+        ; restore
+        mov rax, [TempData]
+        mov rbx, [TempData+8]
+        mov rcx, [TempData+16]
+        mov rdx, [TempData+24]
+%endmacro
+
+%macro READ_PMC_END 0
+        ; save
+        mov [TempData], rax
+        mov [TempData+8], rbx
+        mov [TempData+16], rcx
+        mov [TempData+24], rdx
+
+        SERIALIZE
+
+        ; sub time stamp counter
+        rdtsc
+        sub     [r13 + (CountTemp-ThreadData)], eax
+
+        SERIALIZE
+
+        ; Sub counters
+%assign i  0
+%rep    NUM_COUNTERS
+        mov     ecx, [Counters + i*4]
+        rdpmc
+        sub     [r13 + i*4 + 4 + (CountTemp-ThreadData)], eax
+%assign i  i+1
+%endrep
+
+        ; restore
+        mov rax, [TempData]
+        mov rbx, [TempData+8]
+        mov rcx, [TempData+16]
+        mov rdx, [TempData+24]
 %endmacro
 
 
@@ -711,19 +775,18 @@ TEST_LOOP_2:
 
         SERIALIZE
       
-        ; Read counters
+        ; Clear counters
 %assign i  0
 %rep    NUM_COUNTERS
-        mov     ecx, [Counters + i*4]
-        rdpmc
+        xor     eax, eax
         mov     [r13 + i*4 + 4 + (CountTemp-ThreadData)], eax
 %assign i  i+1
 %endrep
 
         SERIALIZE
 
-        ; read time stamp counter
-        rdtsc
+        ; clear time stamp counter
+        xor     eax, eax
         mov     [r13 + (CountTemp-ThreadData)], eax
 
         SERIALIZE
@@ -774,23 +837,6 @@ REPETITIONS1LOOP:
 ;#                 Test code end
 ;#
 ;##############################################################################
-
-        SERIALIZE
-
-        ; read time stamp counter
-        rdtsc
-        sub     [r13 + (CountTemp-ThreadData)], eax        ; CountTemp[0]
-
-        SERIALIZE
-
-        ; Read counters
-%assign i  0
-%rep    NUM_COUNTERS
-        mov     ecx, [Counters + i*4]
-        rdpmc
-        sub     [r13 + i*4 + 4 + (CountTemp-ThreadData)], eax  ; CountTemp[i+1]
-%assign i  i+1
-%endrep
 
         SERIALIZE
 
