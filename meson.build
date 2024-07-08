@@ -93,18 +93,23 @@ ghr_size = executable('ghr_size',
 	link_with: utils,
 	install: true)
 
-ghr2_gadget_asm = custom_target('ghr2_gadget_asm',
-	output: 'ghr2_gadget.S',
-	input: generate_gadget,
-	command: [generate_gadget, 'ghr2', '@OUTPUT@'])
+cpp = meson.get_compiler('cpp')
+cpu = target_machine.cpu_family()
 
-ghr2_gadget_o = custom_target('ghr2_gadget_o',
-	output: 'ghr2_gadget.o',
-	input: ghr2_gadget_asm,
-	command: ['nasm', '-felf64', '@INPUT@', '-o', '@OUTPUT@'])
+if cpu == 'x86_64'
+	ghr2_gadget_asm = custom_target('ghr2_gadget_asm',
+		output: 'ghr2_gadget.S',
+		input: generate_gadget,
+		command: [generate_gadget, 'ghr2', '@OUTPUT@'])
 
-ghr2_size = executable('ghr2_size',
-	'src/ghr2_size.cpp',
-	ghr2_gadget_o,
-	link_with: utils,
-	install: true)
+	ghr2_gadget_o = custom_target('ghr2_gadget_o',
+		output: 'ghr2_gadget.o',
+		input: ghr2_gadget_asm,
+		command: ['nasm', '-felf64', '@INPUT@', '-o', '@OUTPUT@'])
+
+	ghr2_size = executable('ghr2_size',
+		'src/ghr2_size.cpp',
+		ghr2_gadget_o,
+		link_with: utils,
+		install: true)
+endif
