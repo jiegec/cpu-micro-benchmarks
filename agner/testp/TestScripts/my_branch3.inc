@@ -10,9 +10,14 @@
     %define targetalign 5
 %endif
 
-; toggle bit of branch address
+; toggle bit of branch address (-1 means do not toggle)
 %ifndef branchtoggle
     %define branchtoggle 0
+%endif
+
+; toggle bit of target address (-1 means do not toggle)
+%ifndef targettoggle
+    %define targettoggle 0
 %endif
 
 ; number of dummy branches
@@ -60,9 +65,11 @@ clear_phr_dummy_target:
         nop
     %endrep
 
+    %if branchtoggle != -1
     %rep (1<<branchtoggle)
         nop
     %endrep
+    %endif
     ; the last byte of jnz - 1<<branchtoggle aligned to 1<<branchalign
     ; jnz first_target
     db 0x0f
@@ -70,9 +77,21 @@ clear_phr_dummy_target:
     dd first_target - $ - 4
 
     ; target aligned to 1<<targetalign
+    %if branchtoggle != -1
     %rep (1<<targetalign)-1-(1<<branchtoggle)
         nop
     %endrep
+    %else
+    %rep (1<<targetalign)-1
+        nop
+    %endrep
+    %endif
+
+    %if targettoggle != -1
+    %rep (1<<targettoggle)
+        nop
+    %endrep
+    %endif
 first_target:
 
     ; loop to shift phr
