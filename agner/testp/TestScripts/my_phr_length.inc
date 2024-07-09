@@ -1,3 +1,5 @@
+; reproduce Figure 2 of Half&Half
+
 ; number of dummy branches
 %ifndef dummybranches
     %define dummybranches 200
