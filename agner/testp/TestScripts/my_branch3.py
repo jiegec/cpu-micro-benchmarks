@@ -31,7 +31,7 @@ for branch_toggle in x_data:
 
 plt.imshow(z_data)
 plt.xlabel("Dummy branches")
-plt.xticks(range(len(y_data)), y_data)
+plt.xticks(range(len(y_data)), y_data, rotation=90)
 plt.ylabel("Branch toggle bit")
 plt.yticks(x_data)
 plt.savefig('my_branch3_1.png')
@@ -65,7 +65,7 @@ for target_toggle in x_data:
 
 plt.imshow(z_data)
 plt.xlabel("Dummy branches")
-plt.xticks(range(len(y_data)), y_data)
+plt.xticks(range(len(y_data)), y_data, rotation=90)
 plt.ylabel("Target toggle bit")
 plt.yticks(x_data)
 plt.savefig('my_branch3_2.png')
