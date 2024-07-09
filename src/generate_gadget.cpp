@@ -473,31 +473,31 @@ void gen_ghr2_gadget() {
               target_align);
 
       // place alignment on branch
-      // 8 bytes: dec %eax, jnz 2b
+      // 8 bytes: dec %eax, jnz dummy_target
       // the last byte of jnz aligned to 1<<max_target_align
       fprintf(fp, "\t%%rep %d\n", (1 << max_target_align) - 7);
       fprintf(fp, "\tnop\n");
       fprintf(fp, "\t%%endrep\n");
       fprintf(fp, "\tdec eax\n");
-      fprintf(fp, "\tjnz ghr2_size_%d_%d_dummy_target\n", branch_align,
+      // 6 bytes jnz
+      fprintf(fp, "\tdb 0x0f\n");
+      fprintf(fp, "\tdb 0x85\n");
+      fprintf(fp, "\tdd ghr2_size_%d_%d_dummy_target - $ - 4\n", branch_align,
               target_align);
 
       // first random branch
       // place alignment on branch (end) & target
       // test ebx, ebx: 2 bytes
       fprintf(fp, "\ttest ebx, ebx\n");
-      if (target_align >= 8) {
-        // 6 bytes jnz
-        fprintf(fp, "\t%%rep %d\n", (1 << branch_align) - 6 - 2);
-      } else {
-        // 2 bytes jnz
-        fprintf(fp, "\t%%rep %d\n", (1 << branch_align) - 2 - 2);
-      }
+      fprintf(fp, "\t%%rep %d\n", (1 << branch_align) - 6 - 2);
       fprintf(fp, "\tnop\n");
       fprintf(fp, "\t%%endrep\n");
+      // 6 bytes jnz
       // last byte of jnz aligned to 1<<branch_align
-      fprintf(fp, "\tjnz ghr2_size_%d_%d_first_target\n", branch_align,
-              target_align); // 2/6 bytes
+      fprintf(fp, "\tdb 0x0f\n");
+      fprintf(fp, "\tdb 0x85\n");
+      fprintf(fp, "\tdd ghr2_size_%d_%d_first_target - $ - 4\n", branch_align,
+              target_align);
       fprintf(fp, "\t%%rep %d\n", (1 << target_align) - 1);
       fprintf(fp, "\tnop\n");
       fprintf(fp, "\t%%endrep\n");
