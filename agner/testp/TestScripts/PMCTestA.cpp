@@ -1244,6 +1244,8 @@ SCounterDefinition CounterDefinitions[] = {
     {160, S_ID3,  INTEL_HASW, 0,  3,     0,   0xa1,     0xFF, "uop p07"    }, // uops port 0-7
     {201, S_ID3,  INTEL_HASW, 0,  3,     0,   0xC4,     0x20, "BrTaken"    }, // branches taken
     {207, S_ID3,  INTEL_HASW, 0,  3,     0,   0xc5,     0x00, "BrMispred"  }, // mispredicted branches
+    // https://perfmon-events.intel.com/index.html?pltfrm=haswell.html&evnt=BR_MISP_RETIRED.CONDITIONAL
+    {208, S_ID3,  INTEL_HASW, 0,  3,     0,   0xC5,     0x01, "BrMisCond"  }, // mispredicted conditional branches
     {220, S_ID3,  INTEL_HASW, 0,  3,     0,   0x58,     0x03, "Mov elim"   }, // register moves eliminated
     {221, S_ID3,  INTEL_HASW, 0,  3,     0,   0x58,     0x0C, "Mov elim-"  }, // register moves elimination unsuccessful
     {310, S_ID3,  INTEL_HASW, 0,  3,     0,   0x80,     0x02, "CodeMiss"   }, // code cache misses
