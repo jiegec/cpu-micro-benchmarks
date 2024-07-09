@@ -1,4 +1,4 @@
-; reproduce Figure 3 of Half&Half
+; reproduce Figure 4 of Half&Half
 
 ; alignment bits of branch instruction address
 %ifndef branchalign
@@ -8,6 +8,16 @@
 ; alignment bits of branch target address
 %ifndef targetalign
     %define targetalign 5
+%endif
+
+; toggle bit of branch address
+%ifndef branchtoggle
+    %define branchtoggle 0
+%endif
+
+; toggle bit of target address
+%ifndef targettoggle
+    %define targettoggle 0
 %endif
 
 %macro testinit3 0
@@ -51,16 +61,23 @@ dummy_target:
         nop
     %endrep
 
-    ; the last byte of jnz aligned to 1<<branchalign
+    %rep (1<<branchtoggle)
+        nop
+    %endrep
+
+    ; the last byte of jnz minus 1<<branchtoggle aligned to 1<<branchalign
     ; jnz first_target
     db 0x0f
     db 0x85
     dd first_target - $ - 4
 
-    %rep (1<<targetalign)-1
+    %rep (1<<targetalign)-1-(1<<branchtoggle)
         nop
     %endrep
-    ; target aligned to 1<<targetalign
+    %rep (1<<targettoggle)
+        nop
+    %endrep
+    ; target minus 1<<targettoggle aligned to 1<<targetalign
 first_target:
 
     align 64
