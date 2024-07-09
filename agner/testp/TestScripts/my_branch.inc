@@ -61,10 +61,7 @@ dummy_target:
     ; target aligned to 1<<targetalign
 first_target:
 
-    ; set PC[5]=1
     align 64
-    nop
-    align 32
     jnz second_target
 second_target:
 
