@@ -13,7 +13,7 @@ for dummy_branches in x_data:
     data = []
     for line in output.splitlines():
         parts = list(filter(lambda s: len(s) > 0, line.strip().split(" ")))
-        if len(parts) > 0 and 'Cannot' not in line:
+        if len(parts) > 0:
             if not heading:
                 assert parts[5] == 'BrMisCond'
                 heading = True
