@@ -26,11 +26,11 @@ loop_begin:
 
     ; dummy_target aligned to 1<<8
 dummy_target:
-    %rep (1<<8)-8
+    %rep (1<<8)-7
         nop
     %endrep
     dec eax
-    ; jnz aligned to 1<<19
+    ; the last byte of jnz aligned to 1<<19
     jnz dummy_target
 
     READ_PMC_START
@@ -41,7 +41,7 @@ dummy_target:
     ; rdrand eax: 3 bytes
     ; and eax, 1: 3 bytes
     ; jnz first_target: 2 or 6 bytes depending on targetalign
-    %if targetalign >= 7
+    %if targetalign >= 8
         %assign jnzlength 6
     %else
         %assign jnzlength 2
@@ -51,11 +51,13 @@ dummy_target:
         nop
     %endrep
 
+    ; the last byte of jnz aligned to 1<<branchalign
     jnz first_target
 
-    %rep (1<<targetalign)
+    %rep (1<<targetalign)-1
         nop
     %endrep
+    ; target aligned to 1<<targetalign
 first_target:
 
     ; set PC[5]=1

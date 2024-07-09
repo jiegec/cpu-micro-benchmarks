@@ -474,7 +474,8 @@ void gen_ghr2_gadget() {
 
       // place alignment on branch
       // 8 bytes: dec %eax, jnz 2b
-      fprintf(fp, "\t%%rep %d\n", (1 << max_target_align) - 8);
+      // the last byte of jnz aligned to 1<<max_target_align
+      fprintf(fp, "\t%%rep %d\n", (1 << max_target_align) - 7);
       fprintf(fp, "\tnop\n");
       fprintf(fp, "\t%%endrep\n");
       fprintf(fp, "\tdec eax\n");
@@ -485,7 +486,7 @@ void gen_ghr2_gadget() {
       // place alignment on branch (end) & target
       // test ebx, ebx: 2 bytes
       fprintf(fp, "\ttest ebx, ebx\n");
-      if (target_align >= 7) {
+      if (target_align >= 8) {
         // 6 bytes jnz
         fprintf(fp, "\t%%rep %d\n", (1 << branch_align) - 6 - 2);
       } else {
@@ -494,27 +495,22 @@ void gen_ghr2_gadget() {
       }
       fprintf(fp, "\tnop\n");
       fprintf(fp, "\t%%endrep\n");
+      // last byte of jnz aligned to 1<<branch_align
       fprintf(fp, "\tjnz ghr2_size_%d_%d_first_target\n", branch_align,
               target_align); // 2/6 bytes
-      fprintf(fp, "\t%%rep %d\n", 1 << target_align);
+      fprintf(fp, "\t%%rep %d\n", (1 << target_align) - 1);
       fprintf(fp, "\tnop\n");
       fprintf(fp, "\t%%endrep\n");
+      // target aligned to 1<<target_align
       fprintf(fp, "\tghr2_size_%d_%d_first_target:\n", branch_align,
               target_align);
 
       // second random branch
-      // set pc[5] = 1 for second branch
-      fprintf(fp, "\talign %d\n", 1 << 6);
-      fprintf(fp, "\tnop\n");
-      fprintf(fp, "\talign %d\n", 1 << 5);
       fprintf(fp, "\tjnz ghr2_size_%d_%d_second_target\n", branch_align,
               target_align);
       fprintf(fp, "\tghr2_size_%d_%d_second_target:\n", branch_align,
               target_align);
 
-      // add alignment to last branch by setting pc[5] = 0 to avoid pc[5]
-      // partitioning
-      fprintf(fp, "\talign %d\n", 1 << 6);
       fprintf(fp, "\tdec rdi\n");
       fprintf(fp, "\tjnz ghr2_size_%d_%d_loop_begin\n", branch_align,
               target_align);
