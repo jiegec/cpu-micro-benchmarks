@@ -1245,7 +1245,7 @@ SCounterDefinition CounterDefinitions[] = {
     {201, S_ID3,  INTEL_HASW, 0,  3,     0,   0xC4,     0x20, "BrTaken"    }, // branches taken
     {207, S_ID3,  INTEL_HASW, 0,  3,     0,   0xc5,     0x00, "BrMispred"  }, // mispredicted branches
     // https://perfmon-events.intel.com/index.html?pltfrm=haswell.html&evnt=BR_MISP_RETIRED.CONDITIONAL
-    {208, S_ID3,  INTEL_HASW, 0,  3,     0,   0xC5,     0x01, "BrMisCond"  }, // mispredicted conditional branches
+    {250, S_ID3,  INTEL_HASW, 0,  3,     0,   0xC5,     0x01, "BrMisCond"  }, // mispredicted conditional branches
     {220, S_ID3,  INTEL_HASW, 0,  3,     0,   0x58,     0x03, "Mov elim"   }, // register moves eliminated
     {221, S_ID3,  INTEL_HASW, 0,  3,     0,   0x58,     0x0C, "Mov elim-"  }, // register moves elimination unsuccessful
     {310, S_ID3,  INTEL_HASW, 0,  3,     0,   0x80,     0x02, "CodeMiss"   }, // code cache misses
@@ -1337,16 +1337,9 @@ SCounterDefinition CounterDefinitions[] = {
     {156, S_ID5,  INTEL_GOLDCV, 0,  7,     0,   0xb2,     0x40, "uop p6"     }, // uops port 6.
     {157, S_ID5,  INTEL_GOLDCV, 0,  7,     0,   0xb2,     0x80, "uop p78"    }, // uops port 7&8.
     {201, S_ID5,  INTEL_GOLDCV, 0,  7,     0,   0xC4,     0x01, "BrTaken"    }, // branches taken
-    // https://perfmon-events.intel.com/index.html?pltfrm=ahybrid.html&evnt=BR_MISP_RETIRED.ALL_BRANCHES
     {207, S_ID5,  INTEL_GOLDCV, 0,  7,     0,   0xC5,     0x00, "BrMispred"  }, // mispredicted branches
     // https://perfmon-events.intel.com/index.html?pltfrm=ahybrid.html&evnt=BR_MISP_RETIRED.COND
-    {208, S_ID5,  INTEL_GOLDCV, 0,  7,     0,   0xC5,     0x11, "BrMisCond"  }, // mispredicted conditional branches
-    // https://perfmon-events.intel.com/index.html?pltfrm=ahybrid.html&evnt=BR_MISP_RETIRED.COND_NTAKEN
-    {209, S_ID5,  INTEL_GOLDCV, 0,  7,     0,   0xC5,     0x10, "BrMiCndNT"  }, // mispredicted conditional branches not taken
-    // https://perfmon-events.intel.com/index.html?pltfrm=ahybrid.html&evnt=BR_MISP_RETIRED.COND_TAKEN
-    {210, S_ID5,  INTEL_GOLDCV, 0,  7,     0,   0xC5,     0x01, "BrMisCndT"   }, // mispredicted conditional branches taken
-    // https://perfmon-events.intel.com/index.html?pltfrm=ahybrid.html&evnt=BR_MISP_RETIRED.NEAR_TAKEN
-    {211, S_ID5,  INTEL_GOLDCV, 0,  7,     0,   0xC5,     0x20, "BrMiNearT"  }, // mispredicted conditional branches near and taken
+    {250, S_ID5,  INTEL_GOLDCV, 0,  7,     0,   0xC5,     0x11, "BrMisCond"  }, // mispredicted conditional branches
     {310, S_ID5,  INTEL_GOLDCV, 0,  7,     0,   0x80,     0x04, "CodeMiss"   }, // code cache misses
     {311, S_ID5,  INTEL_GOLDCV, 0,  7,     0,   0x24,     0xe1, "L1D Miss"   }, // level 1 data cache miss
     {320, S_ID5,  INTEL_GOLDCV, 0,  7,     0,   0x24,     0x21, "L2 Miss"    }, // level 2 cache misses
