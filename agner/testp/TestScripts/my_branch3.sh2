@@ -1,5 +1,5 @@
 #!/bin/bash
-nasm -f elf64 -l b64.lst -o b64.o -Dbranchalign=$1 -Dtargetalign=$2 -Dbranchtoggle=$3 -Ddummybranches=$4 -Dcounters=1,9,201,250 -Pmy_branch3.inc MyTemplateB64.nasm
+nasm -f elf64 -l b64.lst -o b64.o -Dbranchalign=$1 -Dtargetalign=$2 -Dbranchtoggle=$3 -Dtargettoggle=$4 -Ddummybranches=$5 -Dcounters=1,9,201,250 -Pmy_branch3.inc MyTemplateB64.nasm
 if [ $? -ne 0 ] ; then exit ; fi
 g++ -fno-pie -no-pie -m64 a64.o b64.o -ox -lpthread
 if [ $? -ne 0 ] ; then exit ; fi
