@@ -13,14 +13,14 @@ for dummy_branches in x_data:
     data = []
     for line in output.splitlines():
         parts = list(filter(lambda s: len(s) > 0, line.strip().split(" ")))
-        if len(parts) > 0:
+        if len(parts) > 0 and 'Cannot' not in line:
             if not heading:
                 assert parts[5] == 'BrMisCond'
                 heading = True
             else:
                 data.append(int(parts[4]))
     avg = np.average(np.array(data)) / 2000 # 2 branches, 1000 loops
-    print(dummy_branches, avg)
+    print(dummy_branches, f'{avg:.2f}')
     y_data.append(avg)
 
 plt.plot(x_data, y_data)
