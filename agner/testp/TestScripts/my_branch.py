@@ -31,7 +31,7 @@ plt.savefig("my_branch_1.png")
 plt.cla()
 
 # Reproduce Figure 3(b) of Half&Half
-x_data = range(1, 20)
+x_data = range(1, 19)
 y_data = []
 for target_align in x_data:
     output = subprocess.check_output(
