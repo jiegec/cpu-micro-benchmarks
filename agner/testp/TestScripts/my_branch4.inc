@@ -21,33 +21,33 @@
     %define targettoggle 0
 %endif
 
-%macro testinit3 0
-    mov rdi, 1000
+%macro SHIFT_PHR 1
+    mov eax, %1+1
 
-    ; loop 300 times to clear phr
-    ; since we only consider branch misprediction of the last two branches
-    ; we do not have to be accurate here e.g. 93/194
-loop_begin:
-    mov eax, 300
-    align 64
-    jmp dummy_target
-
-    align 1<<19
-    %rep (1<<19)-(1<<8)
+    align 1<<16
+    %rep (1<<16)-(1<<6)
         nop
     %endrep
 
-    ; dummy_target aligned to 1<<8
-dummy_target:
-    %rep (1<<8)-7
+    ; dummy_target aligned to 1<<6
+%%shift_phr_dummy_target:
+    %rep (1<<6)-7
         nop
     %endrep
     dec eax ; 2 bytes
-    ; the last byte of jnz aligned to 1<<19
-    ; jnz dummy_target
+    ; the last byte of jnz aligned to 1<<16
+    ; jnz shift_phr_dummy_target
     db 0x0f
     db 0x85
-    dd dummy_target - $ - 4
+    dd %%shift_phr_dummy_target - $ - 4
+%endmacro
+
+%macro testinit3 0
+    mov rdi, 1000
+
+loop_begin:
+    ; loop 300 times to clear phr
+    SHIFT_PHR 300
 
     READ_PMC_START
     rdrand eax
@@ -82,24 +82,7 @@ dummy_target:
 first_target:
 
     ; loop to shift phr by 16 bits in 8 loops
-    mov eax, 8+1
-
-    align 1<<16
-    %rep (1<<16)-(1<<8)
-        nop
-    %endrep
-
-    ; dummy_target aligned to 1<<8
-shift_phr_dummy_target:
-    %rep (1<<8)-7
-        nop
-    %endrep
-    dec eax ; 2 bytes
-    ; the last byte of jnz aligned to 1<<18
-    ; jnz shift_phr_dummy_target
-    db 0x0f
-    db 0x85
-    dd shift_phr_dummy_target - $ - 4
+    SHIFT_PHR 8
 
     align 64
     jnz second_target

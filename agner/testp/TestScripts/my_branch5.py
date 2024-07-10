@@ -19,11 +19,12 @@ for branch_align in x_data:
                 heading = True
             else:
                 data.append(int(parts[4]))
-    avg = np.average(np.array(data)) / 1000  # 1 branches, 1000 loops
+    avg = np.average(np.array(data)) / 10000  # 1 branches, 10000 loops
     print(branch_align, f"{avg:.2f}")
     y_data.append(avg)
 
 plt.plot(x_data, y_data)
 plt.xlabel("Branch alignment bits")
 plt.ylabel("Miss Rate")
+plt.xticks(x_data)
 plt.savefig("my_branch5.png")

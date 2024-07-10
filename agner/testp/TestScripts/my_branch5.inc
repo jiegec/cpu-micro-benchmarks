@@ -5,6 +5,27 @@
     %define branchalign 18
 %endif
 
+%macro SHIFT_PHR 1
+    mov eax, %1+1
+
+    align 1<<16
+    %rep (1<<16)-(1<<6)
+        nop
+    %endrep
+
+    ; dummy_target aligned to 1<<6
+%%shift_phr_dummy_target:
+    %rep (1<<6)-7
+        nop
+    %endrep
+    dec eax ; 2 bytes
+    ; the last byte of jnz aligned to 1<<16
+    ; jnz shift_phr_dummy_target
+    db 0x0f
+    db 0x85
+    dd %%shift_phr_dummy_target - $ - 4
+%endmacro
+
 %macro testinit3 0
     mov rdi, 10000
 
@@ -34,25 +55,7 @@ loop_begin:
 zero_target:
 
     ; shift phr by 193 times
-    ; loop to shift phr
-    mov eax, 193+1
-
-    align 1<<16
-    %rep (1<<16)-(1<<6)
-        nop
-    %endrep
-
-    ; dummy_target aligned to 1<<6
-shift_phr_dummy_target:
-    %rep (1<<6)-7
-        nop
-    %endrep
-    dec eax ; 2 bytes
-    ; the last byte of jnz aligned to 1<<16
-    ; jnz shift_phr_dummy_target
-    db 0x0f
-    db 0x85
-    dd shift_phr_dummy_target - $ - 4
+    SHIFT_PHR 193
     
     ; first test branch
     test ebx, ebx
@@ -86,25 +89,7 @@ first_target:
 zero_target_2:
 
     ; shift phr by 193 times
-    ; loop to shift phr
-    mov eax, 193+1
-
-    align 1<<16
-    %rep (1<<16)-(1<<6)
-        nop
-    %endrep
-
-    ; dummy_target aligned to 1<<6
-shift_phr_dummy_target_2:
-    %rep (1<<6)-7
-        nop
-    %endrep
-    dec eax ; 2 bytes
-    ; the last byte of jnz aligned to 1<<16
-    ; jnz shift_phr_dummy_target_2
-    db 0x0f
-    db 0x85
-    dd shift_phr_dummy_target_2 - $ - 4
+    SHIFT_PHR 193
 
     READ_PMC_START
     ; second test branch
