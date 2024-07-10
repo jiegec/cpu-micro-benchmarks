@@ -9,7 +9,6 @@
     mov rdi, 1000
 
 loop_begin:
-
     ; k = rand() % 2
     rdrand ebx
     and ebx, 1
@@ -57,7 +56,7 @@ shift_phr_dummy_target:
     
     ; first test branch
     test ebx, ebx
-    align 1<<(branchalign-1)
+    align 1<<(branchalign+1)
     %rep (1<<branchalign)-1
         nop
     %endrep
@@ -111,7 +110,7 @@ shift_phr_dummy_target_2:
     ; second test branch
     ; in the opposite direction
     test ebx, ebx ; 2 bytes
-    align 1<<(branchalign-1)
+    align 1<<(branchalign+1)
     %rep (1<<branchalign)-1
         nop
     %endrep

@@ -10,7 +10,8 @@ for branch_toggle in x_data:
     temp = []
     for target_toggle in y_data:
         output = subprocess.check_output(
-            ["./my_branch2.sh2", "16", "16", str(branch_toggle), str(target_toggle)], encoding="utf-8"
+            ["./my_branch2.sh2", "16", "16", str(branch_toggle), str(target_toggle)],
+            encoding="utf-8",
         )
         heading = False
         data = []
@@ -32,4 +33,4 @@ plt.xlabel("Target toggle bit")
 plt.xticks(y_data)
 plt.ylabel("Branch toggle bit")
 plt.yticks(x_data)
-plt.savefig('my_branch2.png')
+plt.savefig("my_branch2.png")

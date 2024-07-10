@@ -11,7 +11,15 @@ for branch_toggle in x_data:
     temp = []
     for dummy_branches in y_data:
         output = subprocess.check_output(
-            ["./my_branch3.sh2", "16", "16", str(branch_toggle), "-1", str(dummy_branches)], encoding="utf-8"
+            [
+                "./my_branch3.sh2",
+                "16",
+                "16",
+                str(branch_toggle),
+                "-1",
+                str(dummy_branches),
+            ],
+            encoding="utf-8",
         )
         heading = False
         data = []
@@ -34,7 +42,7 @@ plt.xlabel("Dummy branches")
 plt.xticks(range(len(y_data)), y_data, rotation=90)
 plt.ylabel("Branch toggle bit")
 plt.yticks(x_data)
-plt.savefig('my_branch3_1.png')
+plt.savefig("my_branch3_1.png")
 plt.cla()
 
 # Test target toggles
@@ -45,7 +53,15 @@ for target_toggle in x_data:
     temp = []
     for dummy_branches in y_data:
         output = subprocess.check_output(
-            ["./my_branch3.sh2", "16", "16", "-1", str(target_toggle), str(dummy_branches)], encoding="utf-8"
+            [
+                "./my_branch3.sh2",
+                "16",
+                "16",
+                "-1",
+                str(target_toggle),
+                str(dummy_branches),
+            ],
+            encoding="utf-8",
         )
         heading = False
         data = []
@@ -68,6 +84,5 @@ plt.xlabel("Dummy branches")
 plt.xticks(range(len(y_data)), y_data, rotation=90)
 plt.ylabel("Target toggle bit")
 plt.yticks(x_data)
-plt.savefig('my_branch3_2.png')
+plt.savefig("my_branch3_2.png")
 plt.cla()
-
