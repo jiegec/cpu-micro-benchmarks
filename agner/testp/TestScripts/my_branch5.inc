@@ -6,7 +6,7 @@
 %endif
 
 %macro testinit3 0
-    mov rdi, 1000
+    mov rdi, 10000
 
 loop_begin:
     ; k = rand() % 2
@@ -16,14 +16,14 @@ loop_begin:
     ; set phr to k0...0
     ; set lower two bits to 0bk0
     align 1<<5
-    %rep (1<<3)-1
+    %rep (1<<4)-1
         nop
     %endrep
-    ; B3=1, B4=0
+    ; B3=0, B4=1
     jnz zero_target
 
     align 1<<5
-    %rep (1<<3)-1
+    %rep (1<<5)-1
         nop
     %endrep
     ; B3=0, B4=0
@@ -68,14 +68,14 @@ first_target:
     
     ; set lower two bits to 0bk0
     align 1<<5
-    %rep (1<<3)-1
+    %rep (1<<4)-1
         nop
     %endrep
-    ; B3=1, B4=0
+    ; B3=0, B4=1
     jnz zero_target_2
     
     align 1<<5
-    %rep (1<<3)-1
+    %rep (1<<5)-1
         nop
     %endrep
     ; B3=0, B4=0
