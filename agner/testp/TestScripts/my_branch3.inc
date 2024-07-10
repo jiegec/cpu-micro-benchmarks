@@ -25,35 +25,36 @@
     %define dummybranches 5
 %endif
 
+%macro SHIFT_PHR 1
+    mov eax, %1+1
+
+    align 1<<16
+    %rep (1<<16)-(1<<6)
+        nop
+    %endrep
+
+    ; dummy_target aligned to 1<<6
+%%shift_phr_dummy_target:
+    %rep (1<<6)-7
+        nop
+    %endrep
+    dec eax ; 2 bytes
+    ; the last byte of jnz aligned to 1<<16
+    ; jnz shift_phr_dummy_target
+    db 0x0f
+    db 0x85
+    dd %%shift_phr_dummy_target - $ - 4
+%endmacro
+
 %macro testinit3 0
     mov rdi, 1000
 
 loop_begin:
 
     ; loop to clear phr
-    mov eax, 200
-    align 64
-    jmp clear_phr_dummy_target
-
-    align 1<<16
-    %rep (1<<16)-(1<<8)
-        nop
-    %endrep
-
-    ; dummy_target aligned to 1<<8
-clear_phr_dummy_target:
-    %rep (1<<8)-7
-        nop
-    %endrep
-    dec eax ; 2 bytes
-    ; the last byte of jnz aligned to 1<<18
-    ; jnz clear_phr_dummy_target
-    db 0x0f
-    db 0x85
-    dd clear_phr_dummy_target - $ - 4
+    SHIFT_PHR 200
 
     ; train branch
-
     READ_PMC_START
     rdrand ebx
     and ebx, 1
@@ -95,27 +96,9 @@ clear_phr_dummy_target:
 first_target:
 
     ; loop to shift phr
-    mov eax, dummybranches+1
-
-    align 1<<16
-    %rep (1<<16)-(1<<8)
-        nop
-    %endrep
-
-    ; dummy_target aligned to 1<<8
-shift_phr_dummy_target:
-    %rep (1<<8)-7
-        nop
-    %endrep
-    dec eax ; 2 bytes
-    ; the last byte of jnz aligned to 1<<18
-    ; jnz shift_phr_dummy_target
-    db 0x0f
-    db 0x85
-    dd shift_phr_dummy_target - $ - 4
-
+    SHIFT_PHR dummybranches
+    
     ; test branch
-
     align 64
     and ebx, 1
     jnz second_target
