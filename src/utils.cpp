@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <memory.h>
 #include <random>
+#include <stdint.h>
 #include <sys/time.h>
 #include <unistd.h>
 
@@ -22,6 +23,25 @@
 // https://clang.llvm.org/docs/LanguageExtensions.html#has-builtin
 #ifndef __has_builtin
 #define __has_builtin(x) 0
+#endif
+
+// select pmu based on icestorm/firestorm
+#ifdef APPLE_M1
+#ifdef APPLE_M1_FIRESTORM
+// 0xb: firestorm pmu
+#define PERF_TYPE_M1 0xb
+#else
+// 0xa: icestorm pmu
+#define PERF_TYPE_M1 0xa
+#endif
+
+// 0x02: BRANCH_MISPREDICT from
+// https://github.com/dougallj/applecpu/blob/main/timer-hacks/bench.py#L85
+#define PERF_COUNT_M1_CPU_CYCLES 0x02
+
+// 0xcb: BRANCH_MISPREDICT from
+// https://github.com/dougallj/applecpu/blob/main/timer-hacks/bench.py#L85
+#define PERF_COUNT_M1_BRANCH_MISSES 0xcb
 #endif
 
 std::map<const char *, size_t> get_cache_sizes() {
@@ -126,6 +146,7 @@ int setup_perf_common(uint32_t type, uint64_t config) {
   attr->pinned = 1;
   attr->inherit = 1;
   attr->exclude_kernel = 1;
+  attr->exclude_guest = 1;
   int fd = syscall(SYS_perf_event_open, attr, 0, -1, -1, 0);
   if (fd < 0) {
     perror("perf_event_open");
@@ -140,8 +161,12 @@ int perf_fd_cycles = -1;
 uint64_t perf_read_cycles() { return perf_read_common(perf_fd_cycles); }
 
 void setup_perf_cycles() {
+#ifdef APPLE_M1_ICESTORM
+  perf_fd_cycles = setup_perf_common(PERF_TYPE_M1, PERF_COUNT_M1_CPU_CYCLES);
+#else
   perf_fd_cycles =
       setup_perf_common(PERF_TYPE_HARDWARE, PERF_COUNT_HW_CPU_CYCLES);
+#endif
   if (perf_fd_cycles >= 0) {
     printf("Using PMU to count cycles\n");
   }
@@ -165,8 +190,12 @@ uint64_t perf_read_branch_misses() {
 }
 
 void setup_perf_branch_misses() {
+#ifdef APPLE_M1
+  perf_fd_branch_misses = setup_perf_common(PERF_TYPE_M1, PERF_COUNT_M1_BRANCH_MISSES);
+#else
   perf_fd_branch_misses =
       setup_perf_common(PERF_TYPE_HARDWARE, PERF_COUNT_HW_BRANCH_MISSES);
+#endif
 }
 
 int perf_fd_llc_misses = -1;
@@ -212,15 +241,22 @@ uint64_t get_time_or_cycles() {
 #endif
 }
 
-// bind to core 0
+// bind to core
 void bind_to_core() {
 #ifdef __linux__
   cpu_set_t set;
   CPU_ZERO(&set);
-  CPU_SET(0, &set);
+#ifdef APPLE_M1_FIRESTORM
+  // core 4-7 is firestorm
+  int core = 4;
+#else
+  int core = 0;
+#endif
+
+  CPU_SET(core, &set);
   int res = sched_setaffinity(0, sizeof(set), &set);
   if (res == 0) {
-    printf("Pinned to cpu 0\n");
+    printf("Pinned to cpu %d\n", core);
   }
 #endif
 }
