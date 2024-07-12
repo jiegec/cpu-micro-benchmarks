@@ -1,7 +1,21 @@
 project('cpu-micro-benchmarks', 'cpp',
 	default_options : ['cpp_std=c++11'])
 
-utils = static_library('utils', 'src/utils.cpp')
+# Detect Apple M1
+r = run_command('cat', '/sys/devices/system/node/node0/cpu0/of_node/compatible', check: false)
+cpp_args = []
+if r.stdout().strip().contains('apple,icestorm')
+	message('Apple M1 detected')
+	if get_option('apple_m1') == 'icestorm'
+		message('Configured for Apple M1 Icestorm')
+		cpp_args += ['-DAPPLE_M1_ICESTORM', '-DAPPLE_M1']
+	else
+		message('Configured for Apple M1 Firestorm')
+		cpp_args += ['-DAPPLE_M1_FIRESTORM', '-DAPPLE_M1']
+	endif
+endif
+
+utils = static_library('utils', 'src/utils.cpp', cpp_args: cpp_args)
 
 memory_latency = executable('memory_latency',
 	'src/memory_latency.cpp',
