@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <set>
 #include <stdio.h>
+#include <string>
 #include <unistd.h>
 #include <utility>
 #include <vector>

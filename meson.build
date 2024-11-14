@@ -15,7 +15,7 @@ if r.stdout().strip().contains('apple,icestorm')
 	endif
 endif
 
-utils = static_library('utils', 'src/utils.cpp', cpp_args: cpp_args)
+utils = static_library('utils', 'src/utils.cpp', 'src/uarch.cpp', cpp_args: cpp_args)
 
 memory_latency = executable('memory_latency',
 	'src/memory_latency.cpp',
