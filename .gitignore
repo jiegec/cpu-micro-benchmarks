@@ -1,7 +1,13 @@
 builddir
+build
 .vscode
 *.png
+*.pdf
 *.csv
 result
 .cache
 *.swp
+*.bin
+venv
+perf.data
+perf.data.old
