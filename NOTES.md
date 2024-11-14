@@ -1,10 +1,90 @@
 # NOTES
 
-- TSV110: https://zhuanlan.zhihu.com/p/614965112 https://zhuanlan.zhihu.com/p/616648182
-- Cortex A78: https://zhuanlan.zhihu.com/p/604417153
-- Cortex A710: https://zhuanlan.zhihu.com/p/622110520 https://zhuanlan.zhihu.com/p/630829752
-- Cortex X1: https://zhuanlan.zhihu.com/p/619033328 https://zhuanlan.zhihu.com/p/620310569 https://zhuanlan.zhihu.com/p/595585895
-- Cortex X2: https://chipsandcheese.com/2023/10/27/cortex-x2-arm-aims-high/
-- Apple M1: https://github.com/name99-org/AArch64-Explore https://zhuanlan.zhihu.com/p/611213899 https://zhuanlan.zhihu.com/p/613097964 https://zhuanlan.zhihu.com/p/595582920 https://zhuanlan.zhihu.com/p/600349467 https://dougallj.github.io/applecpu/firestorm.html https://github.com/dougallj/applecpu
-- Apple M2: https://zhuanlan.zhihu.com/p/675322260 https://zhuanlan.zhihu.com/p/678983061 https://zhuanlan.zhihu.com/p/662561990
-- X Elite Oryon: https://zhuanlan.zhihu.com/p/704707254
+- TSV110:
+	- [华为鲲鹏 920 TSV110 微架构评测（上）:初露锋芒，砥砺前行](https://zhuanlan.zhihu.com/p/614965112)
+	- [华为鲲鹏 920 TSV110 微架构（下）:初露锋芒，砥砺前行](https://zhuanlan.zhihu.com/p/616648182)
+- TaiShan on Kirin 9000s:
+	- [麒麟 9000s 大中核规格对比、初步性能测试](https://zhuanlan.zhihu.com/p/653645023)
+	- [华为麒麟 9000s TSV new 微架构评测（上）：如闪电般归来](https://zhuanlan.zhihu.com/p/655416463)
+- TaiShan on Kirin 9010:
+	- [麒麟 9010 新大核微架构前瞻：8 发射的征途](https://zhuanlan.zhihu.com/p/693254515)
+	- [麒麟 9010 微架构评测：轻舟已过万重山](https://zhuanlan.zhihu.com/p/694560307)
+- Cortex A53: [ARM’s Cortex A53: Tiny But Important](https://chipsandcheese.com/2023/05/28/arms-cortex-a53-tiny-but-important/)
+- Cortex A510: [Arm’s Cortex A510: Two Kids in a Trench Coat](https://chipsandcheese.com/2023/10/01/arms-cortex-a510-two-kids-in-a-trench-coat/)
+- Cortex A72:
+	- [ARM’s Cortex A72: aarch64 for the Masses](https://chipsandcheese.com/2023/11/10/arms-cortex-a72-aarch64-for-the-masses/)
+- Cortex A73:
+	- [Arm’s Cortex A73: Resource Limits, What are Those?](https://chipsandcheese.com/2024/07/18/arms-cortex-a73-resource-limits-what-are-those/)
+	- [Cortex A73’s Not-So-Infinite Reordering Capacity](https://chipsandcheese.com/2024/08/04/cortex-a73s-not-so-infinite-reordering-capacity/)
+- Cortex A76:
+	- [Arm's Cortex-A76 CPU Unveiled: Taking Aim at the Top for 7nm](https://www.anandtech.com/show/12785/arm-cortex-a76-cpu-unveiled-7nm-powerhouse)
+- Cortex A78:
+	- [Arm Cortex A78 微架构评测（上）：中核奠基之作](https://zhuanlan.zhihu.com/p/604417153)
+	- [Arm Cortex A78 微架构（下）：中核奠基之作](https://zhuanlan.zhihu.com/p/606865603)
+- Cortex A710:
+	- [ARM Cortex A710 微架构评测（上）：以退为进？](https://zhuanlan.zhihu.com/p/622110520) 
+	- [ARM Cortex A710 微架构（下）：以退为进？](https://zhuanlan.zhihu.com/p/630829752)
+	- [ARM’s Cortex A710: Winning by Default](https://chipsandcheese.com/2023/08/11/arms-cortex-a710-winning-by-default/)
+- Cortex X1:
+	- https://zhuanlan.zhihu.com/p/619033328
+	- https://zhuanlan.zhihu.com/p/620310569
+	- https://zhuanlan.zhihu.com/p/595585895
+	- https://fuse.wikichip.org/news/3543/arm-cortex-x1-the-first-from-the-cortex-x-custom-program/
+	- https://en.wikichip.org/wiki/arm_holdings/microarchitectures/cortex-x1
+	- https://www.anandtech.com/show/15813/arm-cortex-a78-cortex-x1-cpu-ip-diverging
+- Cortex X2: [Cortex X2: Arm Aims High](https://chipsandcheese.com/2023/10/27/cortex-x2-arm-aims-high/)
+- Neoverse N1:
+	- [Deep Diving Neoverse N1](https://chipsandcheese.com/2021/10/22/deep-diving-neoverse-n1/)
+	- [Arm Announces Neoverse N1 & E1 Platforms & CPUs: Enabling A Huge Jump In Infrastructure Performance](https://www.anandtech.com/show/13959/arm-announces-neoverse-n1-platform/2)
+- Neoverse N2:
+	- [ARM’s Neoverse N2: Cortex A710 for Servers](https://chipsandcheese.com/2023/08/18/arms-neoverse-n2-cortex-a710-for-servers/)
+- Apple M1: 
+	- [Exploration of Apple CPUs](https://github.com/name99-org/AArch64-Explore)
+	- [Apple M1 Icestorm 微架构评测（上）:重铸小核荣光](https://zhuanlan.zhihu.com/p/611213899)
+	- [Apple M1 Icestorm 微架构（下）:重铸小核荣光](https://zhuanlan.zhihu.com/p/613097964)
+	- [苹果的黑魔法？Apple M1 的栈操作消除（上）](https://zhuanlan.zhihu.com/p/595582920)
+	- [苹果的黑魔法？（下）Apple M1 的栈操作消除](https://zhuanlan.zhihu.com/p/600349467)
+	- [Apple Microarchitecture Research by Dougall Johnson](https://dougallj.github.io/applecpu/firestorm.html)
+	- [Apple Firestorm/Icestorm CPU microarchitecture docs](https://github.com/dougallj/applecpu)
+	- [The 2020 Mac Mini Unleashed: Putting Apple Silicon M1 To The Test](https://www.anandtech.com/show/16252/mac-mini-apple-m1-tested)
+	- [Apple Announces The Apple Silicon M1: Ditching x86 - What to Expect, Based on A14](https://www.anandtech.com/show/16226/apple-silicon-m1-a14-deep-dive)
+- Apple M2:
+	- [Apple M2 Blizzard 微架构评测 (上)：阳春白雪](https://zhuanlan.zhihu.com/p/675322260)
+	- [Apple M2 Blizzard 微架构评测 (中)：阳春白雪](https://zhuanlan.zhihu.com/p/678983061)
+	- [不为人知的角落，Apple M2 的小小努力（其一）](https://zhuanlan.zhihu.com/p/662561990)
+- Apple M3:
+	- [MacBook Air M3 简评：性能、续航如何？M1 用户要换吗？](https://www.bilibili.com/video/BV1cw4m1o76r/)
+- Apple M4:
+	- [苹果 M4 性能分析：尽力了，但芯片工艺快到头了！](https://www.bilibili.com/video/BV1NJ4m1w7zk/)
+- X Elite Oryon:
+	- [高通 X Elite Oryon 微架构评测：走走停停](https://zhuanlan.zhihu.com/p/704707254)
+	- [Qualcomm’s Oryon Core: A Long Time in the Making](https://chipsandcheese.com/2024/07/09/qualcomms-oryon-core-a-long-time-in-the-making/)
+	- [Snapdragon X Elite](https://www.qualcomm.com/products/mobile/snapdragon/laptops-and-tablets/snapdragon-x-elite)
+	- [Qualcomm Oryon CPU](https://www.qualcomm.com/products/technology/processors/oryon)
+	- [Qualcomm’s Oryon LLVM Patches](https://chipsandcheese.com/2024/05/15/qualcomms-oryon-llvm-patches/)
+	- [高通自研 PC 芯片 X Elite 实测：真能干翻苹果英特尔？](https://www.bilibili.com/video/BV1Ue41197Qb/)
+	- [太贵了，它没你想的那么美好！高通骁龙 X Elite 78-100 笔记本详细评测](https://www.bilibili.com/video/BV1z1421r7dZ/)
+- Loongson 3A5000: [Loongson’s 3A5000: China’s Best Shot?](https://chipsandcheese.com/2023/04/09/loongsons-3a5000-chinas-best-shot/)
+- Loongson 3A6000: [Loongson 3A6000: A Star among Chinese CPUs](https://chipsandcheese.com/2024/03/13/loongson-3a6000-a-star-among-chinese-cpus/)
+- Sandy Bridge: [Sandy Bridge: Setting Intel’s Modern Foundation](https://chipsandcheese.com/2023/08/04/sandy-bridge-setting-intels-modern-foundation/)
+- Zen 1-4: [Zen evolution: A small overview](https://locuza.substack.com/p/zen-evolution-a-small-overview)
+- Zen 4:
+	- [AMD’s Zen 4 Part 1: Frontend and Execution Engine](https://chipsandcheese.com/2022/11/05/amds-zen-4-part-1-frontend-and-execution-engine/)
+	- [AMD’s Zen 4, Part 2: Memory Subsystem and Conclusion](https://chipsandcheese.com/2022/11/08/amds-zen-4-part-2-memory-subsystem-and-conclusion/)
+- Zen 5:
+	- [AMD Zen 5 深度评测：HX370 能效超强！但大小核靠谱吗？](https://www.bilibili.com/video/BV1ZE421w7eb/)
+	- [AMD Reveals More Zen 5 CPU Core Details](https://www.phoronix.com/review/amd-zen-5-core)
+- Sunny Cove:
+	- [Sunny Cove: Intel’s Lost Generation](https://chipsandcheese.com/2022/06/07/sunny-cove-intels-lost-generation/)
+
+Calling convention:
+
+- AMD64:
+	- Arguments: rdi, rsi, rdx, rcx, r8, r9
+	- Callee-saved: rbx, rsp, rbp, r12-r15
+- AArch64:
+	- Arguments: r0-r7
+	- Callee-saved: r19-r29, sp, v8-v15
+- LoongArch64:
+	- Arguments: a0-a7
+	- Callee-saved: s0-s9, fs0-fs7

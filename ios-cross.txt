@@ -1,0 +1,16 @@
+# from https://github.com/mesonbuild/meson/blob/master/cross/iphone.txt
+[binaries]
+c = ['clang', '-arch', 'arm64', '-isysroot', '/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk']
+cpp = ['clang++', '-arch', 'arm64', '-isysroot', '/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk']
+objc = ['clang', '-arch', 'arm64', '-isysroot', '/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk']
+objcpp = ['clang++', '-arch', 'arm64', '-isysroot', '/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS.sdk']
+ar = 'ar'
+strip = 'strip'
+
+[host_machine]
+system = 'darwin'
+subsystem = 'ios'
+kernel = 'xnu'
+cpu_family = 'aarch64'
+cpu = 'aarch64'
+endian = 'little'

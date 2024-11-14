@@ -1,0 +1,11 @@
+[binaries]
+c = ['aarch64-linux-android31-clang']
+cpp = ['aarch64-linux-android31-clang++']
+ar = 'ar'
+strip = 'strip'
+
+[host_machine]
+system = 'linux'
+cpu_family = 'aarch64'
+cpu = 'aarch64'
+endian = 'little'
