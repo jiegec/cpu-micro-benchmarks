@@ -1,21 +1,37 @@
 project('cpu-micro-benchmarks', 'cpp',
 	default_options : ['cpp_std=c++11'])
-
-# Detect Apple M1
-r = run_command('cat', '/sys/devices/system/node/node0/cpu0/of_node/compatible', check: false)
 cpp_args = []
-if r.stdout().strip().contains('apple,icestorm')
-	message('Apple M1 detected')
-	if get_option('apple_m1') == 'icestorm'
-		message('Configured for Apple M1 Icestorm')
-		cpp_args += ['-DAPPLE_M1_ICESTORM', '-DAPPLE_M1']
-	else
-		message('Configured for Apple M1 Firestorm')
-		cpp_args += ['-DAPPLE_M1_FIRESTORM', '-DAPPLE_M1']
-	endif
+link_args = []
+cpu = target_machine.cpu_family()
+
+if get_option('ios')
+	message('Configured for iOS')
+	cpp_args += ['-DIOS', '-std=c++11', '-DHOST_AARCH64', '-march=armv8.4-a']
+elif get_option('android')
+	cpp_args += ['-DANDROID', '-DHOST_AARCH64', '-DNO_FJCVTZS']
+	link_args += ['-static-libstdc++']
+elif get_option('gem5')
+	cpp_args += ['-DGEM5']
+elif get_option('linux-cross') == 'aarch64'
+	cpp_args += ['-DHOST_AARCH64', '-DNO_FJCVTZS']
+else
+	# Detect cpu models
+	r = run_command('sh', '-c', 'g++ -I. --std=c++11 src/detect_uarch.cpp src/uarch.cpp -o $MESON_BUILD_ROOT/detect_uarch && $MESON_BUILD_ROOT/detect_uarch', check: true)
+	foreach line : r.stderr().strip().split('\n')
+		message(line)
+	endforeach
+	foreach line : r.stdout().strip().split('\n')
+		cpp_args += [line]
+	endforeach
+	message('Got CXXFLAGS:', cpp_args)
 endif
 
+
+message('Final CXXFLAGS:', cpp_args)
+message('Final LDFLAGS:', link_args)
+
 utils = static_library('utils', 'src/utils.cpp', 'src/uarch.cpp', cpp_args: cpp_args)
+utils_native = static_library('utils_native', 'src/utils.cpp', 'src/uarch.cpp', cpp_args: cpp_args, native : true)
 
 memory_latency = executable('memory_latency',
 	'src/memory_latency.cpp',
