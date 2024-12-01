@@ -33,22 +33,20 @@ message('Final LDFLAGS:', link_args)
 utils = static_library('utils', 'src/utils.cpp', 'src/uarch.cpp', cpp_args: cpp_args)
 utils_native = static_library('utils_native', 'src/utils.cpp', 'src/uarch.cpp', cpp_args: cpp_args, native : true)
 
-memory_latency = executable('memory_latency',
-	'src/memory_latency.cpp',
-	link_with: utils,
-	install: true)
+simple_progs = [
+	'memory_latency',
+	'instruction_latency',
+	'ipc',
+]
 
-instruction_latency = executable('instruction_latency',
-	'src/instruction_latency.cpp',
-	link_with: utils,
-	install: true)
+foreach p : simple_progs
+	executable(p,
+		'src/' + p + '.cpp',
+		link_with: utils)
+endforeach
 
-ipc = executable('ipc',
-	'src/ipc.cpp',
-	link_with: utils,
-	install: true)
+libs = []
 
-cpu = target_machine.cpu_family()
 if cpu == 'x86_64'
 	gather_avx2 = executable('gather_avx2',
 		'src/gather.cpp',
@@ -62,95 +60,102 @@ if cpu == 'x86_64'
 		install: true)
 endif
 
-
-
-generate_gadget = executable('generate_gadget',
-	'src/generate_gadget.cpp',
-	link_with: utils)
-
-rob_gadget_asm = custom_target('rob_gadget_asm',
-	output: 'rob_gadget.S',
-	input: generate_gadget,
-	command: [generate_gadget, 'rob', '@OUTPUT@'])
-
-rob_size = executable('rob_size',
-	'src/rob_size.cpp',
-	rob_gadget_asm,
-	link_with: utils,
-	install: true)
-
-btb_gadget_asm = custom_target('btb_gadget_asm',
-	output: 'btb_gadget.S',
-	input: generate_gadget,
-	command: [generate_gadget, 'btb', '@OUTPUT@'])
-
-btb_size = executable('btb_size',
-	'src/btb_size.cpp',
-	btb_gadget_asm,
-	link_with: utils,
-	install: true)
-
-ras_gadget_asm = custom_target('ras_gadget_asm',
-	output: 'ras_gadget.S',
-	input: generate_gadget,
-	command: [generate_gadget, 'ras', '@OUTPUT@'])
-
-ras_size = executable('ras_size',
-	'src/ras_size.cpp',
-	ras_gadget_asm,
-	link_with: utils,
-	install: true)
-
-bp_gadget_asm = custom_target('bp_gadget_asm',
-	output: 'bp_gadget.S',
-	input: generate_gadget,
-	command: [generate_gadget, 'bp', '@OUTPUT@'])
-
-bp_size = executable('bp_size',
-	'src/bp_size.cpp',
-	bp_gadget_asm,
-	link_with: utils,
-	install: true)
-
-ghr_gadget_asm = custom_target('ghr_gadget_asm',
-	output: 'ghr_gadget.S',
-	input: generate_gadget,
-	command: [generate_gadget, 'ghr', '@OUTPUT@'])
-
-ghr_size = executable('ghr_size',
-	'src/ghr_size.cpp',
-	ghr_gadget_asm,
-	link_with: utils,
-	install: true)
-
 cpp = meson.get_compiler('cpp')
 cpu = target_machine.cpu_family()
 
-if cpu == 'x86_64'
-	ghr2_gadget_asm = custom_target('ghr2_gadget_asm',
-		output: 'ghr2_gadget.S',
-		input: generate_gadget,
-		command: [generate_gadget, 'ghr2', '@OUTPUT@'])
+# [gadget name, nasm if available, build as library, has generator]
+progs = [
+	['bp_size', false, false, true],
+	['btb_size_basic', false, true, true],
+	['ghr_size', false, true, true],
+	['ras_size', false, true, true],
+	['rob_size', false, false, true],
+]
 
-	ghr2_gadget_o = custom_target('ghr2_gadget_o',
-		output: 'ghr2_gadget.o',
-		input: ghr2_gadget_asm,
-		command: ['nasm', '-felf64', '@INPUT@', '-o', '@OUTPUT@'])
+foreach p : progs
+	# generator?
+	if p[3]
+		gadget_gen = executable(p[0] + '_gadget_gen',
+			'src/' + p[0] + '_gen.cpp',
+			cpp_args: cpp_args,
+			link_with: utils_native,
+			native : true)
 
-	ghr2_size = executable('ghr2_size',
-		'src/ghr2_size.cpp',
-		ghr2_gadget_o,
-		link_with: utils,
-		install: true)
-elif cpu == 'aarch64'
-	ghr2_gadget_asm = custom_target('ghr2_gadget_asm',
-		output: 'ghr2_gadget.S',
-		input: generate_gadget,
-		command: [generate_gadget, 'ghr2', '@OUTPUT@'])
+		gadget_asm = custom_target(p[0] + '_gadget_asm',
+			output: p[0] + '_gadget.S',
+			input: gadget_gen,
+			command: [gadget_gen, '@OUTPUT@'])
+	
+		# nasm?
+		if cpu == 'x86_64' and p[1]
+			gadget_o = custom_target(p[0] + '_gadget_o',
+				output: p[0] + '_gadget.o',
+				input: gadget_asm,
+				command: ['nasm', '--limit-rep', '10000000', '-felf64', '@INPUT@', '-o', '@OUTPUT@', '-O0'])
 
-	ghr2_size = executable('ghr2_size',
-		'src/ghr2_size.cpp',
-		ghr2_gadget_asm,
+			gadget_src = gadget_o
+		else
+			gadget_src = gadget_asm
+		endif
+		
+		# library?
+		if p[2]
+			gadget_lib = static_library(p[0] + '_lib',
+				'src/' + p[0] + '_lib.cpp',
+				gadget_src,
+				cpp_args: cpp_args,
+				link_with: utils,
+				install: true)
+			libs += gadget_lib.extract_all_objects(recursive: true)
+
+			gadget = executable(p[0],
+				'src/' + p[0] + '.cpp',
+				cpp_args: cpp_args,
+				link_with: gadget_lib,
+				link_args: link_args,
+				install: true)
+		else
+			gadget = executable(p[0],
+				'src/' + p[0] + '.cpp',
+				gadget_src,
+				cpp_args: cpp_args,
+				link_with: utils,
+				link_args: link_args,
+				install: true)
+		endif
+	else
+		# library?
+		if p[2]
+			gadget_lib = static_library(p[0] + '_lib',
+				'src/' + p[0] + '_lib.cpp',
+				cpp_args: cpp_args,
+				link_with: utils,
+				install: true)
+			libs += gadget_lib.extract_all_objects(recursive: true)
+			
+			gadget = executable(p[0],
+				'src/' + p[0] + '.cpp',
+				cpp_args: cpp_args,
+				link_with: gadget_lib,
+				link_args: link_args,
+				install: true)
+		else
+			gadget = executable(p[0],
+				'src/' + p[0] + '.cpp',
+				gadget_asm,
+				cpp_args: cpp_args,
+				link_with: utils,
+				link_args: link_args,
+				install: true)
+		endif
+	endif
+endforeach
+
+# build whole library for ios
+if get_option('ios')
+	message('Building libmicrobenchmark')
+	microbenchmark_lib = static_library('microbenchmark',
+		objects: libs,
 		link_with: utils,
 		install: true)
 endif
