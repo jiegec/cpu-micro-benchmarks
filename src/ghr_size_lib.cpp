@@ -4,39 +4,32 @@
 #include <stdlib.h>
 #include <vector>
 
-// generated in rob_size_gen.cpp
-// args: buffer1, buffer2, loop count
-typedef void (*gadget)(char ***, char ***, size_t);
+// generated in ghr_size_gen.cpp
+// args: loop count, buffer
+typedef void (*gadget)(size_t, uint32_t *);
 extern "C" {
-extern gadget rob_size_gadgets[];
+extern gadget ghr_size_gadgets[];
 }
 
-int main(int argc, char *argv[]) {
-#ifdef GEM5
-  int loop_count = 10;
-#else
+void ghr_size(FILE *fp) {
   int loop_count = 1000;
-#endif
-  // match gen_rob_test
-  int repeat = 20;
+  // match gen_ghr_test
+  int repeat = 2;
   int min_size = 1;
   int max_size = 1024;
 
   bind_to_core();
-  setup_time_or_cycles();
-  FILE *fp = fopen("rob_size.csv", "w");
+#ifdef IOS
+  // no pmu
+#else
+  setup_perf_branch_misses();
+#endif
   assert(fp);
 
-#ifdef GEM5
-  size_t buffer_size = 1024 * 1024 * 16; // 16 MB
-#else
-  size_t buffer_size = 1024 * 1024 * 256; // 256 MB
-#endif
-  char **buffer1 = generate_random_pointer_chasing(buffer_size);
-  char **p1 = buffer1;
-  char **buffer2 = generate_random_pointer_chasing(buffer_size);
-  char **p2 = buffer2;
+  uint32_t *buffer = new uint32_t[loop_count + 1];
+
   fprintf(fp, "size,min,avg,max\n");
+  int gadget_index = 0;
   for (int size = min_size; size <= max_size; size++) {
     std::vector<double> history;
     int iterations = 100;
@@ -45,9 +38,24 @@ int main(int argc, char *argv[]) {
     double sum = 0;
     // run several times
     for (int i = 0; i < iterations; i++) {
-      uint64_t begin = get_time_or_cycles();
-      rob_size_gadgets[size - min_size](&p1, &p2, loop_count);
-      uint64_t elapsed = get_time_or_cycles() - begin;
+      for (int i = 0; i <= loop_count; i++) {
+        buffer[i] = rand() % 2;
+      }
+#ifdef IOS
+      // fallback
+      uint64_t begin = get_time();
+#else
+      uint64_t begin = perf_read_branch_misses();
+#endif
+
+      ghr_size_gadgets[gadget_index](loop_count, buffer);
+
+#ifdef IOS
+      // fallback
+      uint64_t elapsed = get_time() - begin;
+#else
+      uint64_t elapsed = perf_read_branch_misses() - begin;
+#endif
 
       // skip warmup
       if (i >= 10) {
@@ -56,6 +64,7 @@ int main(int argc, char *argv[]) {
         sum += time;
       }
     }
+    gadget_index++;
 
     double min = history[0];
     double max = history[0];
@@ -70,9 +79,5 @@ int main(int argc, char *argv[]) {
     fprintf(fp, "%d,%.2lf,%.2lf,%.2lf\n", size, min, sum / history.size(), max);
     fflush(fp);
   }
-
-  printf("Results are written to rob_size.csv\n");
-  delete[] buffer1;
-  delete[] buffer2;
-  return 0;
+  delete[] buffer;
 }

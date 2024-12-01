@@ -4,39 +4,30 @@
 #include <stdlib.h>
 #include <vector>
 
-// generated in rob_size_gen.cpp
-// args: buffer1, buffer2, loop count
-typedef void (*gadget)(char ***, char ***, size_t);
+// ref:
+// https://zhuanlan.zhihu.com/p/595585895
+
+// generated in ras_size_gen.cpp
+// args: loop count
+typedef void (*gadget)(size_t);
 extern "C" {
-extern gadget rob_size_gadgets[];
+extern gadget ras_size_gadgets[];
 }
 
-int main(int argc, char *argv[]) {
+void ras_size(FILE *fp) {
 #ifdef GEM5
   int loop_count = 10;
 #else
   int loop_count = 1000;
 #endif
-  // match gen_rob_test
-  int repeat = 20;
+  // match gen_ras_test
   int min_size = 1;
-  int max_size = 1024;
+  int max_size = 128;
 
   bind_to_core();
   setup_time_or_cycles();
-  FILE *fp = fopen("rob_size.csv", "w");
-  assert(fp);
-
-#ifdef GEM5
-  size_t buffer_size = 1024 * 1024 * 16; // 16 MB
-#else
-  size_t buffer_size = 1024 * 1024 * 256; // 256 MB
-#endif
-  char **buffer1 = generate_random_pointer_chasing(buffer_size);
-  char **p1 = buffer1;
-  char **buffer2 = generate_random_pointer_chasing(buffer_size);
-  char **p2 = buffer2;
   fprintf(fp, "size,min,avg,max\n");
+  int gadget_index = 0;
   for (int size = min_size; size <= max_size; size++) {
     std::vector<double> history;
     int iterations = 100;
@@ -46,16 +37,17 @@ int main(int argc, char *argv[]) {
     // run several times
     for (int i = 0; i < iterations; i++) {
       uint64_t begin = get_time_or_cycles();
-      rob_size_gadgets[size - min_size](&p1, &p2, loop_count);
+      ras_size_gadgets[gadget_index](loop_count);
       uint64_t elapsed = get_time_or_cycles() - begin;
 
       // skip warmup
       if (i >= 10) {
-        double time = (double)elapsed / loop_count / repeat;
+        double time = (double)elapsed / loop_count / size;
         history.push_back(time);
         sum += time;
       }
     }
+    gadget_index++;
 
     double min = history[0];
     double max = history[0];
@@ -70,9 +62,5 @@ int main(int argc, char *argv[]) {
     fprintf(fp, "%d,%.2lf,%.2lf,%.2lf\n", size, min, sum / history.size(), max);
     fflush(fp);
   }
-
-  printf("Results are written to rob_size.csv\n");
-  delete[] buffer1;
-  delete[] buffer2;
-  return 0;
+  return;
 }
