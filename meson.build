@@ -67,6 +67,7 @@ cpu = target_machine.cpu_family()
 progs = [
 	['bp_size', false, false, true],
 	['btb_size_basic', false, true, true],
+	['find_branch_misses_pmu', false, false, true],
 	['ghr_size', false, true, true],
 	['phr_branch_bits_location', true, false, true],
 	['phr_size', false, true, true],
