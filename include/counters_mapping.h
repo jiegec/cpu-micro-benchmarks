@@ -20,6 +20,7 @@
 DEFINE_COUNTER(cycles, FIXED_CYCLES)
 DEFINE_COUNTER(instructions, FIXED_INSTRUCTIONS)
 DEFINE_COUNTER(branch_misses, BRANCH_MISPRED_NONSPEC)
+DEFINE_COUNTER(cond_branch_misses, BRANCH_COND_MISPRED_NONSPEC)
 
 #else
 // Linux
@@ -42,6 +43,9 @@ DEFINE_COUNTER(instructions, firestorm, PERF_TYPE_FIRESTORM, 0x8c)
 // 0xcb: BRANCH_MISPRED_NONSPEC from
 // https://github.com/jiegec/apple-pmu/blob/master/a14.md
 DEFINE_COUNTER(branch_misses, firestorm, PERF_TYPE_FIRESTORM, 0xcb)
+// 0xc5: BRANCH_COND_MISPRED_NONSPEC from
+// https://github.com/jiegec/apple-pmu/blob/master/a14.md
+DEFINE_COUNTER(cond_branch_misses, firestorm, PERF_TYPE_FIRESTORM, 0xc5)
 
 // arm64 general
 // ARMV8_PMUV3_PERFCTR_BR_MIS_PRED_RETIRED in
@@ -49,6 +53,11 @@ DEFINE_COUNTER(branch_misses, firestorm, PERF_TYPE_FIRESTORM, 0xcb)
 // to ARMV8_PMUV3_PERFCTR_BR_MIS_PRED, which counts speculative mis-predictions,
 // we want retired mis-predictions
 DEFINE_COUNTER_RANGE(branch_misses, arm64, PERF_TYPE_RAW, 0x22)
+
+// qualcomm oryon
+// https://arxiv.org/pdf/2411.13900
+// discovered via find_branch_misses_pmu tool
+DEFINE_COUNTER(cond_branch_misses, oryon, PERF_TYPE_RAW, 0x400)
 
 // fallback counters
 
