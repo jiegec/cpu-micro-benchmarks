@@ -68,7 +68,9 @@ progs = [
 	['bp_size', false, false, true],
 	['btb_size_basic', false, true, true],
 	['ghr_size', false, true, true],
+	['phr_branch_bits_location', true, false, true],
 	['phr_size', false, true, true],
+	['phr_target_bits_location', true, false, true],
 	['ras_size', false, true, true],
 	['rob_size', false, false, true],
 ]
