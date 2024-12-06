@@ -114,4 +114,16 @@ void arm64_la(FILE *fp, int reg, const char *format, ...);
 // convert virtual address to physical
 int virt_to_phys_user(uintptr_t *paddr, uintptr_t vaddr);
 
+// https://arxiv.org/abs/2411.13900
+#if defined(APPLE_M1_FIRESTORM)
+#define PHR_BRANCHES 100
+#elif defined(QUALCOMM_ORYON)
+#define PHR_BRANCHES 100
+#endif
+
+// fallback
+#ifndef PHR_BRANCHES
+#define PHR_BRANCHES 64
+#endif
+
 #endif
