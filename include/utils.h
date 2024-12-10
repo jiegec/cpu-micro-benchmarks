@@ -117,8 +117,10 @@ int virt_to_phys_user(uintptr_t *paddr, uintptr_t vaddr);
 // https://arxiv.org/abs/2411.13900
 #if defined(APPLE_M1_FIRESTORM)
 #define PHR_BRANCHES 100
+#define PHRB_BRANCHES 28
 #elif defined(QUALCOMM_ORYON)
 #define PHR_BRANCHES 100
+#define PHRB_BRANCHES 32
 #endif
 
 // fallback

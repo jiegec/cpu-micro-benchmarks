@@ -344,32 +344,6 @@ compute_counter_per_cycle(const std::vector<uint64_t> counters) {
   return res;
 }
 
-static mpki compute_mpki(const std::vector<uint64_t> counters) {
-  assert(counters.size() == 2);
-  mpki res;
-  res.mispredictions = counters[0];
-  res.instructions = counters[1];
-  res.mpki = (double)res.mispredictions * 1000 / res.instructions;
-  return res;
-}
-
-static top_down compute_top_down_zen5(const std::vector<uint64_t> counters) {
-  top_down res;
-  uint64_t cycles_not_in_halt = counters[0];
-  uint64_t frontend_bubbles = counters[1];
-  uint64_t backend_bubbles = counters[2];
-  uint64_t retired_ops = counters[3];
-  uint64_t dispatched_ops = counters[4];
-
-  uint64_t total_dispatch_slots = 8 * cycles_not_in_halt;
-  res.frontend_bound = (double)frontend_bubbles / total_dispatch_slots;
-  res.bad_speculation =
-      ((double)dispatched_ops - retired_ops) / total_dispatch_slots;
-  res.backend_bound = (double)backend_bubbles / total_dispatch_slots;
-  res.retiring = (double)retired_ops / total_dispatch_slots;
-  return res;
-}
-
 // collect counter mappings
 std::vector<counter_mapping> counter_mappings = {
 #define DEFINE_COUNTER(_name, _uarch, _type, _config)                          \
