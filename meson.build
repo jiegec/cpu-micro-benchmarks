@@ -74,6 +74,8 @@ progs = [
 	['phr_target_bits_location', true, false, true],
 	['pht_associativity', false, false, true],
 	['pht_index_tag_bits', false, false, true],
+	['pht_tag_bits_xor', false, false, true],
+	['pht_tag_bits_xor_phr', false, false, true],
 	['ras_size', false, true, true],
 	['rob_size', false, false, true],
 ]
