@@ -55,7 +55,6 @@ DEFINE_COUNTER(cond_branch_misses, firestorm, PERF_TYPE_FIRESTORM, 0xc5)
 DEFINE_COUNTER_RANGE(branch_misses, arm64, PERF_TYPE_RAW, 0x22)
 
 // qualcomm oryon
-// https://arxiv.org/pdf/2411.13900
 // discovered via find_branch_misses_pmu tool
 DEFINE_COUNTER(cond_branch_misses, oryon, PERF_TYPE_RAW, 0x400)
 

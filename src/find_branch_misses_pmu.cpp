@@ -8,7 +8,6 @@
 #include <unistd.h>
 #include <vector>
 
-// https://arxiv.org/pdf/2411.13900
 // generated in find_branch_misses_pmu_gen.cpp
 // args: loop count, buffer
 typedef void (*gadget)(size_t, uint32_t *);

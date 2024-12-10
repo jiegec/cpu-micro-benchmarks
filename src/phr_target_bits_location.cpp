@@ -7,7 +7,6 @@
 #include <unistd.h>
 #include <vector>
 
-// https://arxiv.org/abs/2411.13900
 // defined in gen_phr_target_bits_location_test()
 // args: loop count, buffer
 typedef void (*gadget)(size_t, uint32_t *);

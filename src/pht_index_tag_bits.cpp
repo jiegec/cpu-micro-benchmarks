@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <vector>
 
-// https://arxiv.org/pdf/2411.13900
 // defined in gen_pht_index_tag_bits_test()
 // args: loop count, buffer
 typedef void (*gadget)(size_t, uint32_t *);
