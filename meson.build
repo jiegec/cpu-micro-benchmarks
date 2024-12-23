@@ -71,6 +71,7 @@ progs = [
 	['elimination', false, true, true],
 	['find_branch_misses_pmu', false, false, true],
 	['ghr_size', false, true, true],
+	['itlb_size', false, true, true],
 	['phr_branch_bits_location', true, false, true],
 	['phr_size', false, true, true],
 	['phr_target_bits_location', true, false, true],
