@@ -71,4 +71,8 @@ DEFINE_COUNTER_RANGE(instructions, all, PERF_TYPE_HARDWARE,
 DEFINE_COUNTER_RANGE(branch_misses, all, PERF_TYPE_HARDWARE,
                      PERF_COUNT_HW_BRANCH_MISSES)
 
+// counter per cycle
+DEFINE_COMPUTED_COUNTER_RANGE(instructions_per_cycle, counter_per_cycle, all,
+                              compute_counter_per_cycle, instructions, cycles)
+
 #endif
