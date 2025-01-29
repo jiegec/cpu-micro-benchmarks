@@ -29,7 +29,8 @@
 
 // utilities
 std::map<const char *, size_t> get_cache_sizes();
-char **generate_random_pointer_chasing(size_t size);
+char **generate_random_pointer_chasing(size_t size,
+                                       size_t granularity = (size_t)-1);
 
 // get time or cycles
 // unit: ns or cycle
@@ -108,12 +109,14 @@ extern bool nasm;
 void define_gadgets_array(FILE *fp, const char *name);
 void add_gadget(FILE *fp, const char *format, ...);
 void emit_nasm_nops(FILE *fp, int repeat);
+void emit_multibyte_nops(FILE *fp, int length);
 // load address to register on arm64
 void arm64_la(FILE *fp, int reg, const char *format, ...);
 
 // convert virtual address to physical
 int virt_to_phys_user(uintptr_t *paddr, uintptr_t vaddr);
 
+// phr length
 #if defined(APPLE_M1_FIRESTORM)
 #define PHR_BRANCHES 100
 #define PHRB_BRANCHES 28

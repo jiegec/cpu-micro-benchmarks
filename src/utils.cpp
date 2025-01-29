@@ -85,16 +85,21 @@ uint64_t get_time() {
   return (uint64_t)tv.tv_sec * 1000000000 + (uint64_t)tv.tv_usec * 1000;
 }
 
-char **generate_random_pointer_chasing(size_t size) {
-  int page_size = getpagesize();
-  if (size < (size_t)page_size) {
+char **generate_random_pointer_chasing(size_t size, size_t granularity) {
+  if (granularity == (size_t)-1) {
+    // use page size as granularity
+    granularity = getpagesize();
+  }
+
+  if (size < granularity) {
     return NULL;
   }
 
-  int page_pointer_count = page_size / sizeof(char *);
+  // number of pointers within each `granularity` bytes
+  int pointer_count = granularity / sizeof(char *);
   int count = size / sizeof(char *);
-  // every page one pointer
-  int index_count = size / page_size;
+  // every `granularity` bytes has one pointer
+  int index_count = size / granularity;
   char **buffer = new char *[count];
   int *index = new int[index_count];
 
@@ -115,11 +120,11 @@ char **generate_random_pointer_chasing(size_t size) {
 
   // init circular list
   for (int i = 0; i < index_count - 1; i++) {
-    buffer[index[i] * page_pointer_count] =
-        (char *)&buffer[index[i + 1] * page_pointer_count];
+    buffer[index[i] * pointer_count] =
+        (char *)&buffer[index[i + 1] * pointer_count];
   }
-  buffer[index[index_count - 1] * page_pointer_count] =
-      (char *)&buffer[index[0] * page_pointer_count];
+  buffer[index[index_count - 1] * pointer_count] =
+      (char *)&buffer[index[0] * pointer_count];
 
   delete[] index;
 
@@ -324,16 +329,15 @@ struct counter_mapping {
   uint32_t type;
   uint64_t config;
 
-  // for subtract fallback
-  // name = name1 - name2
-  bool subtract;
-  const char *name1;
-  const char *name2;
-
   // for computed counter
   const char *source_counters;
   void *compute_fn;
 };
+
+static uint64_t compute_subtract(const std::vector<uint64_t> counters) {
+  assert(counters.size() == 2);
+  return counters[0] - counters[1];
+}
 
 static counter_per_cycle
 compute_counter_per_cycle(const std::vector<uint64_t> counters) {
@@ -347,23 +351,17 @@ compute_counter_per_cycle(const std::vector<uint64_t> counters) {
 // collect counter mappings
 std::vector<counter_mapping> counter_mappings = {
 #define DEFINE_COUNTER(_name, _uarch, _type, _config)                          \
-  counter_mapping{#_name, _uarch, _uarch, _type, _config,                      \
-                  false,  NULL,   NULL,   NULL,  NULL},
+  counter_mapping{#_name, _uarch, _uarch, _type, _config, NULL, NULL},
 #define DEFINE_COUNTER_RANGE(_name, _uarch, _type, _config)                    \
-  counter_mapping{#_name, _uarch##_begin, _uarch##_end, _type, _config,        \
-                  false,  NULL,           NULL,         NULL,  NULL},
-#define DEFINE_COUNTER_SUBTRACT(_name, _name1, _name2)                         \
-  counter_mapping{#_name, all_begin, all_end, 0,    0,                         \
-                  true,   #_name1,   #_name2, NULL, NULL},
+  counter_mapping{#_name,  _uarch##_begin, _uarch##_end, _type,                \
+                  _config, NULL,           NULL},
 #define DEFINE_COMPUTED_COUNTER(_name, _ret_type, _uarch, _fn, ...)            \
-  counter_mapping{#_name, _uarch, _uarch,       0,          0, false,          \
-                  NULL,   NULL,   #__VA_ARGS__, (void *)_fn},
+  counter_mapping{#_name, _uarch, _uarch, 0, 0, #__VA_ARGS__, (void *)_fn},
 #define DEFINE_COMPUTED_COUNTER_RANGE(_name, _ret_type, _uarch, _fn, ...)      \
-  counter_mapping{#_name, _uarch##_begin, _uarch##_end, 0,          0, false,  \
-                  NULL,   NULL,           #__VA_ARGS__, (void *)_fn},
+  counter_mapping{#_name, _uarch##_begin, _uarch##_end, 0,                     \
+                  0,      #__VA_ARGS__,   (void *)_fn},
 #include "include/counters_mapping.h"
 #undef DEFINE_COUNTER
-#undef DEFINE_COUNTER_SUBTRACT
 #undef DEFINE_COMPUTED_COUNTER_RANGE
 };
 
@@ -376,9 +374,6 @@ struct counter_mapping find_mapping(const char *name) {
       if (mapping.source_counters) {
         printf("Found perf counter for %s: computed from %s\n", name,
                mapping.source_counters);
-      } else if (mapping.subtract) {
-        printf("Found perf counter for %s: %s - %s\n", name, mapping.name1,
-               mapping.name2);
       } else {
         printf("Found perf counter for %s: type=0x%x config=0x%lx\n", name,
                mapping.type, mapping.config);
@@ -412,17 +407,7 @@ std::vector<std::string> split_counters(const std::string &counters) {
   void setup_perf_##name() {                                                   \
     fprintf(stderr, "Recording PMU counter for %s\n", #name);                  \
     counter_mapping mapping = find_mapping(#name);                             \
-    if (mapping.subtract) {                                                    \
-      counter_mapping mapping1 = find_mapping(mapping.name1);                  \
-      counter_mapping mapping2 = find_mapping(mapping.name2);                  \
-      assert(!mapping1.subtract);                                              \
-      assert(!mapping2.subtract);                                              \
-      perf_counter_##name = setup_perf_common(mapping1.type, mapping1.config); \
-      perf_counter_##name##_2 =                                                \
-          setup_perf_common(mapping2.type, mapping2.config);                   \
-    } else {                                                                   \
-      perf_counter_##name = setup_perf_common(mapping.type, mapping.config);   \
-    }                                                                          \
+    perf_counter_##name = setup_perf_common(mapping.type, mapping.config);     \
   }
 
 #define DECLARE_COMPUTED_COUNTER(_type, name)                                  \
@@ -697,16 +682,74 @@ top_down perf_end_top_down() { return top_down{}; }
 #elif defined(__APPLE__) && defined(IOS)
 // ios
 
-#define DEFINE_COUNTER(name)                                                   \
-  uint64_t perf_read_##name() { return get_time(); }                           \
-  void setup_perf_##name() { printf("Using time instead of PMU\n"); }          \
-  void setup_perf_##name##_per_cycle() {}                                      \
-  counter_per_cycle perf_read_##name##_per_cycle() {                           \
-    return counter_per_cycle();                                                \
-  }
+// Adapted from
+// https://github.com/junjie1475/iOS-microbench/blob/main/iOS-microbench/main.c
 
-#include "include/counters.h"
+struct proc_threadcounts_data {
+  uint64_t ptcd_instructions;
+  uint64_t ptcd_cycles;
+  uint64_t ptcd_user_time_mach;
+  uint64_t ptcd_system_time_mach;
+  uint64_t ptcd_energy_nj;
+};
+
+struct proc_threadcounts {
+  uint16_t ptc_len;
+  uint16_t ptc_reserved0;
+  uint32_t ptc_reserved1;
+  struct proc_threadcounts_data ptc_counts[];
+};
+
+// https://github.com/apple-oss-distributions/xnu/blob/aca3beaa3dfbd42498b42c5e5ce20a938e6554e5/bsd/sys/proc_info.h#L927
+#define PROC_PIDTHREADCOUNTS 34
+#define PROC_PIDTHREADCOUNTS_SIZE (sizeof(struct proc_threadcounts))
+extern "C" int proc_pidinfo(int pid, int flavor, uint64_t arg, void *buffer,
+                            int buffersize);
+
+// only support cycles and instructions
+
+static uint64_t tid;
+static int countsize;
+static pid_t pid;
+static proc_threadcounts *rbuf = NULL;
+
+void setup_perf_common() {
+  pid = getpid();
+  printf("Got pid %d\n", pid);
+  // 2: p and e, two perf levels
+  countsize = sizeof(struct proc_threadcounts) +
+              2 * sizeof(struct proc_threadcounts_data);
+  rbuf = (struct proc_threadcounts *)malloc(countsize);
+  memset(rbuf, 0, countsize);
+  pthread_threadid_np(pthread_self(), &tid);
+  printf("Got tid %d\n", tid);
+}
+
+uint64_t perf_read_cycles() {
+  proc_pidinfo(pid, PROC_PIDTHREADCOUNTS, tid, rbuf, countsize);
+  // read all cores
+  return rbuf->ptc_counts[0].ptcd_cycles + rbuf->ptc_counts[1].ptcd_cycles;
+}
+
+uint64_t perf_read_instructions() {
+  proc_pidinfo(pid, PROC_PIDTHREADCOUNTS, tid, rbuf, countsize);
+  // read all cores
+  return rbuf->ptc_counts[0].ptcd_instructions +
+         rbuf->ptc_counts[1].ptcd_instructions;
+}
+
+void setup_perf_cycles() { setup_perf_common(); }
+
+void setup_perf_instructions() { setup_perf_common(); }
+
+// provide dummy impl
+
+#define DEFINE_COUNTER(name, event)                                            \
+  uint64_t perf_read_##name() { return 0; }                                    \
+  void setup_perf_##name() {}
+#include "include/counters_mapping.h"
 #undef DEFINE_COUNTER
+
 #endif
 
 void setup_time_or_cycles() { setup_perf_cycles(); }
@@ -715,8 +758,8 @@ uint64_t get_time_or_cycles() {
 #ifdef __linux__
   if (perf_counter_cycles.fd >= 0) {
 #elif defined(__APPLE__) && defined(IOS)
-  // no pmu
-  if (false) {
+  // perf initialized
+  if (rbuf) {
 #elif defined(__APPLE__) && !defined(IOS)
   // perf initialized
   if (lib_kperf != NULL) {
@@ -751,6 +794,12 @@ void bind_to_core() {
   fprintf(stderr, "Bind to E core on macOS\n");
   pthread_set_qos_class_self_np(QOS_CLASS_BACKGROUND, 0);
 #endif
+#elif defined(IOS)
+  // TODO: make it configurable
+  // it is also not very reliable
+  // p core
+  fprintf(stderr, "Bind to P core on iOS\n");
+  pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
 #endif
 }
 
@@ -809,6 +858,33 @@ void emit_nasm_nops(FILE *fp, int repeat) {
   fprintf(fp, "\t%%rep %d\n", repeat % 1000000);
   fprintf(fp, "\tnop\n");
   fprintf(fp, "\t%%endrep\n");
+}
+
+void emit_multibyte_nops(FILE *fp, int length) {
+  std::vector<std::vector<uint8_t>> encodings = {
+      {0x90},
+      {0x66, 0x90},
+      {0x0F, 0x1F, 0x00},
+      {0x0F, 0x1F, 0x40, 0x00},
+      {0x0F, 0x1F, 0x44, 0x00, 0x00},
+      {0x66, 0x0F, 0x1F, 0x44, 0x00, 0x00},
+      {0x0F, 0x1F, 0x80, 0x00, 0x00, 0x00, 0x00},
+      {0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00},
+      {0x66, 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00},
+      {0x66, 0x66, 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00},
+      {0x66, 0x66, 0x66, 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00},
+      {0x66, 0x66, 0x66, 0x66, 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00, 0x00},
+      {0x66, 0x66, 0x66, 0x66, 0x66, 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00, 0x00,
+       0x00},
+      {0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x0F, 0x1F, 0x84, 0x00, 0x00, 0x00,
+       0x00, 0x00},
+      {0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x0F, 0x1F, 0x84, 0x00, 0x00,
+       0x00, 0x00, 0x00},
+  };
+  assert(length >= 1 && length <= 15);
+  for (auto byte : encodings[length - 1]) {
+    fprintf(fp, "\t.byte 0x%x\n", byte);
+  }
 }
 
 void arm64_la(FILE *fp, int reg, const char *format, ...) {
