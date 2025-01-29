@@ -242,8 +242,8 @@ public:
     uint32_t *p = (uint32_t *)cur;
     *p = 0x14000000;
     ssize_t imm = ((ssize_t)target - (ssize_t)cur);
-    assert(imm < (1 << 28));
-    assert(imm >= -(1 << 28));
+    assert(imm < (1 << 27));
+    assert(imm >= -(1 << 27));
     assert((imm & 3) == 0);
     *p |= (((size_t)imm & 0xfffffff) >> 2);
     cur += 4;
