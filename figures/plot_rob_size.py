@@ -5,7 +5,7 @@ size_data = []
 min_data = []
 avg_data = []
 
-with open('rob_size.csv', newline='') as f:
+with open('../run_results/rob_size.csv', newline='') as f:
 	r = csv.DictReader(f)
 	for row in r:
 		size_data.append(float(row["size"]))
@@ -17,4 +17,4 @@ plt.plot(size_data, avg_data, label="avg")
 plt.ylabel('Time')
 plt.xlabel('Instruction Block Size')
 plt.legend()
-plt.savefig('plot_rob_size.png')
+plt.savefig('../run_results/plot_rob_size.png')

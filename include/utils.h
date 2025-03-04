@@ -129,5 +129,8 @@ int virt_to_phys_user(uintptr_t *paddr, uintptr_t vaddr);
 #ifndef PHR_BRANCHES
 #define PHR_BRANCHES 64
 #endif
+#ifndef PHRB_BRANCHES
+#define PHRB_BRANCHES 32
+#endif
 
 #endif
