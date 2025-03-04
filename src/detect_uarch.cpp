@@ -48,6 +48,9 @@ int main() {
   case tsv110:
     printf("-DHISILICON_TSV110\n");
     break;
+  case tsv200m:
+    printf("-DHISILICON_TSV200M\n");
+    break;
   case unknown_arm64:
     break;
   case golden_cove:
@@ -69,6 +72,10 @@ int main() {
   case broadwell:
     printf("-DINTEL\n");
     printf("-DINTEL_BROADWELL\n");
+    break;
+  case whiskylake:
+    printf("-DINTEL\n");
+    printf("-DINTEL_WHISKYLAKE\n");
     break;
   case zen1:
     printf("-DAMD\n");

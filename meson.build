@@ -60,14 +60,14 @@ if cpu == 'x86_64'
 		link_with: utils,
 		install: true)
 elif cpu == 'aarch64'
-	gather_neon = executable('gather_neon',
-		'src/gather_aarch64.cpp',
-		cpp_args: ['-DNEON', '-mfpu=neon'],
-		link_with: utils,
-		install: true)
+	# gather_neon = executable('gather_neon',
+	# 	'src/gather_aarch64.cpp',
+	# 	cpp_args: ['-DNEON'],
+	# 	link_with: utils,
+	# 	install: true)
 	gather_sve = executable('gather_sve',
 		'src/gather_aarch64.cpp',
-		cpp_args: ['-DSVE', '-mfpu=sve'],
+		cpp_args: ['-DSVE', '-march=armv8.6-a+sve'],
 		link_with: utils,
 		install: true)
 endif
