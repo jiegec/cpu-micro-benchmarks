@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
 
   bind_to_core();
   setup_time_or_cycles();
-  FILE *fp = fopen("../run/resultsrob_size.csv", "w");
+  FILE *fp = fopen("../run_results/rob_size.csv", "w");
   assert(fp);
 
 #ifdef GEM5
