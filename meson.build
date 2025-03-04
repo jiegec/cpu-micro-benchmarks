@@ -59,6 +59,17 @@ if cpu == 'x86_64'
 		cpp_args: ['-DAVX512', '-mavx512f'],
 		link_with: utils,
 		install: true)
+elif cpu == 'aarch64'
+	gather_neon = executable('gather_neon',
+		'src/gather_aarch64.cpp',
+		cpp_args: ['-DNEON', '-mfpu=neon'],
+		link_with: utils,
+		install: true)
+	gather_sve = executable('gather_sve',
+		'src/gather_aarch64.cpp',
+		cpp_args: ['-DSVE', '-mfpu=sve'],
+		link_with: utils,
+		install: true)
 endif
 
 cpp = meson.get_compiler('cpp')
