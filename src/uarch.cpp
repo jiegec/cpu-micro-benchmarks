@@ -113,6 +113,9 @@ enum uarch get_uarch_inner() {
     fprintf(stderr, "Intel Broadwell detected\n");
     return broadwell;
     // https://en.wikichip.org/wiki/amd/cpuid
+  } else if (family == 6 && model == 142){
+    fprintf(stderr, "Intel Whiskylake detected\n");
+    return skylake;
   } else if (family == 23 && model == 1) {
     fprintf(stderr, "AMD Zen 1 detected\n");
     return zen1;

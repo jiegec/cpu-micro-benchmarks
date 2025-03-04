@@ -23,7 +23,7 @@ enum uarch {
   neoverse_v2,
   // hisilicon
   tsv110,
-
+  tsv200m,
   unknown_arm64,
   arm64_begin = firestorm,
   arm64_end = unknown_arm64,
@@ -41,6 +41,7 @@ enum uarch {
   sunny_cove,
   skylake,
   broadwell,
+  whiskylake,
   // amd
   zen1,
   zen2,
