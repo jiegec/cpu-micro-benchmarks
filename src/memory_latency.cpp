@@ -79,7 +79,7 @@ void test(int size, int warmup, int iterations, bool perf) {
 }
 
 int main(int argc, char *argv[]) {
-  fp = fopen("memory_latency.csv", "w");
+  fp = fopen("../run_results/memory_latency.csv", "w");
   assert(fp);
 
   int warmup = 50000;

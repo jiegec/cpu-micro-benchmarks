@@ -150,6 +150,9 @@ enum uarch get_uarch_inner() {
   } else if (implementer == 0x48 && part == 0xd01) {
     fprintf(stderr, "Hisilicon TSV110 detected\n");
     return tsv110;
+  } else if (implementer == 0x00 && part == 0xd02) {
+    fprintf(stderr, "HiSilicon TSV200M detected\n");
+    return tsv200m;
   }
 
 #ifdef __APPLE__
