@@ -70,7 +70,48 @@ elif cpu == 'aarch64'
 		cpp_args: ['-DSVE', '-march=armv8.6-a+sve'],
 		link_with: utils,
 		install: true)
+	sve_fp32_add = executable('sve_fp32_add',
+		'src/sve_fp32_add.cpp',
+		cpp_args: ['-DSVE_FP32_ADD', '-march=armv8.6-a+sve'],
+		link_with: utils,
+		install: true)
+	sve_fp64_add = executable('sve_fp64_add',
+		'src/sve_fp64_add.cpp',
+		cpp_args: ['-DSVE_FP64_ADD', '-march=armv8.6-a+sve'],
+		link_with: utils,
+		install: true)
+	sve_fp32_fma = executable('sve_fp32_fma',
+		'src/sve_fp32_fma.cpp',
+		cpp_args: ['-DSVE_FP32_FMA', '-march=armv8.6-a+sve'],
+		link_with: utils,
+		install: true)
+	sve_fp64_fma = executable('sve_fp64_fma',
+		'src/sve_fp64_fma.cpp',
+		cpp_args: ['-DSVE_FP64_FMA', '-march=armv8.6-a+sve'],
+		link_with: utils,
+		install: true)
+	neon_fp32_add = executable('neon_fp32_add',
+		'src/neon_fp32_add.cpp',
+		cpp_args: ['-DNEON_FP32_ADD'],
+		link_with: utils,
+		install: true)
+	neon_fp64_add = executable('neon_fp64_add',
+		'src/neon_fp64_add.cpp',
+		cpp_args: ['-DNEON_FP64_ADD'],
+		link_with: utils,
+		install: true)
+	neon_fp32_fma = executable('neon_fp32_fma',
+		'src/neon_fp32_fma.cpp',
+		cpp_args: ['-DNEON_FP32_FMA'],
+		link_with: utils,
+		install: true)
+	neon_fp64_fma = executable('neon_fp64_fma',
+		'src/neon_fp64_fma.cpp',
+		cpp_args: ['-DNEON_FP64_FMA'],
+		link_with: utils,
+		install: true)
 endif
+
 
 cpp = meson.get_compiler('cpp')
 cpu = target_machine.cpu_family()

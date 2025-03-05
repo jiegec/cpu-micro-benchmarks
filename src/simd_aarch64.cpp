@@ -9,35 +9,223 @@ uint32_t array[n] = {0};
 const int repeat = 1200;
 const int unroll = 16;
 
-void test_1(uint32_t *indices) {
-#ifdef SVE
-  uint32_t tmp[svcntw()];
+void test1(float *indices) {
+#ifdef SVE_FP32_ADD
+  float tmp[svcntw()];
   svbool_t pg = svptrue_b32();
-  svuint32_t index = svld1_u32(pg, indices);
-  for (int i = 0; i < repeat; i++) {
-    index = svld1_gather_u32index_u32(pg, array, index);
-    index = svld1_gather_u32index_u32(pg, array, index);
-    index = svld1_gather_u32index_u32(pg, array, index);
-    index = svld1_gather_u32index_u32(pg, array, index);
-    index = svld1_gather_u32index_u32(pg, array, index);
-    index = svld1_gather_u32index_u32(pg, array, index);
-    index = svld1_gather_u32index_u32(pg, array, index);
-    index = svld1_gather_u32index_u32(pg, array, index);
-    index = svld1_gather_u32index_u32(pg, array, index);
-    index = svld1_gather_u32index_u32(pg, array, index);
-    index = svld1_gather_u32index_u32(pg, array, index);
-    index = svld1_gather_u32index_u32(pg, array, index);
-    index = svld1_gather_u32index_u32(pg, array, index);
-    index = svld1_gather_u32index_u32(pg, array, index);
-    index = svld1_gather_u32index_u32(pg, array, index);
-    index = svld1_gather_u32index_u32(pg, array, index);
+  svfloat32_t v0 = svdup_f32(1.0);
+  svfloat32_t v1 = svld1_f32(pg, indices);
+  for(int i = 0; i < n; i++){
+    v1 = svadd_f32_z(pg, v1, v0);
+    v1 = svadd_f32_z(pg, v1, v0);
+    v1 = svadd_f32_z(pg, v1, v0);
+    v1 = svadd_f32_z(pg, v1, v0);
+    v1 = svadd_f32_z(pg, v1, v0);
+    v1 = svadd_f32_z(pg, v1, v0);
+    v1 = svadd_f32_z(pg, v1, v0);
+    v1 = svadd_f32_z(pg, v1, v0);
+    v1 = svadd_f32_z(pg, v1, v0);
+    v1 = svadd_f32_z(pg, v1, v0);
+    v1 = svadd_f32_z(pg, v1, v0);
+    v1 = svadd_f32_z(pg, v1, v0);
+    v1 = svadd_f32_z(pg, v1, v0);
+    v1 = svadd_f32_z(pg, v1, v0);
+    v1 = svadd_f32_z(pg, v1, v0);
+    v1 = svadd_f32_z(pg, v1, v0);
   }
-  svst1_u32(pg, tmp, index); // 存储向量到数组
+  svst1_f32(pg, tmp, v1);
   res += tmp[0];
 #endif
-#ifdef NEON
-  
+#ifdef NEON_FP32_ADD
+  float tmp[4];
+  float32x4_t v0 = vdupq_n_f32(1.0);
+  float32x4_t v1 = vld1q_f32(indices);
+  for(int i = 0; i < n; i++){
+    v1 = vaddq_f32(v1, v0);
+    v1 = vaddq_f32(v1, v0);
+    v1 = vaddq_f32(v1, v0);
+    v1 = vaddq_f32(v1, v0);
+    v1 = vaddq_f32(v1, v0);
+    v1 = vaddq_f32(v1, v0);
+    v1 = vaddq_f32(v1, v0);
+    v1 = vaddq_f32(v1, v0);
+    v1 = vaddq_f32(v1, v0);
+    v1 = vaddq_f32(v1, v0);
+    v1 = vaddq_f32(v1, v0);
+    v1 = vaddq_f32(v1, v0);
+    v1 = vaddq_f32(v1, v0);
+    v1 = vaddq_f32(v1, v0);
+    v1 = vaddq_f32(v1, v0);
+    v1 = vaddq_f32(v1, v0);
+  }
+  vst1q_f32(tmp, v1);
+  res += tmp[0];
 #endif
+}
+
+void test1(double *indices) {
+  #ifdef SVE_FP64_ADD
+  double tmp[svcntd()];
+  svbool_t pg = svptrue_b64();
+  svfloat64_t v0 = svdup_f64(1.0);
+  svfloat64_t v1 = svld1_f64(pg, indices);
+  for(int i = 0; i < n; i++){
+    v1 = svadd_f64_z(pg, v1, v0);
+    v1 = svadd_f64_z(pg, v1, v0);
+    v1 = svadd_f64_z(pg, v1, v0);
+    v1 = svadd_f64_z(pg, v1, v0);
+    v1 = svadd_f64_z(pg, v1, v0);
+    v1 = svadd_f64_z(pg, v1, v0);
+    v1 = svadd_f64_z(pg, v1, v0);
+    v1 = svadd_f64_z(pg, v1, v0);
+    v1 = svadd_f64_z(pg, v1, v0);
+    v1 = svadd_f64_z(pg, v1, v0);
+    v1 = svadd_f64_z(pg, v1, v0);
+    v1 = svadd_f64_z(pg, v1, v0);
+    v1 = svadd_f64_z(pg, v1, v0);
+    v1 = svadd_f64_z(pg, v1, v0);
+    v1 = svadd_f64_z(pg, v1, v0);
+    v1 = svadd_f64_z(pg, v1, v0);
+  }
+  svst1_f64(pg, tmp, v1);
+  res += tmp[0];
+  #endif
+
+  #ifdef NEON_FP64_ADD
+  double tmp[2];
+  float64x2_t v0 = vdupq_n_f64(1.0);
+  float64x2_t v1 = vld1q_f64(indices);
+  for(int i = 0; i < n; i++){
+    v1 = vaddq_f64(v1, v0);
+    v1 = vaddq_f64(v1, v0);
+    v1 = vaddq_f64(v1, v0);
+    v1 = vaddq_f64(v1, v0);
+    v1 = vaddq_f64(v1, v0);
+    v1 = vaddq_f64(v1, v0);
+    v1 = vaddq_f64(v1, v0);
+    v1 = vaddq_f64(v1, v0);
+    v1 = vaddq_f64(v1, v0);
+    v1 = vaddq_f64(v1, v0);
+    v1 = vaddq_f64(v1, v0);
+    v1 = vaddq_f64(v1, v0);
+    v1 = vaddq_f64(v1, v0);
+    v1 = vaddq_f64(v1, v0);
+    v1 = vaddq_f64(v1, v0);
+    v1 = vaddq_f64(v1, v0);
+  }
+  vst1q_f64(tmp, v1);
+  res += tmp[0];
+  #endif
+}
+
+void test1(float *indices) {
+  #ifdef SVE_FP32_FMA
+  float tmp[svcntw()];
+  svbool_t pg = svptrue_b32();
+  svfloat32_t v0 = svdup_f32(1.0);
+  svfloat32_t v1 = svld1_f32(pg, indices);
+  for(int i = 0; i < n; i++){
+    v1 = svmla_n_f32_z(pg, v1, v0, 1.0);
+    v1 = svmla_n_f32_z(pg, v1, v0, 1.0);
+    v1 = svmla_n_f32_z(pg, v1, v0, 1.0);
+    v1 = svmla_n_f32_z(pg, v1, v0, 1.0);
+    v1 = svmla_n_f32_z(pg, v1, v0, 1.0);
+    v1 = svmla_n_f32_z(pg, v1, v0, 1.0);
+    v1 = svmla_n_f32_z(pg, v1, v0, 1.0);
+    v1 = svmla_n_f32_z(pg, v1, v0, 1.0);
+    v1 = svmla_n_f32_z(pg, v1, v0, 1.0);
+    v1 = svmla_n_f32_z(pg, v1, v0, 1.0);
+    v1 = svmla_n_f32_z(pg, v1, v0, 1.0);
+    v1 = svmla_n_f32_z(pg, v1, v0, 1.0);
+    v1 = svmla_n_f32_z(pg, v1, v0, 1.0);
+    v1 = svmla_n_f32_z(pg, v1, v0, 1.0);
+    v1 = svmla_n_f32_z(pg, v1, v0, 1.0);
+    v1 = svmla_n_f32_z(pg, v1, v0, 1.0);
+  }
+  svst1_f32(pg, tmp, v1);
+  res += tmp[0];
+  #endif
+
+  #ifdef NEON_FP32_FMA
+    float tmp[4];
+    float32x2_t v0 = vdupq_n_f32(1.0);
+    float32x2_t v1 = vld1q_f32(indices);
+    for(int i = 0; i < n; i++){
+      v1 = vfmaq_n_f32(v1, v0, 1.0);
+      v1 = vfmaq_n_f32(v1, v0, 1.0);
+      v1 = vfmaq_n_f32(v1, v0, 1.0);
+      v1 = vfmaq_n_f32(v1, v0, 1.0);
+      v1 = vfmaq_n_f32(v1, v0, 1.0);
+      v1 = vfmaq_n_f32(v1, v0, 1.0);
+      v1 = vfmaq_n_f32(v1, v0, 1.0);
+      v1 = vfmaq_n_f32(v1, v0, 1.0);
+      v1 = vfmaq_n_f32(v1, v0, 1.0);
+      v1 = vfmaq_n_f32(v1, v0, 1.0);
+      v1 = vfmaq_n_f32(v1, v0, 1.0);
+      v1 = vfmaq_n_f32(v1, v0, 1.0);
+      v1 = vfmaq_n_f32(v1, v0, 1.0);
+      v1 = vfmaq_n_f32(v1, v0, 1.0);
+      v1 = vfmaq_n_f32(v1, v0, 1.0);
+      v1 = vfmaq_n_f32(v1, v0, 1.0);
+    }
+    vst1q_f32(tmp, v1);
+    res += tmp[0];
+  #endif
+}
+
+void test1(double *indices) {
+  #ifdef SVE_FP64_FMA
+  double tmp[svcntd()];
+  svbool_t pg = svptrue_b64();
+  svfloat64_t v0 = svdup_f64(1.0);
+  svfloat64_t v1 = svld1_f64(pg, indices);
+  for(int i = 0; i < n; i++){
+    v1 = svmla_n_f64_z(pg, v1, v0, 1.0);
+    v1 = svmla_n_f64_z(pg, v1, v0, 1.0);
+    v1 = svmla_n_f64_z(pg, v1, v0, 1.0);
+    v1 = svmla_n_f64_z(pg, v1, v0, 1.0);
+    v1 = svmla_n_f64_z(pg, v1, v0, 1.0);
+    v1 = svmla_n_f64_z(pg, v1, v0, 1.0);
+    v1 = svmla_n_f64_z(pg, v1, v0, 1.0);
+    v1 = svmla_n_f64_z(pg, v1, v0, 1.0);
+    v1 = svmla_n_f64_z(pg, v1, v0, 1.0);
+    v1 = svmla_n_f64_z(pg, v1, v0, 1.0);
+    v1 = svmla_n_f64_z(pg, v1, v0, 1.0);
+    v1 = svmla_n_f64_z(pg, v1, v0, 1.0);
+    v1 = svmla_n_f64_z(pg, v1, v0, 1.0);
+    v1 = svmla_n_f64_z(pg, v1, v0, 1.0);
+    v1 = svmla_n_f64_z(pg, v1, v0, 1.0);
+    v1 = svmla_n_f64_z(pg, v1, v0, 1.0);
+  }
+  svst1_f64(pg, tmp, v1);
+  res += tmp[0];
+  #endif
+
+  #ifdef NEON_FP64_FMA
+  double tmp[2];
+  float64x2_t v0 = vdupq_n_f64(1.0);
+  float64x2_t v1 = vld1q_f64(indices);
+  for(int i = 0; i < n; i++){
+    v1 = vfmaq_n_f64(v1, v0, 1.0);
+    v1 = vfmaq_n_f64(v1, v0, 1.0);
+    v1 = vfmaq_n_f64(v1, v0, 1.0);
+    v1 = vfmaq_n_f64(v1, v0, 1.0);
+    v1 = vfmaq_n_f64(v1, v0, 1.0);
+    v1 = vfmaq_n_f64(v1, v0, 1.0);
+    v1 = vfmaq_n_f64(v1, v0, 1.0);
+    v1 = vfmaq_n_f64(v1, v0, 1.0);
+    v1 = vfmaq_n_f64(v1, v0, 1.0);
+    v1 = vfmaq_n_f64(v1, v0, 1.0);
+    v1 = vfmaq_n_f64(v1, v0, 1.0);
+    v1 = vfmaq_n_f64(v1, v0, 1.0);
+    v1 = vfmaq_n_f64(v1, v0, 1.0);
+    v1 = vfmaq_n_f64(v1, v0, 1.0);
+    v1 = vfmaq_n_f64(v1, v0, 1.0);
+    v1 = vfmaq_n_f64(v1, v0, 1.0);
+  }
+  vst1q_f64(tmp, v1);
+  res += tmp[0];
+  #endif
 }
 
 int main(int argc, char *argv[]) {
@@ -56,31 +244,41 @@ int main(int argc, char *argv[]) {
   setup_perf_cycles();
 
   // int indices[] = {0, 1, 2, 3, 4, 5, 6, 7};
-#ifdef NEON
+#if defined(NEON_FP32_ADD) || defined(NEON_FP32_FMA)
   const int vlen = 4;
+  float indices[vlen];
 #endif
 
-#ifdef SVE
+#if defined(NEON_FP64_ADD) || defined(NEON_FP64_FMA)
+  const int vlen = 2;
+  double indices[vlen];
+#endif
+
+#if defined(SVE_FP32_ADD) || defined(SVE_FP32_FMA)
   const int vlen = svcntw();
+  float indices[vlen];
 #endif
-  uint32_t indices[vlen];
-  srand(time(NULL));
+
+#if defined(SVE_FP64_ADD) || defined(SVE_FP64_FMA)
+  const int vlen = svcntd();
+  double indices[vlen];
+#endif
   for (int i = 0; i < vlen; i++) {
-    indices[i] = rand() % 32;
+    indices[i] = i + 1.0;
   }
 
-  printf("Numbers:");
-  for (int i = 0; i < vlen; i++) {
-    // generate patterns
-    printf(" %d", indices[i]);
-    array[indices[i]] = indices[i];
-  }
-  printf("\n");
+  // printf("Numbers:");
+  // for (int i = 0; i < vlen; i++) {
+  //   // generate patterns
+  //   printf(" %d", indices[i]);
+  //   array[indices[i]] = indices[i];
+  // }
+  // printf("\n");
 
   int warmup = 1000;
 
   for (int i = 0; i < warmup; i++) {
-    test_1(indices);
+    test1(indices);
   }
 
   int m = 50000;
@@ -88,7 +286,7 @@ int main(int argc, char *argv[]) {
   uint64_t instructions_before = perf_read_instructions();
 
   for (int i = 0; i < m; i++) {
-    test_1(indices);
+    test1(indices);
   }
 
   uint64_t cycles_after = perf_read_cycles();
