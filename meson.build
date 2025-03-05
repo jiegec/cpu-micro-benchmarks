@@ -4,6 +4,10 @@ cpp_args = []
 link_args = []
 cpu = target_machine.cpu_family()
 
+avx2_support = false
+avx512f_support = false
+sve_support = false
+
 if get_option('ios')
 	message('Configured for iOS')
 	cpp_args += ['-DIOS', '-std=c++11', '-DHOST_AARCH64', '-march=armv8.4-a']
@@ -20,9 +24,21 @@ else
 	foreach line : r.stderr().strip().split('\n')
 		message(line)
 	endforeach
-	foreach line : r.stdout().strip().split('\n')
-		cpp_args += [line]
+	foreach line : r.stdout().strip().split('\n') # check whether the line first char is -
+		if line[0] == '-'
+			cpp_args += [line]
+		elif line == 'AVX2 detected'
+			avx2_support = true
+		elif line == 'AVX512F detected'
+			avx512f_support = true
+		elif line == 'SVE detected'
+			sve_support = true
+		endif
 	endforeach
+	message('Got CXXFLAGS:', cpp_args)
+endif
+
+if cpu == 'x86_64'
 	message('Got CXXFLAGS:', cpp_args)
 endif
 
@@ -49,47 +65,53 @@ endforeach
 libs = []
 
 if cpu == 'x86_64'
-	gather_avx2 = executable('gather_avx2',
-		'src/gather.cpp',
-		cpp_args: ['-DAVX2', '-mavx2'],
-		link_with: utils,
-		install: true)
+	if avx2_support
+		gather_avx2 = executable('gather_avx2',
+			'src/gather.cpp',
+			cpp_args: ['-DAVX2', '-mavx2'],
+			link_with: utils,
+			install: true)
+	endif
+	if avx512f_support
 	gather_avx512 = executable('gather_avx512',
 		'src/gather.cpp',
 		cpp_args: ['-DAVX512', '-mavx512f'],
 		link_with: utils,
 		install: true)
+	endif
 elif cpu == 'aarch64'
 	# gather_neon = executable('gather_neon',
 	# 	'src/gather_aarch64.cpp',
 	# 	cpp_args: ['-DNEON'],
 	# 	link_with: utils,
 	# 	install: true)
-	gather_sve = executable('gather_sve',
-		'src/gather_aarch64.cpp',
-		cpp_args: ['-DSVE', '-march=armv8.6-a+sve'],
-		link_with: utils,
-		install: true)
-	sve_fp32_add = executable('sve_fp32_add',
-		'src/sve_fp32_add.cpp',
-		cpp_args: ['-DSVE_FP32_ADD', '-march=armv8.6-a+sve'],
-		link_with: utils,
-		install: true)
-	sve_fp64_add = executable('sve_fp64_add',
-		'src/sve_fp64_add.cpp',
-		cpp_args: ['-DSVE_FP64_ADD', '-march=armv8.6-a+sve'],
-		link_with: utils,
-		install: true)
-	sve_fp32_fma = executable('sve_fp32_fma',
-		'src/sve_fp32_fma.cpp',
-		cpp_args: ['-DSVE_FP32_FMA', '-march=armv8.6-a+sve'],
-		link_with: utils,
-		install: true)
-	sve_fp64_fma = executable('sve_fp64_fma',
-		'src/sve_fp64_fma.cpp',
-		cpp_args: ['-DSVE_FP64_FMA', '-march=armv8.6-a+sve'],
-		link_with: utils,
-		install: true)
+	if sve_support
+		gather_sve = executable('gather_sve',
+			'src/gather_aarch64.cpp',
+			cpp_args: ['-DSVE', '-march=armv8.6-a+sve'],
+			link_with: utils,
+			install: true)
+		sve_fp32_add = executable('sve_fp32_add',
+			'src/sve_fp32_add.cpp',
+			cpp_args: ['-DSVE_FP32_ADD', '-march=armv8.6-a+sve'],
+			link_with: utils,
+			install: true)
+		sve_fp64_add = executable('sve_fp64_add',
+			'src/sve_fp64_add.cpp',
+			cpp_args: ['-DSVE_FP64_ADD', '-march=armv8.6-a+sve'],
+			link_with: utils,
+			install: true)
+		sve_fp32_fma = executable('sve_fp32_fma',
+			'src/sve_fp32_fma.cpp',
+			cpp_args: ['-DSVE_FP32_FMA', '-march=armv8.6-a+sve'],
+			link_with: utils,
+			install: true)
+		sve_fp64_fma = executable('sve_fp64_fma',
+			'src/sve_fp64_fma.cpp',
+			cpp_args: ['-DSVE_FP64_FMA', '-march=armv8.6-a+sve'],
+			link_with: utils,
+			install: true)
+	endif
 	neon_fp32_add = executable('neon_fp32_add',
 		'src/neon_fp32_add.cpp',
 		cpp_args: ['-DNEON_FP32_ADD'],
