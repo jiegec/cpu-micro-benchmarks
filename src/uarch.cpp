@@ -101,6 +101,7 @@ enum uarch get_uarch_inner() {
         if (value.find("avx2") != std::string::npos && !avx2) {
           avx2 = true;
         }
+      } else if (key == "Features") {
         if (value.find("sve") != std::string::npos && !sve) {
           sve = true;
         }

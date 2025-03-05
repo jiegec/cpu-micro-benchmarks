@@ -1,5 +1,6 @@
 #include "include/utils.h"
 #include <arm_sve.h>
+#include <arm_neon.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -9,8 +10,8 @@ uint32_t array[n] = {0};
 const int repeat = 1200;
 const int unroll = 16;
 
-void test1(float *indices) {
 #ifdef SVE_FP32_ADD
+void test1(float *indices) {
   float tmp[svcntw()];
   svbool_t pg = svptrue_b32();
   svfloat32_t v0 = svdup_f32(1.0);
@@ -35,8 +36,11 @@ void test1(float *indices) {
   }
   svst1_f32(pg, tmp, v1);
   res += tmp[0];
+}
 #endif
+
 #ifdef NEON_FP32_ADD
+void test1(float *indices) {
   float tmp[4];
   float32x4_t v0 = vdupq_n_f32(1.0);
   float32x4_t v1 = vld1q_f32(indices);
@@ -60,11 +64,11 @@ void test1(float *indices) {
   }
   vst1q_f32(tmp, v1);
   res += tmp[0];
-#endif
 }
+#endif
 
-void test1(double *indices) {
   #ifdef SVE_FP64_ADD
+  void test1(double *indices) {
   double tmp[svcntd()];
   svbool_t pg = svptrue_b64();
   svfloat64_t v0 = svdup_f64(1.0);
@@ -89,9 +93,11 @@ void test1(double *indices) {
   }
   svst1_f64(pg, tmp, v1);
   res += tmp[0];
-  #endif
+}
+#endif
 
-  #ifdef NEON_FP64_ADD
+#ifdef NEON_FP64_ADD
+  void test1(double *indices) {
   double tmp[2];
   float64x2_t v0 = vdupq_n_f64(1.0);
   float64x2_t v1 = vld1q_f64(indices);
@@ -115,11 +121,12 @@ void test1(double *indices) {
   }
   vst1q_f64(tmp, v1);
   res += tmp[0];
-  #endif
 }
+#endif
 
+
+#ifdef SVE_FP32_FMA
 void test1(float *indices) {
-  #ifdef SVE_FP32_FMA
   float tmp[svcntw()];
   svbool_t pg = svptrue_b32();
   svfloat32_t v0 = svdup_f32(1.0);
@@ -144,12 +151,14 @@ void test1(float *indices) {
   }
   svst1_f32(pg, tmp, v1);
   res += tmp[0];
-  #endif
+}
+#endif
 
-  #ifdef NEON_FP32_FMA
+#ifdef NEON_FP32_FMA
+void test1(float *indices) {
     float tmp[4];
-    float32x2_t v0 = vdupq_n_f32(1.0);
-    float32x2_t v1 = vld1q_f32(indices);
+    float32x4_t v0 = vdupq_n_f32(1.0);
+    float32x4_t v1 = vld1q_f32(indices);
     for(int i = 0; i < n; i++){
       v1 = vfmaq_n_f32(v1, v0, 1.0);
       v1 = vfmaq_n_f32(v1, v0, 1.0);
@@ -170,11 +179,11 @@ void test1(float *indices) {
     }
     vst1q_f32(tmp, v1);
     res += tmp[0];
-  #endif
-}
+  }
+#endif
 
+#ifdef SVE_FP64_FMA
 void test1(double *indices) {
-  #ifdef SVE_FP64_FMA
   double tmp[svcntd()];
   svbool_t pg = svptrue_b64();
   svfloat64_t v0 = svdup_f64(1.0);
@@ -199,9 +208,11 @@ void test1(double *indices) {
   }
   svst1_f64(pg, tmp, v1);
   res += tmp[0];
+}
   #endif
 
-  #ifdef NEON_FP64_FMA
+#ifdef NEON_FP64_FMA
+void test1(double *indices) {
   double tmp[2];
   float64x2_t v0 = vdupq_n_f64(1.0);
   float64x2_t v1 = vld1q_f64(indices);
@@ -225,8 +236,9 @@ void test1(double *indices) {
   }
   vst1q_f64(tmp, v1);
   res += tmp[0];
-  #endif
 }
+#endif
+
 
 int main(int argc, char *argv[]) {
 
