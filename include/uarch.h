@@ -14,6 +14,9 @@ enum uarch {
   // qualcomm
   oryon,
   // arm
+  cortex_a53,
+  cortex_a55,
+  cortex_a73,
   cortex_a77,
   cortex_a78,
   cortex_x1,

@@ -162,6 +162,18 @@ enum uarch get_uarch_inner() {
   } else if (implementer == 0x41 && part == 0xd0d) {
     fprintf(stderr, "ARM Cortex A77 detected\n");
     return cortex_a77;
+  } else if (implementer == 0x41 && part == 0xd41) {
+    fprintf(stderr, "ARM Cortex A78 detected\n");
+    return cortex_a78;
+  } else if (implementer == 0x41 && part == 0xd05) {
+    fprintf(stderr, "ARM Cortex A55 detected\n");
+    return cortex_a55;
+  } else if (implementer == 0x41 && part == 0xd03) {
+    fprintf(stderr, "ARM Cortex A75 detected\n");
+    return cortex_a53;
+  } else if (implementer == 0x41 && part == 0xd09) {
+    fprintf(stderr, "ARM Cortex A76 detected\n");
+    return cortex_a73;
   } else if (implementer == 0x41 && part == 0xd40) {
     fprintf(stderr, "ARM Neoverse V1 detected\n");
     return neoverse_v1;

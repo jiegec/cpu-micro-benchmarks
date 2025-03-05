@@ -30,6 +30,15 @@ int main() {
   case cortex_a77:
     printf("-DARM_CORTEX_A77\n");
     break;
+  case cortex_a53:
+    printf("-DARM_CORTEX_A53\n");
+    break;
+  case cortex_a55:
+    printf("-DARM_CORTEX_A55\n");
+    break;
+  case cortex_a73:
+    printf("-DARM_CORTEX_A73\n");
+    break;
   case cortex_x1:
     printf("-DARM_CORTEX_X1\n");
     break;
