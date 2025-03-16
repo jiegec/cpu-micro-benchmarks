@@ -14,7 +14,7 @@ Paper: https://arxiv.org/abs/2411.13900, cite as:
 }
 ```
 
-In this post, we reveal the detailed result of the experiments in the paper.
+In this post, we reveal the detailed result of the experiments in the paper. The microbenchmarks used in this report are provided as-is in this repo.
 
 ## PHRB & PHRT
 
