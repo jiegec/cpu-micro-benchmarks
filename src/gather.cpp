@@ -1,7 +1,14 @@
 #include "include/utils.h"
-#include <immintrin.h>
 #include <time.h>
 #include <unistd.h>
+
+#if defined(AVX2) || defined(AVX512)
+#include <immintrin.h>
+#endif
+
+#ifdef SVE
+#include <arm_sve.h>
+#endif
 
 int res = 0;
 const int n = 1000;
@@ -54,6 +61,29 @@ void test_1(int *indices) {
   }
   res += index[0];
 #endif
+#ifdef SVE
+  svbool_t predicate = svwhilelt_b32_s32(0, 8);
+  svint32_t index = svld1_s32(predicate, indices);
+  for (int i = 0; i < repeat; i++) {
+    index = svld1_gather_s32index_s32(predicate, array, index);
+    index = svld1_gather_s32index_s32(predicate, array, index);
+    index = svld1_gather_s32index_s32(predicate, array, index);
+    index = svld1_gather_s32index_s32(predicate, array, index);
+    index = svld1_gather_s32index_s32(predicate, array, index);
+    index = svld1_gather_s32index_s32(predicate, array, index);
+    index = svld1_gather_s32index_s32(predicate, array, index);
+    index = svld1_gather_s32index_s32(predicate, array, index);
+    index = svld1_gather_s32index_s32(predicate, array, index);
+    index = svld1_gather_s32index_s32(predicate, array, index);
+    index = svld1_gather_s32index_s32(predicate, array, index);
+    index = svld1_gather_s32index_s32(predicate, array, index);
+    index = svld1_gather_s32index_s32(predicate, array, index);
+    index = svld1_gather_s32index_s32(predicate, array, index);
+    index = svld1_gather_s32index_s32(predicate, array, index);
+    index = svld1_gather_s32index_s32(predicate, array, index);
+  }
+  res += svlastb_s32(predicate, index);
+#endif
 }
 
 int main(int argc, char *argv[]) {
@@ -77,6 +107,9 @@ int main(int argc, char *argv[]) {
 #endif
 #ifdef AVX512
   const int vlen = 16;
+#endif
+#ifdef SVE
+  const int vlen = svlen_s32(svint32_t{});
 #endif
   int indices[vlen];
   srand(time(NULL));
@@ -115,8 +148,8 @@ int main(int argc, char *argv[]) {
   // EPYC 9654: AVX2 20 cycles, AVX512 33 cycles
   // EPYC 7742: AVX2 21 cycles
   // EPYC 7551: AVX2 20 cycles
-  printf("%ld cycles, %ld instructions, %.2lf ipc, %d ans\n",
-         (cycles_after - cycles_before) / m / repeat / unroll,
+  printf("%.2f cycles, %ld instructions, %.2lf ipc, %d ans\n",
+         (float)(cycles_after - cycles_before) / m / repeat / unroll,
          (instructions_after - instructions_before) / m / repeat / unroll,
          (double)(instructions_after - instructions_before) /
              (cycles_after - cycles_before),

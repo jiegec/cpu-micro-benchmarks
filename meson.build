@@ -41,6 +41,7 @@ simple_progs = [
 foreach p : simple_progs
 	executable(p,
 		'src/' + p + '.cpp',
+		cpp_args: cpp_args,
 		link_with: utils)
 endforeach
 
@@ -52,9 +53,34 @@ if cpu == 'x86_64'
 		cpp_args: ['-DAVX2', '-mavx2'],
 		link_with: utils,
 		install: true)
+
 	gather_avx512 = executable('gather_avx512',
 		'src/gather.cpp',
 		cpp_args: ['-DAVX512', '-mavx512f'],
+		link_with: utils,
+		install: true)
+
+	gather_serialize_avx2 = executable('gather_serialize_avx2',
+		'src/gather_serialize.cpp',
+		cpp_args: ['-DAVX2', '-mavx2'],
+		link_with: utils,
+		install: true)
+
+	gather_serialize_avx512 = executable('gather_serialize_avx512',
+		'src/gather_serialize.cpp',
+		cpp_args: ['-DAVX512', '-mavx512f'],
+		link_with: utils,
+		install: true)
+elif cpu == 'aarch64'
+	gather = executable('gather',
+		'src/gather.cpp',
+		cpp_args: ['-DSVE', '-march=armv8-a+sve'],
+		link_with: utils,
+		install: true)
+
+	gather_serialize = executable('gather_serialize',
+		'src/gather_serialize.cpp',
+		cpp_args: ['-DSVE', '-march=armv8-a+sve'],
 		link_with: utils,
 		install: true)
 endif
@@ -170,5 +196,13 @@ if get_option('ios')
 	microbenchmark_lib = static_library('microbenchmark',
 		objects: libs,
 		link_with: utils,
+		install: true)
+endif
+
+if target_machine.system() == 'linux'
+	# required linux affinity api
+	coherency_latency = executable('coherency_latency',
+		'src/coherency_latency.cpp',
+		link_args: ['-pthread'],
 		install: true)
 endif
