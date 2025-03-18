@@ -6,7 +6,7 @@ time_data = []
 llc_miss_data = []
 llc_load_data = []
 
-with open('../run_results/memory_latency.csv', newline='') as f:
+with open('memory_latency.csv', newline='') as f:
 	r = csv.reader(f)
 	for row in r:
 		if row[0] == "size":
@@ -34,4 +34,4 @@ ax2.set_xscale('log')
 ax2.set_ylabel('LLC Load/Miss per Access')
 ax2.set_xlabel('Memory Block Size (B)')
 
-plt.savefig('../run_results/plot_memory_latency.png')
+plt.savefig('plot_memory_latency.png')
