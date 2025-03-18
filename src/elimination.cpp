@@ -6,7 +6,7 @@
 
 extern void elimination(FILE *fp);
 int main(int argc, char *argv[]) {
-  FILE *fp = fopen("elimination.csv", "w");
+  FILE *fp = fopen("../run_results/elimination.csv", "w");
   assert(fp);
   elimination(fp);
 

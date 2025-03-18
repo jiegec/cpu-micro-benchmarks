@@ -74,6 +74,9 @@ enum uarch get_uarch_inner() {
   // arm64
   int implementer = 0;
   int part = 0;
+  bool sve = false;
+  bool avx512f = false;
+  bool avx2 = false;
 
   while (std::getline(t, line)) {
     size_t pos = line.find(':');
@@ -91,11 +94,33 @@ enum uarch get_uarch_inner() {
         part = std::stoi(value, nullptr, 16);
       } else if (key == "Model Name" && value == " Loongson-3C5000") {
         return la464;
+      } else if (key == "flags") { 
+        if (value.find("avx512f") != std::string::npos && !avx512f) {
+          avx512f = true;
+        }
+        if (value.find("avx2") != std::string::npos && !avx2) {
+          avx2 = true;
+        }
+      } else if (key == "Features") {
+        if (value.find("sve") != std::string::npos && !sve) {
+          sve = true;
+        }
       }
     }
   }
   fprintf(stderr, "Found CPU family %d, model %d, implementer %d, part %d\n",
           family, model, implementer, part);
+
+  if(avx2){
+    fprintf(stdout, "AVX2 detected\n");
+  }
+  if(avx512f){
+    fprintf(stdout, "AVX512F detected\n");
+  }
+  if(sve){
+    fprintf(stdout, "SVE detected\n");
+  }
+
   if (family == 6 && model == 183) {
     fprintf(stderr, "Intel Raptor Lake detected\n");
     fprintf(stderr, "Configured for Golden Cove\n");
@@ -113,6 +138,9 @@ enum uarch get_uarch_inner() {
     fprintf(stderr, "Intel Broadwell detected\n");
     return broadwell;
     // https://en.wikichip.org/wiki/amd/cpuid
+  } else if (family == 6 && model == 142){
+    fprintf(stderr, "Intel Whiskylake detected\n");
+    return skylake;
   } else if (family == 23 && model == 1) {
     fprintf(stderr, "AMD Zen 1 detected\n");
     return zen1;
@@ -135,6 +163,18 @@ enum uarch get_uarch_inner() {
   } else if (implementer == 0x41 && part == 0xd0d) {
     fprintf(stderr, "ARM Cortex A77 detected\n");
     return cortex_a77;
+  } else if (implementer == 0x41 && part == 0xd41) {
+    fprintf(stderr, "ARM Cortex A78 detected\n");
+    return cortex_a78;
+  } else if (implementer == 0x41 && part == 0xd05) {
+    fprintf(stderr, "ARM Cortex A55 detected\n");
+    return cortex_a55;
+  } else if (implementer == 0x41 && part == 0xd03) {
+    fprintf(stderr, "ARM Cortex A75 detected\n");
+    return cortex_a53;
+  } else if (implementer == 0x41 && part == 0xd09) {
+    fprintf(stderr, "ARM Cortex A76 detected\n");
+    return cortex_a73;
   } else if (implementer == 0x41 && part == 0xd40) {
     fprintf(stderr, "ARM Neoverse V1 detected\n");
     return neoverse_v1;
@@ -147,6 +187,9 @@ enum uarch get_uarch_inner() {
   } else if (implementer == 0x48 && part == 0xd01) {
     fprintf(stderr, "Hisilicon TSV110 detected\n");
     return tsv110;
+  } else if (implementer == 0x00 && part == 0xd02) {
+    fprintf(stderr, "HiSilicon TSV200M detected\n");
+    return tsv200m;
   }
 
 #ifdef __APPLE__

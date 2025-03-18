@@ -19,6 +19,9 @@ enum uarch {
   // qualcomm
   oryon,
   // arm
+  cortex_a53,
+  cortex_a55,
+  cortex_a73,
   cortex_a77,
   cortex_a78,
   cortex_x1,
@@ -28,7 +31,7 @@ enum uarch {
   neoverse_v2,
   // hisilicon
   tsv110,
-
+  tsv200m,
   unknown_arm64,
   arm64_begin = firestorm,
   arm64_end = unknown_arm64,
@@ -46,6 +49,7 @@ enum uarch {
   sunny_cove,
   skylake,
   broadwell,
+  whiskylake,
   // amd
   zen1,
   zen2,

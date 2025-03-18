@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
     test_1();
   }
 
-  int m = 50000;
+  int m = 100000;
   uint64_t cycles_before = perf_read_cycles();
   uint64_t instructions_before = perf_read_instructions();
 

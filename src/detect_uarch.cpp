@@ -47,6 +47,15 @@ int main() {
   case cortex_a77:
     printf("-DARM_CORTEX_A77\n");
     break;
+  case cortex_a53:
+    printf("-DARM_CORTEX_A53\n");
+    break;
+  case cortex_a55:
+    printf("-DARM_CORTEX_A55\n");
+    break;
+  case cortex_a73:
+    printf("-DARM_CORTEX_A73\n");
+    break;
   case cortex_x1:
     printf("-DARM_CORTEX_X1\n");
     break;
@@ -65,6 +74,9 @@ int main() {
     break;
   case tsv110:
     printf("-DHISILICON_TSV110\n");
+    break;
+  case tsv200m:
+    printf("-DHISILICON_TSV200M\n");
     break;
   case unknown_arm64:
     break;
@@ -87,6 +99,10 @@ int main() {
   case broadwell:
     printf("-DINTEL\n");
     printf("-DINTEL_BROADWELL\n");
+    break;
+  case whiskylake:
+    printf("-DINTEL\n");
+    printf("-DINTEL_WHISKYLAKE\n");
     break;
   case zen1:
     printf("-DAMD\n");
