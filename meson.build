@@ -70,6 +70,7 @@ progs = [
 	['btb_size_basic', false, true, true],
 	['elimination', false, true, true],
 	['find_branch_misses_pmu', false, false, true],
+	['fp_peak', false, false, true],
 	['ghr_size', false, true, true],
 	['itlb_size', false, true, true],
 	['phr_branch_bits_location', true, false, true],
