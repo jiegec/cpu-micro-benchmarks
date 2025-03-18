@@ -36,8 +36,6 @@ utils_native = static_library('utils_native', 'src/utils.cpp', 'src/uarch.cpp', 
 simple_progs = [
 	'dtlb_size',
 	'memory_latency',
-	'instruction_latency',
-	'ipc',
 ]
 
 foreach p : simple_progs
@@ -72,6 +70,7 @@ progs = [
 	['find_branch_misses_pmu', false, false, true],
 	['fp_peak', false, false, true],
 	['ghr_size', false, true, true],
+	['instruction_latency', false, true, false],
 	['itlb_size', false, true, true],
 	['phr_branch_bits_location', true, false, true],
 	['phr_size', false, true, true],
