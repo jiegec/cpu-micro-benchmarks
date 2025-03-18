@@ -163,6 +163,11 @@ enum uarch get_uarch_inner() {
 
     fprintf(stderr, "Configured for Apple M2 Avalanche\n");
     return avalanche;
+  } else if (strcmp(buf, "0x6f5129ac\n") == 0) {
+    fprintf(stderr, "Apple M4 detected\n");
+
+    fprintf(stderr, "Configured for Apple M4 P core\n");
+    return m4_pcore;
   }
 #endif
 

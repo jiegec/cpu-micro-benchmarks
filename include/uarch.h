@@ -7,10 +7,15 @@ enum uarch {
 
   // arm64
   // apple
+  // m1
   firestorm,
   icestorm,
+  // m2
   avalanche,
   blizzard,
+  // m4
+  m4_pcore,
+  m4_ecore,
   // qualcomm
   oryon,
   // arm
