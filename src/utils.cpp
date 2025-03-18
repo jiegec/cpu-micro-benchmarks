@@ -785,7 +785,7 @@ void bind_to_core() {
     fprintf(stderr, "Pinned to cpu %d\n", core);
   }
 #elif defined(__APPLE__) && !defined(IOS)
-#if defined(APPLE_M1_FIRESTORM) || defined(APPLE_M2_AVALANCHE)
+#if defined(APPLE_PCORE)
   // p core
   fprintf(stderr, "Bind to P core on macOS\n");
   pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
