@@ -36,7 +36,7 @@ void test_1(uint32_t *indices) {
   res += tmp[0];
 #endif
 #ifdef NEON
-  
+
 #endif
 }
 
@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
 
   uint64_t cycles_after = perf_read_cycles();
   uint64_t instructions_after = perf_read_instructions();
-  
+
   printf("%ld cycles, %ld instructions, %.2lf ipc, %d ans\n",
          (cycles_after - cycles_before) / m / repeat / unroll,
          (instructions_after - instructions_before) / m / repeat / unroll,

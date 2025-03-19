@@ -57,9 +57,6 @@ int main() {
   case tsv110:
     printf("-DHISILICON_TSV110\n");
     break;
-  case tsv200m:
-    printf("-DHISILICON_TSV200M\n");
-    break;
   case unknown_arm64:
     break;
   case golden_cove:

@@ -94,7 +94,7 @@ enum uarch get_uarch_inner() {
         part = std::stoi(value, nullptr, 16);
       } else if (key == "Model Name" && value == " Loongson-3C5000") {
         return la464;
-      } else if (key == "flags") { 
+      } else if (key == "flags") {
         if (value.find("avx512f") != std::string::npos && !avx512f) {
           avx512f = true;
         }
@@ -111,13 +111,13 @@ enum uarch get_uarch_inner() {
   fprintf(stderr, "Found CPU family %d, model %d, implementer %d, part %d\n",
           family, model, implementer, part);
 
-  if(avx2){
+  if (avx2) {
     fprintf(stdout, "AVX2 detected\n");
   }
-  if(avx512f){
+  if (avx512f) {
     fprintf(stdout, "AVX512F detected\n");
   }
-  if(sve){
+  if (sve) {
     fprintf(stdout, "SVE detected\n");
   }
 
@@ -138,7 +138,7 @@ enum uarch get_uarch_inner() {
     fprintf(stderr, "Intel Broadwell detected\n");
     return broadwell;
     // https://en.wikichip.org/wiki/amd/cpuid
-  } else if (family == 6 && model == 142){
+  } else if (family == 6 && model == 142) {
     fprintf(stderr, "Intel Whiskylake detected\n");
     return skylake;
   } else if (family == 23 && model == 1) {
@@ -187,9 +187,6 @@ enum uarch get_uarch_inner() {
   } else if (implementer == 0x48 && part == 0xd01) {
     fprintf(stderr, "Hisilicon TSV110 detected\n");
     return tsv110;
-  } else if (implementer == 0x00 && part == 0xd02) {
-    fprintf(stderr, "HiSilicon TSV200M detected\n");
-    return tsv200m;
   }
 
 #ifdef __APPLE__
