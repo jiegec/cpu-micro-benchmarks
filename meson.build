@@ -71,6 +71,11 @@ if cpu == 'x86_64'
 			cpp_args: ['-DAVX2', '-mavx2'],
 			link_with: utils,
 			install: true)
+		div_avx2 = executable('div_avx2',
+			'src/div.cpp',
+			cpp_args: ['-DAVX2', '-mavx2'],
+			link_with: utils,
+			install: true)
 	endif
 	if avx512f_support
 	gather_avx512 = executable('gather_avx512',
