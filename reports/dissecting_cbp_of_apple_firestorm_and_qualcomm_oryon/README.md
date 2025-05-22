@@ -60,8 +60,8 @@ Using pht_tag_bits_xor_phr to find xor relationship between PHR bits:
 
 - PHRT[0,12,...,96] xor PHRB[8,21]
 - PHRT[1,13,...,97] xor PHRB[9,22]
-- PHRT[2,14,...,98] xor PHRB[10,23] 
-- PHRT[3,15,...,87] xor PHRB[11,12,24,25]
+- PHRT[2,14,...,98] xor PHRB[10,23,24] 
+- PHRT[3,15,...,87,99] xor PHRB[11,12,25]
 - PHRT[4,16,...,88] xor PHRB[0,13,26]
 - PHRT[5,17,...,89] xor PHRB[1,14,27]
 - PHRT[6,18,...,90] xor PHRB[2,15]
@@ -77,8 +77,8 @@ Using pht_tag_bits_xor to find xor relationship between PHR bits and PC bits:
 
 - PC[7] xor PHRT[0,12,...,96] xor PHRB[8,21]
 - PC[8] xor PHRT[1,13,...,97] xor PHRB[9,22]
-- PC[9] xor PHRT[2,14,...,98] xor PHRB[10,23] 
-- PC[10] xor PHRT[3,15,...,87,99] xor PHRB[11,12,24,25]
+- PC[9] xor PHRT[2,14,...,98] xor PHRB[10,23,24]
+- PC[10] xor PHRT[3,15,...,87,99] xor PHRB[11,12,25]
 - PC[11] xor PHRT[4,16,...,88] xor PHRB[0,13,26]
 - PC[12] xor PHRT[5,17,...,89] xor PHRB[1,14,27]
 - PC[13] xor PHRT[6,18,...,90] xor PHRB[2,15]
