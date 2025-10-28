@@ -32,22 +32,6 @@ First, we show the result of probing PHRB & PHRT structure using phr_branch_bits
 
 ![](./plot_phr_target_bits_location.png)
 
-## PHT Associativity
-
-Then, we dissect the associativity of the TAGE table with the longest history using the pht_associativity microbenchmark:
-
-### Apple Firestorm PHT Associativity
-
-4-way with PC[6] and PC[9] in index:
-
-![](./plot_pht_associativity_firestorm.png)
-
-### Qualcomm Oryon PHT Associativity
-
-4-way with PC[6] and PC[7] in index (the data is a bit noisy, but enough to justify):
-
-![](./plot_pht_associativity_oryon.png)
-
 ### Remark
 
 In Apple's Patent [Managing table accesses for tagged geometric length (TAGE) load value prediction](https://patents.google.com/patent/US12159142B1/en):
@@ -85,6 +69,23 @@ may vary in different embodiments.
 ```
 
 As of writing, we were unaware of this patent. It verifies our reverse engineered PHRB/PHRT construction: `path_hist` is PHRB, `global_hist` is PHRT. And the footprint of PHRT (Y-bit portion) is longer than that of PHRB (N-bit portion). Seems that Apple is also using the two PHR registers to predict load values.
+
+
+## PHT Associativity
+
+Then, we dissect the associativity of the TAGE table with the longest history using the pht_associativity microbenchmark:
+
+### Apple Firestorm PHT Associativity
+
+4-way with PC[6] and PC[9] in index:
+
+![](./plot_pht_associativity_firestorm.png)
+
+### Qualcomm Oryon PHT Associativity
+
+4-way with PC[6] and PC[7] in index (the data is a bit noisy, but enough to justify):
+
+![](./plot_pht_associativity_oryon.png)
 
 ## PHT Tag Hash Function
 
