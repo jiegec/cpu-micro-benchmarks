@@ -68,7 +68,7 @@ impact of a given address on the current history value, etc. These parameters
 may vary in different embodiments.
 ```
 
-As of writing, we were unaware of this patent. It verifies our reverse engineered PHRB/PHRT construction: `path_hist` is PHRB, `global_hist` is PHRT. And the footprint of PHRT (Y-bit portion) is longer than that of PHRB (N-bit portion). Seems that Apple is also using the two PHR registers to predict load values.
+As of writing, we were unaware of this patent (the publication of the patent is one month later than our paper). It verifies our reverse engineered PHRB/PHRT construction: `path_hist` is PHRB, `global_hist` is PHRT. And the footprint of PHRT (Y-bit portion) is longer than that of PHRB (N-bit portion). Seems that Apple is also using the two PHR registers to predict load values.
 
 
 ## PHT Associativity
