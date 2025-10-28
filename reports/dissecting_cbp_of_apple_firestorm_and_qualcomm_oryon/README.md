@@ -53,15 +53,35 @@ Then, we dissect the associativity of the TAGE table with the longest history us
 In Apple's Patent [Managing table accesses for tagged geometric length (TAGE) load value prediction](https://patents.google.com/patent/US12159142B1/en):
 
 ```
-Note that the branch history information used to access a non-base VTAGE table may be updated based on each taken control transfer, e.g., based on the target or based on the PC of the control transfer. As one specific example, the branch history may be a path history that is an M+N bit value that is shifted left by one and XOR'd with N bits of the fetch address of the current fetch group to generate the next path history value each cycle, according to the following example equation:
+Note that the branch history information used to access a non-base VTAGE table
+may be updated based on each taken control transfer, e.g., based on the target
+or based on the PC of the control transfer. As one specific example, the branch
+history may be a path history that is an M+N bit value that is shifted left by
+one and XOR'd with N bits of the fetch address of the current fetch group to
+generate the next path history value each cycle, according to the following
+example equation:
 
 path_hist[M+N−1:0]={path_hist[M+N−2:0],1′b0}{circumflex over ( )}{M′b0,N_bits_of_PC}
 
-As another example, branch history may be a global history that is an X+Y bit value that is shifted left by one and XOR'd with Y bits of the fetch address of the current fetch group to generate the next path history value each cycle, according to the following example equation:
+As another example, branch history may be a global history that is an X+Y bit
+value that is shifted left by one and XOR'd with Y bits of the fetch address of
+the current fetch group to generate the next path history value each cycle,
+according to the following example equation:
 
 global_hist[X+Y−1:0]={global_hist[X+Y−2:0],1′b0}{circumflex over ( )}{X′b0,Y_bits_of_target}
 
-In some embodiments, both global and path history may be used to access one or more VTAGE tables or to access different VTAGE tables. Note that the Y bits of the target may or may not be contiguous and may be located at different positions within the address in different embodiments. In some embodiments, the Y-bit portion of the current fetch address input to hash circuitry 310 is different than the N-bit portion of the current fetch address input to hash circuitry 305. In some embodiments, Y-bit portion includes one or more bits that are more significant than any bits included in the N-bit portion. The N-bit and Y-bit portions may or may not overlap. The number of bits implemented for M, N, X, Y, etc. may affect the length of history used, control circuit area, the impact of a given address on the current history value, etc. These parameters may vary in different embodiments.
+In some embodiments, both global and path history may be used to access one or
+more VTAGE tables or to access different VTAGE tables. Note that the Y bits of
+the target may or may not be contiguous and may be located at different
+positions within the address in different embodiments. In some embodiments, the
+Y-bit portion of the current fetch address input to hash circuitry 310 is
+different than the N-bit portion of the current fetch address input to hash
+circuitry 305. In some embodiments, Y-bit portion includes one or more bits that
+are more significant than any bits included in the N-bit portion. The N-bit and
+Y-bit portions may or may not overlap. The number of bits implemented for M, N,
+X, Y, etc. may affect the length of history used, control circuit area, the
+impact of a given address on the current history value, etc. These parameters
+may vary in different embodiments.
 ```
 
 As of writing, we were unaware of this patent. It verifies our reverse engineered PHRB/PHRT construction: `path_hist` is PHRB, `global_hist` is PHRT. And the footprint of PHRT (Y-bit portion) is longer than that of PHRB (N-bit portion). Seems that Apple is also using the two PHR registers to predict load values.
