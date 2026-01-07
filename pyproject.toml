@@ -5,7 +5,7 @@ description = ""
 authors = ["Jiajie Chen <c@jia.je>"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.10"
 matplotlib = "^3.6.0"
 
 [tool.poetry.dev-dependencies]
