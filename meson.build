@@ -93,9 +93,11 @@ progs = [
 	['bp_size', false, false, true],
 	['btb_size_basic', false, true, true],
 	['elimination', false, true, true],
+	['fetch_bandwidth', false, true, true],
 	['find_branch_misses_pmu', false, false, true],
 	['fp_peak', false, false, true],
 	['ghr_size', false, true, true],
+	['if_width', false, true, true],
 	['instruction_latency', false, true, false],
 	['itlb_size', false, true, true],
 	['phr_branch_bits_location', true, false, true],
@@ -109,7 +111,9 @@ progs = [
 	['pht_tag_bits_xor', false, false, true],
 	['pht_tag_bits_xor_phr', false, false, true],
 	['ras_size', false, true, true],
+	['register_file_size', false, true, true],
 	['rob_size', false, false, true],
+	['sched_size', false, true, true],
 ]
 
 foreach p : progs
