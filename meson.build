@@ -36,6 +36,7 @@ utils_native = static_library('utils_native', 'src/utils.cpp', 'src/uarch.cpp', 
 simple_progs = [
 	'dtlb_size',
 	'memory_latency',
+	'prefetcher_cacheline',
 ]
 
 foreach p : simple_progs
