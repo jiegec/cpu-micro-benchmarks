@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <vector>
 
+// use with generate_gadget tool
+
 // defined in gen_pht_index_tag_bits_test()
 // args: loop count, buffer
 typedef void (*gadget)(size_t, uint32_t *);

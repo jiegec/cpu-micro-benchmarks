@@ -7,7 +7,7 @@ int main(int argc, char *argv[]) {
 
 #if defined(HOST_AMD64)
   int min_branch_toggle = 1;
-  int max_branch_toggle = 12;
+  int max_branch_toggle = 15;
   int min_target_toggle = 0;
   int max_target_toggle = 12;
 #else

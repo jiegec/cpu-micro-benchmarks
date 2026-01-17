@@ -243,10 +243,6 @@ int main(int argc, char *argv[]) {
         // test fifth longest tage table
         history_bits = 7;
         phr_index_bit = 6;
-      } else if (test_table == 6) {
-        // test sixth longest tage table
-        history_bits = 4;
-        phr_index_bit = 3;
         assoc = 6;
       }
 #else

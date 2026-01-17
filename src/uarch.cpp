@@ -20,6 +20,8 @@ enum uarch get_uarch_inner() {
   std::vector<struct uarch_mapping> mapping = {
       {"Gracemont", gracemont, 24},
       {"Icestorm", icestorm, 0},
+      {"Blizzard", blizzard, 0},
+      {"M4-E-Core", m4_ecore, 0},
   };
   const char *override = getenv("UARCH_OVERRIDE");
   if (override) {
@@ -91,6 +93,10 @@ enum uarch get_uarch_inner() {
         part = std::stoi(value, nullptr, 16);
       } else if (key == "Model Name" && value == " Loongson-3C5000") {
         return la464;
+      } else if (key == "cpu" && value == " POWER8 (raw), altivec supported") {
+        return power8;
+      } else if (key == "cpu" && value == " POWER9, altivec supported") {
+        return power9;
       }
     }
   }
@@ -100,6 +106,9 @@ enum uarch get_uarch_inner() {
     fprintf(stderr, "Intel Raptor Lake detected\n");
     fprintf(stderr, "Configured for Golden Cove\n");
     return golden_cove;
+  } else if (family == 6 && model == 173) {
+    fprintf(stderr, "Intel Granite Rapids detected\n");
+    return granite_rapids;
   } else if (family == 6 && model == 151) {
     fprintf(stderr, "Intel Alder Lake detected\n");
     return golden_cove;
@@ -114,18 +123,23 @@ enum uarch get_uarch_inner() {
     return broadwell;
     // https://en.wikichip.org/wiki/amd/cpuid
   } else if (family == 23 && model == 1) {
+    // 7551 Naples: Family 17h, Model 01h
     fprintf(stderr, "AMD Zen 1 detected\n");
     return zen1;
   } else if (family == 23 && model == 49) {
+    // 7742 Rome: Family 17h, Model 31h
     fprintf(stderr, "AMD Zen 2 detected\n");
     return zen2;
   } else if (family == 25 && (model == 1 || model == 33)) {
+    // 5700X Vermeer: Family 19h, Model 21h
     fprintf(stderr, "AMD Zen 3 detected\n");
     return zen3;
   } else if (family == 25 && (model == 17 || model == 97)) {
+    // 7500F Raphael: Family 19h, Model 61h
     fprintf(stderr, "AMD Zen 4 detected\n");
     return zen4;
   } else if (family == 26 && model == 68) {
+    // 9950X Granite Ridge: Family 1Ah, Model 48h
     fprintf(stderr, "AMD Zen 5 detected\n");
     return zen5;
     // https://github.com/util-linux/util-linux/blob/master/sys-utils/lscpu-arm.c
@@ -162,21 +176,26 @@ enum uarch get_uarch_inner() {
     fprintf(stderr, "Apple M2 detected\n");
 
     fprintf(stderr, "Configured for Apple M2 Avalanche\n");
+    bind_core = -1; // core != 0 means p-core
     return avalanche;
   } else if (strcmp(buf, "0x6f5129ac\n") == 0) {
     fprintf(stderr, "Apple M4 detected\n");
 
     fprintf(stderr, "Configured for Apple M4 P core\n");
+    bind_core = -1; // core != 0 means p-core
     return m4_pcore;
   }
 #endif
 
+  fprintf(stderr, "Unknown uarch\n");
 #ifdef HOST_AARCH64
   return unknown_arm64;
 #elif defined(HOST_AMD64)
   return unknown_amd64;
 #elif defined(HOST_LOONGARCH64)
   return unknown_loongarch64;
+#elif defined(HOST_PPC64LE)
+  return unknown_ppc64le;
 #endif
   return unknown;
 }

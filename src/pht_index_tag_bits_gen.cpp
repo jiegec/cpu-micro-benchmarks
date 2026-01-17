@@ -1,6 +1,15 @@
-#include "include/utils.h"
+// pht_index_tag_bits: find which PC bits are used for PHT index and tag
+// This benchmark helps determine which bits of the program counter are used for
+// indexing and tagging in the pattern history table (PHT). It places branches
+// at various alignments and tests aliasing to understand the PHT organization.
+//
+// pht_index_tag_bits: 查找哪些 PC 位用于 PHT index 和 tag
+// 此基准测试帮助确定 PC 的哪些位用于 PHT 中的 index 和 tag。
+// 它在各种对齐位置放置分支并测试以理解 PHT 组织结构。
 
 // https://cseweb.ucsd.edu/~dstefan/pubs/yavarzadeh:2023:half.pdf
+
+#include "include/utils.h"
 int main(int argc, char *argv[]) {
   FILE *fp = fopen(argv[1], "w");
   assert(fp);

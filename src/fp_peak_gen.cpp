@@ -1,3 +1,24 @@
+// fp_peak: measure floating-point peak performance
+// This benchmark measures the peak floating-point performance by executing
+// FMA (fused multiply-add) instructions in various precisions and widths:
+// - Pattern 0: single precision scalar
+// - Pattern 1: double precision scalar
+// - Pattern 2: single precision 128-bit SIMD
+// - Pattern 3: double precision 128-bit SIMD
+// - Pattern 4: single precision 256-bit SIMD (AVX)
+// - Pattern 5: double precision 256-bit SIMD (AVX)
+// Results show FLOPs/cycle capability.
+//
+// fp_peak: 测量浮点峰值性能
+// 此基准测试通过以各种精度和宽度执行 FMA（融合乘加）指令来测量峰值浮点性能：
+// - 模式 0：单精度标量
+// - 模式 1：双精度标量
+// - 模式 2：单精度 128 位 SIMD
+// - 模式 3：双精度 128 位 SIMD
+// - 模式 4：单精度 256 位 SIMD (AVX)
+// - 模式 5：双精度 256 位 SIMD (AVX)
+// 结果是每周期 FLOPs。
+
 #include "include/utils.h"
 #include <cstdio>
 

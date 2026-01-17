@@ -23,7 +23,12 @@ void btb_size_basic(FILE *fp) {
 
   min_size = 2;
   max_size = 65536;
+#ifdef HOST_PPC64LE
+  max_product = 16384;
+#else
+  // limited binary size on ios
   max_product = 32768;
+#endif
   min_stride = 4;
   max_stride = 8192;
   mults = {1, 3, 5, 7};

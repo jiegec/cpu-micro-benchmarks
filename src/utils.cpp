@@ -785,15 +785,19 @@ void bind_to_core() {
     fprintf(stderr, "Pinned to cpu %d\n", core);
   }
 #elif defined(__APPLE__) && !defined(IOS)
-#if defined(APPLE_PCORE)
-  // p core
-  fprintf(stderr, "Bind to P core on macOS\n");
-  pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
-#else
-  // e core
-  fprintf(stderr, "Bind to E core on macOS\n");
-  pthread_set_qos_class_self_np(QOS_CLASS_BACKGROUND, 0);
-#endif
+  int core = get_bind_core();
+  // we cannot bind to specific core on macOS:
+  // core == 0 means e-core
+  // core != 0 means p-core
+  if (core == 0) {
+    // e core
+    fprintf(stderr, "Bind to E core on macOS\n");
+    pthread_set_qos_class_self_np(QOS_CLASS_BACKGROUND, 0);
+  } else {
+    // p core
+    fprintf(stderr, "Bind to P core on macOS\n");
+    pthread_set_qos_class_self_np(QOS_CLASS_USER_INTERACTIVE, 0);
+  }
 #elif defined(IOS)
   // TODO: make it configurable
   // it is also not very reliable

@@ -28,8 +28,12 @@ int main(int argc, char *argv[]) {
   assert(fp);
   uint64_t min_size = 2;
   uint64_t max_size = 65536;
+#ifdef HOST_PPC64LE
+  uint64_t max_product = 16384;
+#else
   // limited binary size on ios
   uint64_t max_product = 32768;
+#endif
   uint64_t min_stride = 4;
   // limited binary size on ios
   uint64_t max_stride = 8192;
@@ -85,7 +89,7 @@ int main(int argc, char *argv[]) {
         fprintf(fp, "\tret\n");
 #elif defined(HOST_AMD64)
         fprintf(fp, "\t1:\n");
-        // the last loop is bne 1b
+        // the last loop is jne 1b
         for (int i = 0; i < (int)size - 1; i++) {
           if (pattern == 0 || (pattern == 2 && i % 2 == 0)) {
             // unconditional
@@ -101,6 +105,26 @@ int main(int argc, char *argv[]) {
         fprintf(fp, "\tdec %%rdi\n");
         fprintf(fp, "\tjne 1b\n");
         fprintf(fp, "\tret\n");
+#elif defined(HOST_PPC64LE)
+        fprintf(fp, "\t1:\n");
+        // the last loop is bne 1b
+        for (int i = 0; i < (int)size - 1; i++) {
+          if (pattern == 0 || (pattern == 2 && i % 2 == 0)) {
+            // unconditional
+            fprintf(fp, "\tb 2f\n");
+          } else if (pattern == 1 || (pattern == 2 && i % 2 == 1)) {
+            // conditional
+            fprintf(fp, "\tbne 2f\n");
+          }
+          // fill nops so that branch instructions have the specified stride
+          fprintf(fp, "\t.balign %ld\n", stride);
+          fprintf(fp, "\t2:\n");
+        }
+        fprintf(fp, "\taddi 3, 3, -1\n");
+        fprintf(fp, "\tcmpdi CR0, 3, 0\n");
+        fprintf(fp, "\tbne 1b\n");
+        // ret
+        fprintf(fp, "\tblr\n");
 #endif
       }
     }

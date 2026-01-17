@@ -189,10 +189,6 @@ int main(int argc, char *argv[]) {
     // fifth longest tage
     additional_phr_bits = {4, 5, 6};
     history_bits = 7;
-  } else if (test_table == 6) {
-    // sixth longest tage
-    additional_phr_bits = {0, 1, 2, 3};
-    history_bits = 4;
   }
 #else
   // index bits of firestorm tage

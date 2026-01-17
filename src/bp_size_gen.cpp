@@ -1,6 +1,3 @@
-#include "include/utils.h"
-#include <cstdio>
-
 // bp_size: test branch prediction capability
 // Generate several branches, and each branch follow its own patterns. Observe
 // performance, if the branch predictor fails to predict so many branches to so
@@ -13,6 +10,9 @@
 // 性能会有明显的下降。这是一个定性的测试。
 // 你可以通过运行 `python3 figures/plot_bp_size.py`
 // 然后查看 `plot_bp_size.png` 图片来观察结果。
+
+#include "include/utils.h"
+#include <cstdio>
 
 // https://github.com/ChipsandCheese/Microbenchmarks/blob/master/AsmGen/tests/BranchHistoryTest.cs
 // https://github.com/ChipsandCheese/Microbenchmarks/blob/master/AsmGen/DataFiles/GccBranchHistFunction.c

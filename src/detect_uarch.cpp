@@ -68,6 +68,10 @@ int main() {
     break;
   case unknown_arm64:
     break;
+  case granite_rapids:
+    printf("-DINTEL\n");
+    printf("-DINTEL_GRANITE_RAPIDS\n");
+    break;
   case golden_cove:
     printf("-DINTEL\n");
     printf("-DINTEL_AHYBRID\n");
@@ -113,6 +117,12 @@ int main() {
   case la464:
     printf("-DLA464\n");
   case unknown_loongarch64:
+    break;
+  case power8:
+    printf("-DPOWER8\n");
+  case power9:
+    printf("-DPOWER9\n");
+  case unknown_ppc64le:
     break;
   default:
     assert(false);

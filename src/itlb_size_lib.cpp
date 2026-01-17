@@ -13,6 +13,7 @@ typedef void (*gadget)(size_t);
 bool avoid_hugepage_merging = false;
 int stride = 64;
 int fake_page_size = -1;
+bool enable_itlb_misses = false;
 
 void itlb_size(FILE *fp) {
   int loop_count = 1000;
@@ -20,6 +21,10 @@ void itlb_size(FILE *fp) {
   uint64_t max_size = 4096;
   bind_to_core();
   setup_perf_cycles();
+  if (enable_itlb_misses) {
+    setup_perf_l1itlb_misses();
+    setup_perf_l2itlb_misses();
+  }
 
   size_t page_size = getpagesize();
   if (fake_page_size != -1) {
@@ -34,7 +39,11 @@ void itlb_size(FILE *fp) {
   }
   printf("Branch stride: %dB\n", stride);
 
-  fprintf(fp, "size,min,avg,max\n");
+  if (enable_itlb_misses) {
+    fprintf(fp, "size,min,avg,max,l1itlb_misses,l2itlb_misses\n");
+  } else {
+    fprintf(fp, "size,min,avg,max\n");
+  }
   for (uint64_t size = min_size; size <= max_size; size++) {
     gadget entry = NULL;
     jit *jit_main = NULL;
@@ -66,6 +75,8 @@ void itlb_size(FILE *fp) {
           jit_page->b(target);
 #elif defined(HOST_AMD64)
           jit_page->jmp5(target);
+#elif defined(HOST_PPC64LE)
+          jit_page->b(target);
 #endif
         } else {
 #if defined(HOST_AARCH64)
@@ -81,6 +92,18 @@ void itlb_size(FILE *fp) {
           jit_page->dec_r32(jit::DI);
           jit_page->jnz6(start);
           jit_page->ret();
+#elif defined(HOST_PPC64LE)
+          // addi 3, 3, -1
+          jit_page->addi(3, 3, -1);
+          // cmpdi CR0, 3, 0
+          jit_page->cmpdi(0, 3, 0);
+          uint8_t *end = jit_page->get_cur() + 8;
+          // beq end
+          jit_page->beq(end);
+          // b start
+          jit_page->b(start);
+          // end:
+          jit_main->blr();
 #endif
         }
         jit_page->protect();
@@ -90,7 +113,7 @@ void itlb_size(FILE *fp) {
     } else {
       size_t mapped_size = page_size * size;
       mapped_size = (mapped_size + 0x10000) & -0x10000;
-      uint8_t *start = (uint8_t *)0x100000000;
+      uint8_t *start = (uint8_t *)0x7000000000;
       jit_main = new jit(start, mapped_size);
       for (uint64_t i = 0; i < size; i++) {
         // span over multiple cachelines to avoid hitting icache capacity
@@ -103,6 +126,8 @@ void itlb_size(FILE *fp) {
           jit_main->b(target);
 #elif defined(HOST_AMD64)
           jit_main->jmp5(target);
+#elif defined(HOST_PPC64LE)
+          jit_main->b(target);
 #endif
         } else {
 #if defined(HOST_AARCH64)
@@ -118,11 +143,23 @@ void itlb_size(FILE *fp) {
           jit_main->dec_r32(jit::DI);
           jit_main->jnz6(start);
           jit_main->ret();
+#elif defined(HOST_PPC64LE)
+          // addi 3, 3, -1
+          jit_main->addi(3, 3, -1);
+          // cmpdi CR0, 3, 0
+          jit_main->cmpdi(0, 3, 0);
+          uint8_t *end = jit_main->get_cur() + 8;
+          // beq end
+          jit_main->beq(end);
+          // b start
+          jit_main->b(start);
+          // end:
+          jit_main->blr();
 #endif
         }
       }
       jit_main->protect();
-      // jit_main->dump();
+      jit_main->dump();
       entry = (gadget)start;
     }
 
@@ -131,17 +168,38 @@ void itlb_size(FILE *fp) {
     history.reserve(iterations);
 
     double sum = 0;
+    double sum_l1itlb_misses = 0;
+    double sum_l2itlb_misses = 0;
     // run several times
     for (int i = 0; i < iterations; i++) {
       uint64_t begin = perf_read_cycles();
+      uint64_t begin_l1itlb_misses = 0;
+      uint64_t begin_l2itlb_misses = 0;
+      if (enable_itlb_misses) {
+        begin_l1itlb_misses = perf_read_l1itlb_misses();
+        begin_l2itlb_misses = perf_read_l2itlb_misses();
+      }
       entry(loop_count);
       uint64_t elapsed = perf_read_cycles() - begin;
+      uint64_t elapsed_l1itlb_misses = 0;
+      uint64_t elapsed_l2itlb_misses = 0;
+      if (enable_itlb_misses) {
+        elapsed_l1itlb_misses = perf_read_l1itlb_misses() - begin_l1itlb_misses;
+        elapsed_l2itlb_misses = perf_read_l2itlb_misses() - begin_l2itlb_misses;
+      }
 
       // skip warmup
       if (i >= 10) {
         double time = (double)elapsed / loop_count / size;
         history.push_back(time);
         sum += time;
+
+        if (enable_itlb_misses) {
+          sum_l1itlb_misses +=
+              (double)elapsed_l1itlb_misses / loop_count / size;
+          sum_l2itlb_misses +=
+              (double)elapsed_l2itlb_misses / loop_count / size;
+        }
       }
     }
 
@@ -162,8 +220,14 @@ void itlb_size(FILE *fp) {
         max = history[i];
       }
     }
-    fprintf(fp, "%ld,%.2lf,%.2lf,%.2lf\n", size, min, sum / history.size(),
-            max);
+    if (enable_itlb_misses) {
+      fprintf(fp, "%ld,%.2lf,%.2lf,%.2lf,%.2lf,%.2lf\n", size, min,
+              sum / history.size(), max, sum_l1itlb_misses / history.size(),
+              sum_l2itlb_misses / history.size());
+    } else {
+      fprintf(fp, "%ld,%.2lf,%.2lf,%.2lf\n", size, min, sum / history.size(),
+              max);
+    }
     fflush(fp);
   }
 }

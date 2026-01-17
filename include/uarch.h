@@ -33,6 +33,14 @@ enum uarch {
   arm64_begin = firestorm,
   arm64_end = unknown_arm64,
 
+  // ppc64le
+  power8,
+  power9,
+
+  unknown_ppc64le,
+  ppc64le_begin = power8,
+  ppc64le_end = unknown_ppc64le,
+
   // loongarch
   la464,
   la664,
@@ -41,6 +49,7 @@ enum uarch {
   loongarch64_end = unknown_loongarch64,
 
   // intel
+  granite_rapids,
   golden_cove,
   gracemont,
   sunny_cove,

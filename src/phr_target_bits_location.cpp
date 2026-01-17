@@ -7,6 +7,8 @@
 #include <unistd.h>
 #include <vector>
 
+// use with generate_gadget tool
+
 // defined in gen_phr_target_bits_location_test()
 // args: loop count, buffer
 typedef void (*gadget)(size_t, uint32_t *);
@@ -214,15 +216,21 @@ int main(int argc, char *argv[]) {
         uintptr_t first_target;
         uintptr_t second_target;
 // separate assumes B[14+] not input
-#if defined(APPLE_M1_FIRESTORM) || defined(APPLE_M2_AVALANCHE) ||              \
-    defined(QUALCOMM_ORYON)
+#if defined(APPLE_SILICON) || defined(QUALCOMM_ORYON)
         bool separate = target_toggle > 14; // must larger than page size
 #else
         bool separate = false;
 #endif
         if (separate) {
+#ifdef __APPLE__
+          // 0x7000000000: magic number on macOS, find via find_mmap_page:
+          // Good region: [0x300000000, 0xf00000000]
+          // Good region: [0x7000000000, 0x7fff00000000]
+          first_target = 0x7000000000 | ((uintptr_t)1 << (target_toggle + 1));
+#else
           // use 0 or 1<<(target_toggle+1) for first_target
-          first_target = (uintptr_t)1 << (target_toggle + 1);
+          first_target = ((uintptr_t)1 << (target_toggle + 1));
+#endif
           second_target = first_target + ((uintptr_t)1 << target_toggle);
         } else {
           first_target = (uintptr_t)jit_main->get_cur();

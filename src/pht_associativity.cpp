@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <vector>
 
+// use with generate_gadget tool
+
 // defined in gen_pht_associativity_test()
 // args: loop count, buffer
 typedef void (*gadget)(size_t, uint32_t *);
@@ -15,6 +17,11 @@ int main(int argc, char *argv[]) {
   int loop_count = 1000;
   // match gen_pht_associativity_test
   int min_branches = 1;
+#ifdef HOST_AMD64
+  int max_branches = 16;
+  int min_branch_align = 6;
+  int max_branch_align = 18;
+#else
   int max_branches = 32;
   int min_branch_align = 3;
 #ifdef __APPLE__
@@ -22,6 +29,7 @@ int main(int argc, char *argv[]) {
   int max_branch_align = 8;
 #else
   int max_branch_align = 19;
+#endif
 #endif
 
   bind_to_core();

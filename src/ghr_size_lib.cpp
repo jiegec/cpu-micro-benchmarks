@@ -19,11 +19,7 @@ void ghr_size(FILE *fp) {
   int max_size = 1024;
 
   bind_to_core();
-#ifdef IOS
-  // no pmu
-#else
   setup_perf_branch_misses();
-#endif
   assert(fp);
 
   uint32_t *buffer = new uint32_t[loop_count + 1];
@@ -41,21 +37,11 @@ void ghr_size(FILE *fp) {
       for (int i = 0; i <= loop_count; i++) {
         buffer[i] = rand() % 2;
       }
-#ifdef IOS
-      // fallback
-      uint64_t begin = get_time();
-#else
       uint64_t begin = perf_read_branch_misses();
-#endif
 
       ghr_size_gadgets[gadget_index](loop_count, buffer);
 
-#ifdef IOS
-      // fallback
-      uint64_t elapsed = get_time() - begin;
-#else
       uint64_t elapsed = perf_read_branch_misses() - begin;
-#endif
 
       // skip warmup
       if (i >= 10) {

@@ -20,9 +20,8 @@ void phr_size(FILE *fp) {
   int max_size = 256;
 
   bind_to_core();
-#ifdef IOS
-  // no pmu
-#elif defined(NO_COND_BRANCH_MISSES)
+  setup_perf_cycles();
+#if defined(NO_COND_BRANCH_MISSES)
   // fallback
   setup_perf_branch_misses();
 #else
@@ -32,7 +31,7 @@ void phr_size(FILE *fp) {
 
   uint32_t *buffer = new uint32_t[loop_count + 1];
 
-  fprintf(fp, "size,min,avg,max\n");
+  fprintf(fp, "size,min,avg,max,cycles\n");
   int gadget_index = 0;
   for (int size = min_size; size <= max_size; size++) {
     std::vector<double> history;
@@ -40,6 +39,7 @@ void phr_size(FILE *fp) {
     history.reserve(iterations);
 
     double sum = 0;
+    double sum_cycles = 0;
     // run several times
     for (int i = 0; i < iterations; i++) {
 
@@ -51,33 +51,32 @@ void phr_size(FILE *fp) {
       buffer[0] = 0;
       buffer[1] = 1;
 
-#ifdef IOS
-      // fallback
-      uint64_t begin = get_time();
-#elif defined(NO_COND_BRANCH_MISSES)
+#if defined(NO_COND_BRANCH_MISSES)
       // fallback
       uint64_t begin = perf_read_branch_misses();
 #else
       uint64_t begin = perf_read_cond_branch_misses();
 #endif
+      uint64_t begin_cycles = perf_read_cycles();
 
       phr_size_gadgets[gadget_index](loop_count, buffer);
 
-#ifdef IOS
-      // fallback
-      uint64_t elapsed = get_time() - begin;
-#elif defined(NO_COND_BRANCH_MISSES)
+#if defined(NO_COND_BRANCH_MISSES)
       // fallback
       uint64_t elapsed = perf_read_branch_misses() - begin;
 #else
       uint64_t elapsed = perf_read_cond_branch_misses() - begin;
 #endif
+      uint64_t elapsed_cycles = perf_read_cycles() - begin_cycles;
 
       // skip warmup
       if (i >= 10) {
         double time = (double)elapsed / loop_count;
         history.push_back(time);
         sum += time;
+
+        double cycles = (double)elapsed_cycles / loop_count;
+        sum_cycles += cycles;
       }
     }
     gadget_index++;
@@ -92,7 +91,8 @@ void phr_size(FILE *fp) {
         max = history[i];
       }
     }
-    fprintf(fp, "%d,%.2lf,%.2lf,%.2lf\n", size, min, sum / history.size(), max);
+    fprintf(fp, "%d,%.2lf,%.2lf,%.2lf,%.2lf\n", size, min, sum / history.size(),
+            max, sum_cycles / history.size());
     fflush(fp);
   }
   delete[] buffer;

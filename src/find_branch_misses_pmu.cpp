@@ -18,6 +18,24 @@ extern gadget find_branch_misses_pmu_gadgets[];
 int main(int argc, char *argv[]) {
   int num_patterns = 3;
   int loop_count = 1000;
+  // on oryon:
+  // Possible branch misses counter: 0x10
+  // Possible branch misses counter: 0x22
+  // Possible cond branch misses counter: 0x400
+  // Possible indir branch misses counter: 0x80d
+  // Possible indir branch misses counter: 0x80e
+  // on firestorm:
+  // Possible cond branch misses counter: 0xc5
+  // Possible branch misses counter: 0xcb
+  // Possible cond branch misses counter: 0xcd
+  // Possible indir branch misses counter: 0xc6
+  // Possible indir branch misses counter: 0xce
+  // on neoverse n1:
+  // Possible branch misses counter: 0x10
+  // Possible branch misses counter: 0x22
+  // Possible branch misses counter: 0x116
+  // Possible cond branch misses counter: 0x117
+  // Possible indir branch misses counter: 0x118
   int min_counter = 0x0;
   int max_counter = 0x1000;
   const char *pattern_names[] = {

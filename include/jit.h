@@ -691,6 +691,75 @@ public:
     *p++ = 0xc0 | (dest << 3) | src;
     cur = p;
   }
+#elif defined(HOST_PPC64LE)
+  // All PPC64LE instructions are 4 bytes (32 bits)
+
+  void nop() {
+    assert((size_t)cur % 4 == 0);
+    uint32_t *p = (uint32_t *)cur;
+    // ori 0, 0, 0
+    *p = 0x60000000;
+    cur += 4;
+  }
+
+  // BLR: branch to link register
+  void blr() {
+    assert((size_t)cur % 4 == 0);
+    uint32_t *p = (uint32_t *)cur;
+    // 19 (010011) BO=01000 BI=00000 BD=00000 AA=0 LK=1
+    *p = 0x4e800020;
+    cur += 4;
+  }
+
+  // B target: unconditional branch
+  void b(uint8_t *target) {
+    assert((size_t)cur % 4 == 0);
+    uint32_t *p = (uint32_t *)cur;
+    // B: 18 (010010) | LI (24-bit offset in instructions) | AA=0 | LK=0
+    ssize_t offset = ((ssize_t)target - (ssize_t)cur);
+    assert(offset % 4 == 0); // Must be word-aligned
+    offset /= 4;             // Convert to instruction offset
+    assert(offset >= -(1 << 23) && offset < (1 << 23)); // 24-bit signed
+    offset &= 0xFFFFFF;
+    *p = (18 << 26) | (offset << 2);
+    cur += 4;
+  }
+
+  // ADDI rD, rA, simm
+  void addi(int rd, int ra, int16_t simm) {
+    assert((size_t)cur % 4 == 0);
+    uint32_t *p = (uint32_t *)cur;
+    // ADDI: 14 (001110) | rD (5) | rA (5) | simm (16)
+    assert((0 <= rd) && (rd <= 31));
+    assert((0 <= ra) && (ra <= 31));
+    *p = (14 << 26) | (rd << 21) | (ra << 16) | (uint16_t)simm;
+    cur += 4;
+  }
+
+  // CMPDI crfD, rA, simm
+  void cmpdi(int cr, int ra, int16_t simm) {
+    assert((size_t)cur % 4 == 0);
+    uint32_t *p = (uint32_t *)cur;
+    // CMPI: 11 (001011) | L=1 | crfD (3) | rA (5) | simm (16)
+    assert((0 <= cr) && (cr <= 7));
+    assert((0 <= ra) && (ra <= 31));
+    *p = (11 << 26) | (1 << 21) | (cr << 23) | (ra << 16) | (uint16_t)simm;
+    cur += 4;
+  }
+
+  // BEQ target: branch if equal to CR0 bit 0
+  void beq(uint8_t *target) {
+    assert((size_t)cur % 4 == 0);
+    uint32_t *p = (uint32_t *)cur;
+    // BC: 16 (010000) | BO=01100 | BI=00010 | BD (14-bit) | AA=0 | LK=0
+    ssize_t offset = ((ssize_t)target - (ssize_t)cur);
+    assert(offset % 4 == 0); // Must be word-aligned
+    offset /= 4;             // Convert to instruction offset
+    assert(offset >= -(1 << 13) && offset < (1 << 13)); // 14-bit signed
+    offset &= 0x3FFF;
+    *p = (16 << 26) | (0b01100 << 21) | (0b00010 << 16) | (offset << 2);
+    cur += 4;
+  }
 #endif
 
   void dump(const char *file_name = "jit.bin") const {

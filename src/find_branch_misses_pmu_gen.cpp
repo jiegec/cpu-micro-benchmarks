@@ -1,3 +1,13 @@
+// find_branch_misses_pmu: find hidden branch misses PMU counters
+// This benchmark generates different types of branch misses (conditional,
+// indirect) and uses Performance Monitoring Unit (PMU) counters to measure the
+// miss rates. Useful for finding hidden PMU counters.
+//
+// find_branch_misses_pmu: 查找分支误预测的隐藏 PMU 计数器
+// 此基准测试生成不同类型的分支误预测（条件分支、间接分支）
+// 并使用性能监控单元（PMU）计数器来测量误预测率。
+// 用于寻找隐藏的 PMU 计数器。
+
 #include "include/utils.h"
 
 int main(int argc, char *argv[]) {

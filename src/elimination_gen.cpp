@@ -1,3 +1,21 @@
+// elimination: test instruction elimination
+// This benchmark tests whether the processor can eliminate or optimize away
+// certain instructions. It tests various patterns including:
+// - Dependent vs independent operations
+// - Instructions with zero operands (xor zero, sub zero, mov zero)
+// - Register-to-register moves
+// - Vector operations
+// Instructions that are fully eliminated execute in zero cycles.
+//
+// elimination: 测试指令消除
+// 此基准测试处理器是否可以消除或优化某些指令。
+// 它测试各种模式，包括：
+// - 依赖操作与独立操作
+// - 具有零操作数的指令（xor zero、sub zero、mov zero）
+// - 寄存器到寄存器的移动
+// - 向量操作
+// 完全消除的指令在零周期内执行。
+
 #include "include/utils.h"
 
 int main(int argc, char *argv[]) {

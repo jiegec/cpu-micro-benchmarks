@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
   // match gen_phr_branch_target_xor_test
 #if defined(HOST_AMD64)
   int min_branch_toggle = 1;
-  int max_branch_toggle = 12;
+  int max_branch_toggle = 15;
   int min_target_toggle = 0;
   int max_target_toggle = 12;
 #else

@@ -1,7 +1,20 @@
-#include "include/utils.h"
+// ghr_size: measure global history register size
+// Global history register (GHR) stores the history of branch directions for
+// branch prediction. To measure GHR size, we create a sequence of always-taken
+// branches followed by one data-dependent branch. When the number of
+// always-taken branches exceeds GHR size, older branch history is lost, and the
+// final branch cannot be predicted correctly using the full history.
+//
+// ghr_size: 测量全局历史寄存器的大小
+// 全局历史寄存器（GHR）存储分支方向的历史记录用于分支预测。
+// 为了测量 GHR 的大小，我们创建一系列总是执行的分支，后跟一个数据依赖的分支。
+// 当总是执行的分支数量超过 GHR 大小时，较旧的分支历史会丢失，
+// 最终分支无法使用完整历史进行正确预测。
 
 // ref:
 // https://cseweb.ucsd.edu/~dstefan/pubs/yavarzadeh:2023:half.pdf
+
+#include "include/utils.h"
 int main(int argc, char *argv[]) {
   FILE *fp = fopen(argv[1], "w");
   assert(fp);

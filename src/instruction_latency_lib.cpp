@@ -38,6 +38,7 @@ std::vector<InstrTest> tests = {
 };
 
 #undef INSTR_TEST
+#undef INSTR_TEST_REPEAT
 
 struct InstrInfo {
   std::set<double> latency;
