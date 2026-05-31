@@ -3,3 +3,4 @@
 !*.c
 !*.S
 !*.md
+!Makefile
