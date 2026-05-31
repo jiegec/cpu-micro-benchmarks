@@ -17,10 +17,10 @@ make
 Run result on 3C5000:
 
 ```
-Variant                ns/op  M vfmax/s
----------------------------------------
-gcc16 (vfmax_gcc16)     20.68        48    100000 pairs x 100 iters
-gcc15 (vfmax_gcc15)     26.73        37    100000 pairs x 100 iters
-clang (vfmax_clang)     14.72        68    100000 pairs x 100 iters
-opt (vfmax_opt)          5.04       198    100000 pairs x 100 iters
+Variant                 ns/op  M vfmax/s
+----------------------------------------
+gcc16 (vfmax_gcc16)     20.68         48    100000 pairs x 100 iters
+gcc15 (vfmax_gcc15)     26.73         37    100000 pairs x 100 iters
+clang22 (vfmax_clang22) 14.72         68    100000 pairs x 100 iters
+opt (vfmax_opt)          5.04        198    100000 pairs x 100 iters
 ```

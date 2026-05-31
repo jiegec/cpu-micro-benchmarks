@@ -61,7 +61,7 @@ static double bench(const char *name,
   double per_call_ns = total_ns / (double)(iterations * n);
   double million_ops = (double)(iterations * n) / total_ns * 1000.0;
 
-  printf("%-19s %9.2f  %8.0f    %d pairs x %d iters\n", name, per_call_ns,
+  printf("%-23s %5.2f  %9.0f    %d pairs x %d iters\n", name, per_call_ns,
          million_ops, n, iterations);
   return per_call_ns;
 }
@@ -154,13 +154,13 @@ int main(void) {
   printf("All implementations match the C reference.\n\n");
 
   printf("=== Performance benchmark ===\n");
-  printf("%-18s %9s  %8s\n", "Variant", "ns/op", "M vfmax/s");
-  printf("---------------------------------------\n");
+  printf("%-21s %7s  %8s\n", "Variant", "ns/op", "M vfmax/s");
+  printf("----------------------------------------\n");
 
   bench("ref (vfmax_c)", vfmax_c, a, b, ref, n, iterations);
   bench("gcc16 (vfmax_gcc16)", vfmax_gcc16, a, b, t_gcc16, n, iterations);
   bench("gcc15 (vfmax_gcc15)", vfmax_gcc15, a, b, t_gcc15, n, iterations);
-  bench("clang (vfmax_clang)", vfmax_clang22, a, b, t_clang22, n, iterations);
+  bench("clang22 (vfmax_clang22)", vfmax_clang22, a, b, t_clang22, n, iterations);
   bench("opt (vfmax_opt)", vfmax_opt, a, b, t_opt, n, iterations);
 
   free(a);
