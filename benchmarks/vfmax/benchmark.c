@@ -11,6 +11,7 @@ struct vfloat4 {
    struct vfloat4 vfmax_*(struct vfloat4 a, struct vfloat4 b) */
 extern struct vfloat4 vfmax_c(struct vfloat4, struct vfloat4);
 extern struct vfloat4 vfmax_gcc16(struct vfloat4, struct vfloat4);
+extern struct vfloat4 vfmax_gcc15(struct vfloat4, struct vfloat4);
 extern struct vfloat4 vfmax_clang22(struct vfloat4, struct vfloat4);
 extern struct vfloat4 vfmax_opt(struct vfloat4, struct vfloat4);
 
@@ -60,7 +61,7 @@ static double bench(const char *name,
   double per_call_ns = total_ns / (double)(iterations * n);
   double million_ops = (double)(iterations * n) / total_ns * 1000.0;
 
-  printf("%-18s %9.2f  %8.0f    %d pairs x %d iters\n", name, per_call_ns,
+  printf("%-19s %9.2f  %8.0f    %d pairs x %d iters\n", name, per_call_ns,
          million_ops, n, iterations);
   return per_call_ns;
 }
@@ -73,10 +74,11 @@ int main(void) {
   struct vfloat4 *b = aligned_alloc(16, n * sizeof(struct vfloat4));
   struct vfloat4 *ref = aligned_alloc(16, n * sizeof(struct vfloat4));
   struct vfloat4 *t_gcc16 = aligned_alloc(16, n * sizeof(struct vfloat4));
+  struct vfloat4 *t_gcc15 = aligned_alloc(16, n * sizeof(struct vfloat4));
   struct vfloat4 *t_clang22 = aligned_alloc(16, n * sizeof(struct vfloat4));
   struct vfloat4 *t_opt = aligned_alloc(16, n * sizeof(struct vfloat4));
 
-  if (!a || !b || !ref || !t_gcc16 || !t_clang22 || !t_opt) {
+  if (!a || !b || !ref || !t_gcc16 || !t_gcc15 || !t_clang22 || !t_opt) {
     fprintf(stderr, "aligned_alloc failed\n");
     return 1;
   }
@@ -126,12 +128,15 @@ int main(void) {
   for (int i = 0; i < n; i++)
     t_gcc16[i] = vfmax_gcc16(a[i], b[i]);
   for (int i = 0; i < n; i++)
+    t_gcc15[i] = vfmax_gcc15(a[i], b[i]);
+  for (int i = 0; i < n; i++)
     t_clang22[i] = vfmax_clang22(a[i], b[i]);
   for (int i = 0; i < n; i++)
     t_opt[i] = vfmax_opt(a[i], b[i]);
 
   int errors = 0;
   errors += validate_bit("vfmax_gcc16", ref, t_gcc16, n);
+  errors += validate_bit("vfmax_gcc15", ref, t_gcc15, n);
   errors += validate_bit("vfmax_clang22", ref, t_clang22, n);
   errors += validate_bit("vfmax_opt", ref, t_opt, n);
 
@@ -141,6 +146,7 @@ int main(void) {
     free(b);
     free(ref);
     free(t_gcc16);
+    free(t_gcc15);
     free(t_clang22);
     free(t_opt);
     return 1;
@@ -149,10 +155,11 @@ int main(void) {
 
   printf("=== Performance benchmark ===\n");
   printf("%-18s %9s  %8s\n", "Variant", "ns/op", "M vfmax/s");
-  printf("--------------------------------------\n");
+  printf("---------------------------------------\n");
 
   bench("ref (vfmax_c)", vfmax_c, a, b, ref, n, iterations);
   bench("gcc16 (vfmax_gcc16)", vfmax_gcc16, a, b, t_gcc16, n, iterations);
+  bench("gcc15 (vfmax_gcc15)", vfmax_gcc15, a, b, t_gcc15, n, iterations);
   bench("clang (vfmax_clang)", vfmax_clang22, a, b, t_clang22, n, iterations);
   bench("opt (vfmax_opt)", vfmax_opt, a, b, t_opt, n, iterations);
 
@@ -160,6 +167,7 @@ int main(void) {
   free(b);
   free(ref);
   free(t_gcc16);
+  free(t_gcc15);
   free(t_clang22);
   free(t_opt);
   return 0;
