@@ -58,6 +58,11 @@ DEFINE_COUNTER_RANGE(branch_misses, arm64, PERF_TYPE_RAW, 0x22)
 // discovered via find_branch_misses_pmu tool
 DEFINE_COUNTER(cond_branch_misses, oryon, PERF_TYPE_RAW, 0x400)
 
+// golden cove
+// https://perfmon-events.intel.com/platforms/alderlake/core-events/p-core/#event-MACHINE_CLEARS.COUNT
+// EventSel=C3H UMask=01H
+DEFINE_COUNTER(machine_clear, golden_cove, PERF_TYPE_RAW, 0x01C3)
+
 // fallback counters
 
 // cycles

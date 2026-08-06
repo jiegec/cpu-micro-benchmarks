@@ -29,5 +29,8 @@ DECLARE_RAW_COUNTER(l2itlb_misses)
 DECLARE_RAW_COUNTER(l1dtlb_misses)
 DECLARE_RAW_COUNTER(l2dtlb_misses)
 
+// others
+DECLARE_RAW_COUNTER(machine_clear)
+
 // declare computed counters
 DECLARE_COMPUTED_COUNTER(counter_per_cycle, instructions_per_cycle)

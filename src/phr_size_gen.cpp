@@ -1,10 +1,10 @@
 // phr_size: measure PHR size
 // Path history register (PHR) stores the history of taken branches.
-// To measure PHR size, we use indirect jumps to create a long dependency chain of branches,
-// where each branch's outcome depends on the previous one through a data chain.
-// When the chain length exceeds PHR size, the processor cannot maintain the full history,
-// causing prediction degradation.
-// 
+// To measure PHR size, we use indirect jumps to create a long dependency chain
+// of branches, where each branch's outcome depends on the previous one through
+// a data chain. When the chain length exceeds PHR size, the processor cannot
+// maintain the full history, causing prediction degradation.
+//
 // phr_size: 测量 PHR 的大小
 // PHR 存储分支路径历史。
 // 为了测量 PHR 的大小，我们使用间接跳转创建一个长的分支依赖链，

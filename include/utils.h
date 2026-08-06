@@ -6,9 +6,11 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <vector>
 
 // detect host machine if not set
-#if !defined(HOST_AARCH64) && !defined(HOST_AMD64) && !defined(HOST_LOONGARCH64) && !defined(HOST_PPC64LE)
+#if !defined(HOST_AARCH64) && !defined(HOST_AMD64) &&                          \
+    !defined(HOST_LOONGARCH64) && !defined(HOST_PPC64LE)
 #ifdef __x86_64__
 #define HOST_AMD64
 #endif
