@@ -1,5 +1,7 @@
 # Result of Dissecting Conditional Branch Predictors of Apple Firestorm and Qualcomm Oryon
 
+In this post, we reveal the detailed result of the experiments in our study paper:
+
 Paper: https://arxiv.org/abs/2411.13900, cite as:
 
 ```bibtex
@@ -14,7 +16,19 @@ Paper: https://arxiv.org/abs/2411.13900, cite as:
 }
 ```
 
-In this post, we reveal the detailed result of the experiments in the paper. The microbenchmarks used in this report are provided as-is in this repo.
+> **News:** We have extended this work to attacks on macOS on Apple Silicon. Our attack paper [iEnFlow: Endogenous Control-Flow Attacks via Conditional Branch Prediction on Apple Silicon](https://craft.cs.tsinghua.edu.cn/papers/iEnFlow_full.pdf) (Kaiyuan Rong, Jiajie Chen, Junqi Fang, Peng Qu, Hanyin Liu, Youhui Zhang, Dapeng Ju, Dongsheng Wang) has been accepted at ACM CCS'26. Cite as:
+>
+> ```bibtex
+> @inproceedings{rong2026ienflow,
+>       title={iEnFlow: Endogenous Control-Flow Attacks via Conditional Branch Prediction on Apple Silicon},
+>       author={Kaiyuan Rong and Jiajie Chen and Junqi Fang and Peng Qu and Hanyin Liu and Youhui Zhang and Dapeng Ju and Dongsheng Wang},
+>       booktitle={Proceedings of the 2026 ACM SIGSAC Conference on Computer and Communications Security (CCS '26)},
+>       year={2026},
+>       url={https://craft.cs.tsinghua.edu.cn/papers/iEnFlow_full.pdf},
+> }
+> ```
+
+The microbenchmarks used in this report are provided as-is in this repo.
 
 ## PHRB & PHRT
 
