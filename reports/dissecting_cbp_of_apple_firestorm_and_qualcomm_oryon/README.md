@@ -16,7 +16,7 @@ Paper: https://arxiv.org/abs/2411.13900, cite as:
 }
 ```
 
-> **News:** We have extended this work to attacks on macOS on Apple Silicon. Our attack paper [iEnFlow: Endogenous Control-Flow Attacks via Conditional Branch Prediction on Apple Silicon](https://craft.cs.tsinghua.edu.cn/papers/iEnFlow_full.pdf) (Kaiyuan Rong, Jiajie Chen, Junqi Fang, Peng Qu, Hanyin Liu, Youhui Zhang, Dapeng Ju, Dongsheng Wang) has been accepted at ACM CCS'26. Cite as:
+> **News:** We have extended this work to attacks on macOS on Apple Silicon. Our attack paper [iEnFlow: Endogenous Control-Flow Attacks via Conditional Branch Prediction on Apple Silicon](https://craft.cs.tsinghua.edu.cn/papers/iEnFlow_full.pdf) (Kaiyuan Rong, Jiajie Chen, Junqi Fang, Peng Qu, Hanyin Liu, Youhui Zhang, Dapeng Ju, Dongsheng Wang) has been accepted at ACM CCS'26. Artifacts: [GitHub repository](https://github.com/CPU-Security/iEnFlow) and [Zenodo archive](https://zenodo.org/records/20769810). Cite as:
 >
 > ```bibtex
 > @inproceedings{rong2026ienflow,
